@@ -42,6 +42,14 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		return false;
 		//return new mwmod_mw_data_session_man("mainui");	
 	}
+	function get_user_pref_rel_path(){
+		if(!$cod=$this->__get_ap_submanager_cod()){
+						
+			$cod="uidef";
+		}
+		return $cod;
+
+	}
 	final function  __get_priv_uiSessionDataMan(){
 		if(!isset($this->uiSessionDataMan)){
 			if(!$this->uiSessionDataMan= $this->createUISessionDataMan()){

@@ -151,7 +151,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 	}
 	
-	function get_user_ui_pref(){
+	function get_user_ui_data($cod="uipref"){
 		if(!$user=$this->get_current_user()){
 			return false;
 		}
@@ -159,8 +159,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!$path=$this->get_full_cod("/")){
 			return false;	
 		}
+		$maincode=$this->maininterface->get_user_pref_rel_path();
 		
-		return $user->get_jsondata_item("uipref","ui/".$path);
+		return $user->get_jsondata_item($cod,"uipref/{$maincode}/".$path);
+	}
+	function get_user_ui_pref(){
+		return $this->get_user_ui_data("uipref"); 
 	}
 	function get_current_user(){
 		return $this->get_admin_current_user();

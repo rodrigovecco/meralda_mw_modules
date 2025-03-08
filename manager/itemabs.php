@@ -14,6 +14,7 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	
 	
 	private $_related_objects_man;
+	
 	//20250202 HAC 
 	function getDataAsDate($format="c"){
 		$r=$this->get_data();
@@ -450,6 +451,11 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	function get_data_as_date($key=""){
 		if($tblitem=$this->tblitem){
 			return $tblitem->get_data_as_date($key);
+		}
+	}
+	function get_data_as_time($key=""){
+		if($tblitem=$this->tblitem){
+			return $tblitem->get_data_as_time($key);
 		}
 	}
 	

@@ -9,6 +9,7 @@ class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_ele
 	public $dataGrid;
 	
 	public $index=0;
+	public $userColsSelectedRememberEnabled=true;
 	function __construct($cod,$lbl=false,$dataType=false){
 		$this->init_column($cod,$dataType,$lbl);
 	}

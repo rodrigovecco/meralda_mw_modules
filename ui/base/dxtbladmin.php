@@ -4,6 +4,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $defPageSize=20;
 	public $editingMode="row";
 	public $excelExportName;
+
+	public	$userColsSelectedRememberEnabled=false;
+	public	$userColsSelectedRememberEnabledVisible=false;
+
 	
 	function __construct($cod,$parent){
 		$this->init_as_main_or_sub($cod,$parent);
@@ -12,7 +16,74 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->editingMode="row";
 		
 	}
+	function allowSaveColsState(){
+		if($this->userColsSelectedRememberEnabled){
+			return $this->is_allowed();	
+		}
+	}
+	function execfrommain_getcmd_sxml_savecolsstate($params=array(),$filename=false){
+		$xml=$this->new_getcmd_sxml_answer(false);
+		$this->xml_output=$xml;
+		if(!$this->allowSaveColsState()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+		
+		if(!$dataItem=$this->get_user_ui_data("colsstate")){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		$input=new mwmod_mw_helper_inputvalidator_request("cols");
+		if(!$input->is_req_input_ok()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$nd=$input->get_value_as_list()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		$xml->set_prop("newdata",$nd);
+		$chaged=false;
+		foreach($nd as $cod=>$val){
+			if(is_array($val)){
+				if($this->check_str_key_alnum_underscore($cod)){
+					if($this->userColsSelectedRememberEnabledVisible){
+						if(isset($val["visible"])){
+							if($val["visible"]){
+								$dataItem->set_data(true,"cols.".$cod.".visible");	
+							}else{
+								$dataItem->set_data(false,"cols.".$cod.".visible");	
+							}
+							$chaged=true;
+						}
+					}
+					
+				
+				}
+			}
+
+			
+		}
+		if($chaged){
+			$dataItem->set_data(date("Y-m-d H:i:s"),"updatedTime");
+
+			$dataItem->save();
+		}
+
+
+
+		
+		
+		
+		$xml->set_prop("ok",true);
+		
+		$xml->set_prop("colsstate",$dataItem->get_data());
 	
+		
+		$xml->root_do_all_output();
+
+	}
 	function getDefPageSize(){
 		return $this->defPageSize;	
 	}
@@ -34,6 +105,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function allowUpdateItem($item){
 		return $this->allowUpdate();
 	}
+	
 	function getQuery(){
 		
 		$this->queryHelper=new mwmod_mw_devextreme_data_queryhelper();
@@ -64,6 +136,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$r=$item->getDataForDXtbl();
 		return $r;
 	}
+	
 
 	function execfrommain_getcmd_sxml_loaddata($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
@@ -154,9 +227,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		//
 		$js=new mwmod_mw_jsobj_jquery_docreadyfnc();
 		$this->set_ui_js_params();
-		if($this->excelExportName){
-			$this->ui_js_init_params->set_prop("excelExportName",$this->excelExportName);
-		}
+		
+		
+
+		//$this->setDefaultJSinitParams();
 		
 		$jsui=$this->new_ui_js();
 		$var=$this->get_js_ui_man_name();
@@ -170,6 +244,19 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 
 		
+	}
+	function set_ui_js_params(){
+		$this->setDefaultJSinitParams();
+	}
+	function setDefaultJSinitParams(){
+		if($this->userColsSelectedRememberEnabled){
+			$this->ui_js_init_params->set_prop("userColsSelectedRememberEnabled",true);
+		}
+		if($this->excelExportName){
+			$this->ui_js_init_params->set_prop("excelExportName",$this->excelExportName);
+		}
+		///$this->ui_js_init_params->set_prop("excelExportName",$this->excelExportName);
+
 	}
 	function before_exec(){
 		$util=new mwmod_mw_devextreme_util();
@@ -432,6 +519,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 
 		$this->add_cols($datagrid);
+		$this->setColsUserPrefs($datagrid);
 		/*
 		$dataoptim=$datagrid->new_dataoptim_data_man();
 		$dataoptim->set_key("id");
@@ -475,6 +563,43 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 		
 			
+	}
+	function setColsUserPrefs($datagrid){
+		if(!$this->userColsSelectedRememberEnabled){
+			return false;	
+		}
+		if(!$dataItem=$this->get_user_ui_data("colsstate")){
+			
+			return false;	
+		}
+		$cols=$datagrid->columns->get_items();
+		//var_dump($dataItem->get_data());
+		//die("setColsUserPrefs");
+		foreach($cols as $col){
+			if($col->userColsSelectedRememberEnabled){
+
+				$cod=$col->cod;
+				$datacod="cols.".$cod;
+				if($this->userColsSelectedRememberEnabledVisible){
+					
+					
+					if($dataItem->is_data_defined($datacod.".visible")){
+						//die($datacod);
+						if($dataItem->get_data($datacod.".visible")){
+							$col->js_data->set_prop("visible",true);
+						}else{
+							$col->js_data->set_prop("visible",false);
+						}
+						
+					}
+					
+				}
+			}
+			
+			
+		}
+		
+
 	}
 	//20210217
 	function afterDatagridCreated($datagrid,$gridhelper){
