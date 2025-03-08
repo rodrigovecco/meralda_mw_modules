@@ -4,11 +4,20 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $defPageSize=20;
 	public $editingMode="row";
 	public $excelExportName;
+	public $columnsChooserEnabled=false;
 
 	public	$userColsSelectedRememberEnabled=false;
 	public	$userColsSelectedRememberEnabledVisible=false;
-
-	
+	public	$userColsPrefResetBtnEnabled=false;
+	public $tollbarItemsExportButtonAdded=false;
+	function setUserColsSelectedRememberEnabledMode(){
+		$this->userColsSelectedRememberEnabled=true;
+		$this->userColsSelectedRememberEnabledVisible=true;
+		$this->userColsPrefResetBtnEnabled=true;
+	}
+	function userColsSelectedRememberEnabledVisibleIndex(){
+		return $this->userColsSelectedRememberEnabledVisible;
+	}
 	function __construct($cod,$parent){
 		$this->init_as_main_or_sub($cod,$parent);
 		$this->set_def_title("Some UI");
@@ -20,6 +29,42 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		if($this->userColsSelectedRememberEnabled){
 			return $this->is_allowed();	
 		}
+	}
+	function execfrommain_getcmd_sxml_resetcolsstate($params=array(),$filename=false){
+		$xml=$this->new_getcmd_sxml_answer(false);
+		$this->xml_output=$xml;
+		if(!$this->allowSaveColsState()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+		
+		if(!$dataItem=$this->get_user_ui_data("colsstate")){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		$dataItem->set_data(array());
+		$dataItem->save();
+
+		
+		$js=new mwmod_mw_jsobj_obj();
+		$xml_js=new mwmod_mw_data_xml_js("js",$js);		
+		$xml->add_sub_item($xml_js);
+
+
+
+	
+		
+		$xml->set_prop("notify.message",$this->lng_common_get_msg_txt("MSGcolumnsPrefReseted","Se restablecieron las preferencias de columnas. Por favor, actualizar la página."));
+		$xml->set_prop("notify.type","warning");
+		
+		$xml->set_prop("ok",true);
+		
+		$xml->set_prop("colsstate",$dataItem->get_data());
+	
+		
+		$xml->root_do_all_output();
+
 	}
 	function execfrommain_getcmd_sxml_savecolsstate($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
@@ -58,6 +103,16 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 							$chaged=true;
 						}
 					}
+					if($this->userColsSelectedRememberEnabledVisibleIndex()){
+						if(isset($val["visibleIndex"])and(is_numeric($val["visibleIndex"]))){
+						
+							$dataItem->set_data($val["visibleIndex"],"cols.".$cod.".visibleIndex");	
+							
+							$chaged=true;
+						}
+					}
+					
+					
 					
 				
 				}
@@ -232,9 +287,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 		//$this->setDefaultJSinitParams();
 		
-		$jsui=$this->new_ui_js();
+		//$jsui=$this->new_ui_js();
 		$var=$this->get_js_ui_man_name();
-		$js->add_cont("var {$var}=".$jsui->get_as_js_val().";\n");
+		//$js->add_cont("var {$var}=".$jsui->get_as_js_val().";\n");
 		
 		$js->add_cont($var.".init(".$this->ui_js_init_params->get_as_js_val().");\n");
 		
@@ -282,6 +337,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 		$this->add_req_js_scripts();	
 		$this->add_req_css();
+		$item=$this->create_js_man_ui_header_declaration_item();
+		$jsman->add_item_by_item($item);
+
 	}
 	function execfrommain_getcmd_sxml_newitem($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
@@ -489,6 +547,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			
 			
 			
+			
 		}
 		$datagrid->js_props->set_prop("columnAutoWidth",true);	
 		$datagrid->js_props->set_prop("allowColumnResizing",true);
@@ -594,6 +653,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 					}
 					
 				}
+				if($this->userColsSelectedRememberEnabledVisibleIndex()){
+					if($dataItem->is_data_defined($datacod.".visibleIndex")){
+						$vv=$dataItem->get_data($datacod.".visibleIndex");
+						if(is_numeric($vv)){
+							$col->js_data->set_prop("visibleIndex",$vv+0);
+						}
+						
+						
+					}
+
+				}
 			}
 			
 			
@@ -602,8 +672,83 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 	}
 	//20210217
+	
 	function afterDatagridCreated($datagrid,$gridhelper){
+		$var=$this->get_js_ui_man_name();
+		
+		if($this->columnsChooserEnabled){
+			//$datagrid->set_prop("columnsChooserEnabled",true);
+			$datagrid->js_props->set_prop("columnChooser.enabled",true);
+			$datagrid->js_props->set_prop("columnChooser.mode","select");
+			$datagrid->js_props->set_prop("allowColumnReordering",true);
 			
+		}
+		
+		if($this->userColsPrefResetBtnEnabled){
+			$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
+			///todo: creathe a method on datagrid to check what default btns nned to be added
+			/*
+			let grid = $("#miDataGrid").dxDataGrid("instance");
+			let toolbarItems = [];
+
+			toolbarItems.push({
+				location: "before",
+				widget: "dxButton",
+				options: {
+					icon: "fa-solid fa-rotate-left",
+					text: "Reset Columns",
+					onClick: function() { resetColumnPreferences(); }
+				}
+			});
+
+			// Check if the grid has specific features enabled and add the buttons dynamically
+			if (grid.option("editing.allowAdding")) toolbarItems.push("addRowButton");
+			if (grid.option("editing.mode") === "batch" || grid.option("editing.mode") === "cell") {
+				toolbarItems.push("saveButton");
+				toolbarItems.push("revertButton");
+			}
+			if (grid.option("export.enabled")) toolbarItems.push("exportButton");
+			if (grid.option("columnChooser.enabled")) toolbarItems.push("columnChooserButton");
+			if (grid.option("searchPanel.visible")) toolbarItems.push("searchPanel");
+
+			grid.option("toolbar.items", toolbarItems);
+			*/
+			if($this->allowInsert()){
+				$tollbarItems->add_data("addRowButton");
+			}			
+			if($this->columnsChooserEnabled){
+				$tollbarItems->add_data("columnChooserButton");
+			}
+			if($this->excelExportName){
+
+				if(!$this->tollbarItemsExportButtonAdded){
+					$tollbarItems->add_data("exportButton");
+					$this->tollbarItemsExportButtonAdded=true;
+				}
+			}
+			
+			
+			$this->addBtnColsPrefReset($datagrid,$gridhelper);
+
+
+		}
+			
+			
+	}
+	function addBtnColsPrefReset($datagrid,$gridhelper){
+		$var=$this->get_js_ui_man_name();
+		$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
+		//$tollbarItems->add_data("columnChooserButton");
+		//$tollbarItems->add_data("exportButton");
+		$btn=$tollbarItems->add_data_obj();
+		//$btn->set_prop("location","before");
+		$btn->set_prop("widget","dxButton");
+		$btn->set_prop("options.text",$this->lng_get_msg_txt("resetColumns","Restablecer columnas"));
+		$btn->set_prop("options.icon","undo");
+		$fnc=new mwmod_mw_jsobj_functionext();
+		$fnc->add_cont("{$var}.resetUserPrefCols();");
+		$btn->set_prop("options.onClick",$fnc);
+
 	}
 	function add_cols($datagrid){
 		$col=$datagrid->add_column_number("id","ID");

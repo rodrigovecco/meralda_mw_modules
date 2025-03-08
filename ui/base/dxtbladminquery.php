@@ -165,7 +165,7 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		
 		$jsui=$this->new_ui_js();
 		$var=$this->get_js_ui_man_name();
-		$js->add_cont("var {$var}=".$jsui->get_as_js_val().";\n");
+		//$js->add_cont("var {$var}=".$jsui->get_as_js_val().";\n");
 		
 		$js->add_cont($var.".init(".$this->ui_js_init_params->get_as_js_val().");\n");
 		
