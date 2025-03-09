@@ -507,8 +507,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->$method($params,$filename);
 	}
-	
+	//20250307
+	function before_set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
+		//extender puede usarse para cargar objetos dependientes especialmente cuando las subinterfases se crean en dependencia a parametros de entrada	
+	}
 	function set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
+		$this->before_set_current_subinterface_for_getcmd($cods,$params,$filename);
+		
 		if(!$cods){
 			return false;	
 		}
@@ -588,7 +593,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return mw_array_get_sub_key($this->cmdparams,$key);	
 	}
 	final function set_cmd_param($key,$val){
-		mw_array_set_sub_key($key,$val,$this->cmdparams);	
+
+		mw_array_set_sub_key($key,$val,$this->cmdparams);
+		
+	}
+	final function __get_priv_cmdparams(){
+		return $this->cmdparams;	
 	}
 	////////
 

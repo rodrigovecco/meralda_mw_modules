@@ -574,21 +574,24 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 		//$datagrid->mw_helper_js_set_editrow_mode_from_ui($this,$gridhelper,true,true,true);
 		$datagrid->mw_helper_js_set_rdata_mode_from_ui($this,$gridhelper);
+		$gridhelper->set_prop("dataSourceMan.dataKey","id");//new!!
 		$gridhelper->set_fnc_name("mw_devextreme_datagrid_man_rdataedit");
 		
 
 		$this->add_cols($datagrid);
 		$this->setColsUserPrefs($datagrid);
+		
+		//$dataoptim=$datagrid->new_dataoptim_data_man();
+		//$dataoptim->set_key("id");
 		/*
-		$dataoptim=$datagrid->new_dataoptim_data_man();
-		$dataoptim->set_key("id");
 		if($items=$this->items_man->get_all_items()){
 			foreach($items as $id=>$item){
 				$data=$this->get_item_data($item);
 				$dataoptim->add_data($data);	
 			}
 		}
-		*/
+			*/
+		
 
 		$columns=$datagrid->columns->get_items();
 
