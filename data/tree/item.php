@@ -85,6 +85,15 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 		
 		
 	}
+	/*
+	function unset_data($key){
+		if(!$this->is_data_defined($key)){
+			return;
+
+		}
+		
+	}
+		*/
 	final function is_data_defined($key=false){
 		if(!$key){
 			if($this->isNew()){

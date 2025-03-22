@@ -6,7 +6,14 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $excelExportName;
 	public $columnsChooserEnabled=false;
 
+
+	public $userColsFiltersRememberEnabled=false;
+	public $userColsOrderRememberEnabled=false;
+
+
+
 	public	$userColsSelectedRememberEnabled=false;
+	public $userFiltersRemember=false;
 	public	$userColsSelectedRememberEnabledVisible=false;
 	public	$userColsPrefResetBtnEnabled=false;
 	public $tollbarItemsExportButtonAdded=false;
@@ -14,7 +21,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->userColsSelectedRememberEnabled=true;
 		$this->userColsSelectedRememberEnabledVisible=true;
 		$this->userColsPrefResetBtnEnabled=true;
+		$this->userColsFiltersRememberEnabled=true;
+		$this->userColsOrderRememberEnabled=true;
 	}
+	
 	function userColsSelectedRememberEnabledVisibleIndex(){
 		return $this->userColsSelectedRememberEnabledVisible;
 	}
@@ -93,6 +103,38 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		foreach($nd as $cod=>$val){
 			if(is_array($val)){
 				if($this->check_str_key_alnum_underscore($cod)){
+					$dataItem->set_data($val,"cols.".$cod."");
+					$chaged=true;
+					/*
+					
+					if($this->userColsFiltersRememberEnabled){
+						if(isset($val["filterValue"])){
+							$chaged=true;
+							$dataItem->set_data($val["filterValue"],"cols.".$cod.".filterValue");
+							if(isset($val["selectedFilterOperation"])){
+								$dataItem->set_data($val["selectedFilterOperation"],"cols.".$cod.".selectedFilterOperation");
+								$chaged=true;
+							}
+						}
+
+						
+
+					}
+					if($this->userColsOrderRememberEnabled){
+						if(isset($val["sortIndex"]) and isset($val["sortOrder"])){
+							if(is_numeric($val["sortIndex"])){
+								$val["sortIndex"]=abs(round($val["sortIndex"],0));
+								if(is_string($val["sortOrder"])){
+									if($val["sortOrder"]=="asc" or $val["sortOrder"]=="desc"){
+										$dataItem->set_data($val["sortIndex"],"cols.".$cod.".sortIndex");
+										$dataItem->set_data($val["sortOrder"],"cols.".$cod.".sortOrder");
+										$chaged=true;
+									}
+
+								}
+							}
+						}
+					}
 					if($this->userColsSelectedRememberEnabledVisible){
 						if(isset($val["visible"])){
 							if($val["visible"]){
@@ -111,6 +153,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 							$chaged=true;
 						}
 					}
+					*/
 					
 					
 					
@@ -306,6 +349,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function setDefaultJSinitParams(){
 		if($this->userColsSelectedRememberEnabled){
 			$this->ui_js_init_params->set_prop("userColsSelectedRememberEnabled",true);
+		}
+		if($this->userFiltersAndOrderRememberEnabled){
+			$this->ui_js_init_params->set_prop("userFiltersAndOrderRememberEnabled",true);
 		}
 		if($this->excelExportName){
 			$this->ui_js_init_params->set_prop("excelExportName",$this->excelExportName);
@@ -642,6 +688,33 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 				$cod=$col->cod;
 				$datacod="cols.".$cod;
+				if($this->userColsFiltersRememberEnabled){
+					if($dataItem->is_data_defined($datacod.".filterValue")){
+						$col->js_data->set_prop("filterValue",$dataItem->get_data($datacod.".filterValue"));
+						if($dataItem->is_data_defined($datacod.".selectedFilterOperation")){
+							$col->js_data->set_prop("selectedFilterOperation",$dataItem->get_data($datacod.".selectedFilterOperation"));
+
+						}
+					}
+					
+
+
+					
+
+				}
+				if($this->userColsOrderRememberEnabled){
+					if($dataItem->is_data_defined($datacod.".sortIndex")){
+						if($dataItem->is_data_defined($datacod.".sortOrder")){
+							$col->js_data->set_prop("sortIndex",$dataItem->get_data($datacod.".sortIndex"));
+							$col->js_data->set_prop("sortOrder",$dataItem->get_data($datacod.".sortOrder"));
+
+						}
+
+					}
+					
+				}
+
+
 				if($this->userColsSelectedRememberEnabledVisible){
 					
 					
@@ -656,6 +729,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 					}
 					
 				}
+
 				if($this->userColsSelectedRememberEnabledVisibleIndex()){
 					if($dataItem->is_data_defined($datacod.".visibleIndex")){
 						$vv=$dataItem->get_data($datacod.".visibleIndex");
