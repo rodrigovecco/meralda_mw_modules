@@ -41,6 +41,35 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 	final function finalSetMainItem($item){
 		$this->mainItem=$item;
 	}
+	function before_exec(){
+		$this->loadMainItemFromReq();
+		$util=new mwmod_mw_devextreme_util();
+		if($this->excelExportName){
+			$util->preapare_ui_exportExcel($this);
+		}
+		$util->preapare_ui_webappjs($this);
+		$jsman=$this->maininterface->jsmanager;
+		$jsman->add_item_by_cod_def_path("url.js");
+		$jsman->add_item_by_cod_def_path("ajax.js");
+		$jsman->add_item_by_cod_def_path("mw_objcol.js");
+		$jsman->add_item_by_cod_def_path("ui/mwui.js");
+		$jsman->add_item_by_cod_def_path("ui/mwui_grid.js");
+		$jsman->add_item_by_cod_def_path("mw_date.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_datagrid_helper.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_datagrid_helper_adv.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_datagrid_helper_cols.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_datagrid_helper_rdata.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_data.js");
+
+		$jsman->add_item_by_cod_def_path("ui/helpers/ajaxelem.js");
+		$jsman->add_item_by_cod_def_path("ui/helpers/ajaxelem/devextreme_datagrid.js");
+		
+		$this->add_req_js_scripts();	
+		$this->add_req_css();
+		$item=$this->create_js_man_ui_header_declaration_item();
+		$jsman->add_item_by_item($item);
+
+	}
 	function do_exec_page_in(){
 		if(!$this->mainItem){
 			
