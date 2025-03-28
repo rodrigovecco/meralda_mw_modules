@@ -7,6 +7,9 @@ class mwmod_mw_devextreme_widget_datagrid_column_date extends mwmod_mw_devextrem
 	function set_dataoptim_field($field){
 		$field->date_mode();	
 	}
+	function isDate(){
+		return true;
+	}
 	
 	
 }

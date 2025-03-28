@@ -143,6 +143,9 @@ class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_ele
 		}
 		$this->js_data->set_prop("name",$cod);
 	}
+	function isDate(){
+		return false;
+	}
 	
 	
 	

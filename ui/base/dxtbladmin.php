@@ -690,7 +690,23 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 				$datacod="cols.".$cod;
 				if($this->userColsFiltersRememberEnabled){
 					if($dataItem->is_data_defined($datacod.".filterValue")){
-						$col->js_data->set_prop("filterValue",$dataItem->get_data($datacod.".filterValue"));
+						
+						if($col->isDate()){
+							if($filterValue=$dataItem->get_data($datacod.".filterValue")){
+								if(is_string($filterValue)){
+									if($filterValueTime=strtotime($filterValue)){
+										$filterValue=date("Y-m-d",$filterValueTime);
+										$filterValueObj=new mwmod_mw_jsobj_date($filterValue);
+										$col->js_data->set_prop("filterValue",$filterValueObj);
+									}
+								}
+							}
+
+						}else{
+							$col->js_data->set_prop("filterValue",$dataItem->get_data($datacod.".filterValue"));
+						}
+						
+
 						if($dataItem->is_data_defined($datacod.".selectedFilterOperation")){
 							$col->js_data->set_prop("selectedFilterOperation",$dataItem->get_data($datacod.".selectedFilterOperation"));
 
