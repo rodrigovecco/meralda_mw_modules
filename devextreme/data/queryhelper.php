@@ -236,6 +236,10 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		if(!is_string($cod)){
 			return false;	
 		}
+		if(!$this->fields[$cod]??false){
+			return false;	
+		}
+
 		return $this->fields[$cod];	
 	}
 	

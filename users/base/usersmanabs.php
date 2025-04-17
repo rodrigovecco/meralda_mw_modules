@@ -844,7 +844,11 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		$num=round($n)+1;
 		$this->set_login_security_sess_data($num,"fails_num");
 		if($this->disable_login_after_fail_enabled()){
-			$num=round($this->get_login_security_sess_data("fails_num_after_reallowed"))+1;
+			$fails_num_after_reallowed=$this->get_login_security_sess_data("fails_num_after_reallowed");
+			if(!is_numeric($fails_num_after_reallowed)){
+				$fails_num_after_reallowed=0;
+			}
+			$num=round($fails_num_after_reallowed)+1;
 			if($num>=$this->disable_login_after_fail_tries){
 				$num=0;
 				$this->set_login_security_sess_data(1,"login_temp_disabled");
