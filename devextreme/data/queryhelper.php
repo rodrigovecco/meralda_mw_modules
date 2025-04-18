@@ -48,7 +48,7 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		}
 		
 		
-		if(!$take=intval(abs($this->getLoadOptions("take")))+0){
+		if(!$take=abs(intval($this->getLoadOptions("take")))+0){
 			if($this->allowLoadAllWhenOptionTakeNotPresent){
 				return;
 			}
@@ -59,7 +59,7 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 				$take=$this->maxPageSize;	
 			}
 		}
-		$skip=intval(abs($this->getLoadOptions("skip")+0));
+		$skip=abs(intval($this->getLoadOptions("skip")+0));
 		$query->limit->set_limit($take,$skip);
 			
 	}
