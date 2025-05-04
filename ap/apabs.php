@@ -1,6 +1,7 @@
 <?php
 abstract class  mwmod_mw_ap_apabs extends mw_baseobj{
 	private $pathman;
+	private $man;
 	//paths
 	private $root_path;
 	private $system_path;
@@ -63,6 +64,19 @@ abstract class  mwmod_mw_ap_apabs extends mw_baseobj{
 			return $man;	
 		}
 	}
+	function create_man(){
+		$man=new mwmod_mw_ap_util_submanagers($this);
+		return $man;	
+	}
+
+	final function __get_priv_man(){
+		if(!isset($this->man)){
+			$this->man=$this->create_man();
+			
+		}
+		return $this->man;
+	}
+
 	final function __get_priv_admin_ui(){
 		if(!isset($this->admin_ui)){
 			if(!$this->admin_ui=$this->load_admin_ui()){
