@@ -6,6 +6,117 @@ class mwmod_mw_geo_helper extends mw_apsubbaseobj{
     function __construct(){
     
     }
+    /*Poligons*/
+    function polygonToJSArray(array $points) {
+        $jsPoints = [];
+        foreach ($points as $p) {
+            $jsPoints[] = ['lat' => $p[1], 'lng' => $p[0]];
+        }
+        return $jsPoints;
+    }
+    function normalizeWKTToClosedPolygon($wkt){
+        if(!$points=$this->parseWKTPolygon($wkt)){
+            $points=$this->parseWKTLineStringToPolygon($wkt);
+        }
+        if(!$points){
+            return false;
+        }
+        if(!$points=$this->validatePolygonCoords($points)){
+            return false;
+        }
+        return $this->closePolygon($points);
+        
+       
+
+
+    }
+    function parseWKTPolygon($wkt) {
+        if(!is_string($wkt)){
+            return false;
+        }
+        if (!preg_match('/^POLYGON\s*\(\((.+)\)\)$/i', trim($wkt), $matches)) {
+            return false;
+        }
+    
+        $coordsStr = $matches[1];
+        $points = [];
+        foreach (explode(',', $coordsStr) as $pair) {
+            $parts = preg_split('/\s+/', trim($pair));
+            if (count($parts) != 2) {
+                continue;
+            }
+            $lat = floatval($parts[1]);
+            $lng = floatval($parts[0]);
+            $points[] = [$lat, $lng];
+        }
+    
+        return $points;
+    }
+    function parseWKTLineStringToPolygon($wkt) {
+        if(!is_string($wkt)){
+            return false;
+        }
+        if (!preg_match('/^LINESTRING\s*\((.+)\)$/i', trim($wkt), $matches)) {
+            return false;
+        }
+    
+        $coordsStr = $matches[1];
+        $points = [];
+        foreach (explode(',', $coordsStr) as $pair) {
+            $parts = preg_split('/\s+/', trim($pair));
+            if (count($parts) != 2) continue;
+            $lat = floatval($parts[1]);
+            $lng = floatval($parts[0]);
+            $points[] = [$lat, $lng];
+        }
+        return $points;
+        // Validar y cerrar
+       
+    }
+    function validatePolygonCoords(array $points) {
+        $valid = [];
+        foreach ($points as $p) {
+            if (!is_array($p) || count($p) !== 2) continue;
+            list($lat, $lng) = $p;
+            if ($this->validateCoordinates($lat, $lng)) {
+                $valid[] = [$lat, $lng];
+            }
+        }
+        return count($valid) >= 3 ? $valid : false;
+    }
+    function closePolygon(array $points) {
+        if (count($points) < 3) return false;
+        $first = $points[0];
+        $last = end($points);
+        if ($first[0] != $last[0] || $first[1] != $last[1]) {
+            $points[] = $first;
+        }
+        return $points;
+    }
+    function polygonToWKT(array $points) {
+        $strPoints = [];
+        foreach ($points as $p) {
+            $strPoints[] = "{$p[1]} {$p[0]}"; // lng lat
+        }
+        return "POLYGON ((" . implode(', ', $strPoints) . "))";
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*Coordinates*/
     function validateCoordinates($latitude, $longitude) {
         return $this->validateLatitude($latitude) && $this->validateLongitude($longitude);
     }
