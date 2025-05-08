@@ -1,4 +1,8 @@
 <?php
+/**
+ * Abstract class for DevExtreme-based admin data tables in the UI.
+ * Handles data loading, saving, item creation, deletion, user preferences, and JS initialization.
+ */
 abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $queryHelper;//mwmod_mw_devextreme_data_queryhelper iniciado en getQuery
 	public $defPageSize=20;
@@ -185,6 +189,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function getDefPageSize(){
 		return $this->defPageSize;	
 	}
+	/**
+	 * @return mwmod_mw_manager_man
+	 */
 	function getItemsMan(){
 		return $this->items_man;
 	}
@@ -203,7 +210,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function allowUpdateItem($item){
 		return $this->allowUpdate();
 	}
-	
+	/**
+     * @return false|mwmod_mw_db_query
+     */
 	function getQuery(){
 		
 		$this->queryHelper=new mwmod_mw_devextreme_data_queryhelper();
@@ -220,6 +229,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->afterGetQuery($query);
 		return $query;
 	}
+	/**
+     * Hook to customize the query.
+     * @param mwmod_mw_db_query $query
+     */
 	function afterGetQuery($query){
 		//extender	
 	}
@@ -458,7 +471,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			$xml->root_do_all_output();
 			return false;	
 		}
-		if(!$item=$man->get_item($_REQUEST["itemid"]??null)){
+		if(!$item=$this->getOwnItem($_REQUEST["itemid"]??null)){
 			$xml->root_do_all_output();
 			return false;	
 				
@@ -523,7 +536,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			$xml->root_do_all_output();
 			return false;	
 		}
-		if(!$item=$man->get_item($_REQUEST["itemid"]??null)){
+		if(!$item=$this->getOwnItem($_REQUEST["itemid"]??null)){
 			$xml->root_do_all_output();
 			return false;	
 				
@@ -564,6 +577,22 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		}
 		$item->do_save_data($nd);
 		
+	}
+	function getOwnItem($id){
+		if($man=$this->__get_priv_items_man()){
+			if($item=$man->get_item($id)){
+				if($this->isItemAllowed($item)){
+					return $item;	
+				}
+			}
+			
+			
+		}
+	
+
+	}
+	function isItemAllowed($item){
+		return $item;
 	}
 
 	function execfrommain_getcmd_sxml_loaddatagrid($params=array(),$filename=false){
@@ -765,7 +794,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 	}
 	//20210217
-	
+	 /**
+     * @param mwmod_mw_devextreme_widget_datagrid $datagrid
+     * @param mwmod_mw_devextreme_widget_datagrid_helper_dgman $gridhelper
+     */
 	function afterDatagridCreated($datagrid,$gridhelper){
 		$var=$this->get_js_ui_man_name();
 		
@@ -843,6 +875,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$btn->set_prop("options.onClick",$fnc);
 
 	}
+	 /**
+     * @param mwmod_mw_devextreme_widget_datagrid $datagrid
+     */
 	function add_cols($datagrid){
 		$col=$datagrid->add_column_number("id","ID");
 		$col->js_data->set_prop("width",60);

@@ -1,5 +1,12 @@
 <?php
 //rvh 20240313
+/**
+ * Table abstraction layer for database operations, including CRUD, preload, and SQL helpers.
+ *
+ * @property-read mwmod_mw_db_dbman $dbman The database manager associated with this table.
+ * @property-read string $id_field The name of the primary key field (default is "id").
+ * @property-read string $tbl The name of the database table.
+ */
 class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	private $dbman;
 	private $tbl;
@@ -93,6 +100,11 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	final function get_read_only_fields(){
 		return $this->_readonly_fields;	
 	}
+	/**
+	 * Creates a new SQL query object for this table and assigns the current DB manager to it.
+	 *
+	 * @return mwmod_mw_db_sql_query The initialized SQL query object.
+	 */
 	function new_query(){
 
 		$query=new mwmod_mw_db_sql_query($this->tbl);

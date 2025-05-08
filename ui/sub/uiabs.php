@@ -1,4 +1,19 @@
 <?php
+/**
+ * Base class for all UI subinterfaces in Meralda.
+ *
+ * @property-read mwmod_mw_ui_main_def $maininterface Main interface object.
+ * @property-read mwmod_mw_ui_template_abs $template UI rendering template.
+ * @property-read mwmod_mw_mnu_man $mnu_man Menu manager.
+ * @property-read mwmod_mw_data_xml_root $xmlResponse XML response for commands.
+ * @property-read mwmod_mw_data_xml_js $ui_js_init_params JavaScript initialization parameters.
+ * @property-read mwmod_mw_manager_man $items_man Manager for the items (can be subclassed with @method in children).
+ * @property-read mwmod_mw_data_session_man_item $uiSessionDataMan Session manager for this UI.
+ * @property-read mwmod_mw_manager_item $current_item Currently selected item in this UI.
+ * @property-read string $code Interface code.
+ * @property-read mwmod_mw_ui_sub_uiabs|null $parent_subinterface Direct parent subinterface.
+ * @property-read mwmod_mw_ui_sub_uiabs|null $current_sub_interface Currently active child subinterface.
+ */
 abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	/**
     * MainUI
@@ -130,7 +145,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function is_allowed_for_get_cmd_no_user(){
 		return false;	
 	}
-	
+	/**
+	 * Retrieves a nested subinterface using a dot-separated path.
+	 *
+	 * For example, "admin.users.edit" will recursively return the "edit" subinterface of "users" under "admin".
+	 *
+	 * @param string $dotcod Dot-separated subinterface code path (e.g., "module.submodule").
+	 * @param string $sep Separator character, default is ".".
+	 * 
+	 * @return mwmod_mw_ui_sub_uiabs The target subinterface if found, or false otherwise.
+	 */
 	function get_sub_interface_by_dot_cod($dotcod,$sep="."){
 		if(!$dotcod){
 			return false;	
@@ -150,7 +174,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		
 	}
-	
+	/**
+	 * Retrieves user-specific UI data stored in their JSON preferences.
+	 *
+	 * Constructs the path using the full subinterface code and the main interface's user preference path.
+	 *
+	 * @param string $cod The key of the data set to retrieve. Defaults to "uipref".
+	 * 
+	 * @return mwmod_mw_data_json_item The data item if found, or false if the user or path is not available.
+	 */
 	function get_user_ui_data($cod="uipref"){
 		if(!$user=$this->get_current_user()){
 			return false;
@@ -163,9 +195,23 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		return $user->get_jsondata_item($cod,"uipref/{$maincode}/".$path);
 	}
+	/**
+	 * Shortcut to retrieve the user's UI preferences.
+	 *
+	 * Equivalent to calling get_user_ui_data("uipref").
+	 *
+	 * @return mwmod_mw_data_json_item User preference item or false if unavailable.
+	 */
 	function get_user_ui_pref(){
 		return $this->get_user_ui_data("uipref"); 
 	}
+	/**
+	 * Returns the current logged-in admin user.
+	 *
+	 * Delegates to the main interface to get the current admin user object.
+	 *
+	 * @return mwmod_mw_users_user|false The admin user object or false if none is set.
+	 */
 	function get_current_user(){
 		return $this->get_admin_current_user();
 	}
@@ -181,6 +227,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		return $this->maininterface->get_url_sub_interface_by_dot_cod($full_cod,$file,$sep,$args);
 	}
+	/**
+	 * Creates the main UI container DOM element with a unique ID.
+	 * 
+	 * @return mwmod_mw_html_elem The created DOM element.
+	 */
 	function create_ui_dom_elem_container(){
 		$container= new mwmod_mw_html_elem("div");
 		$container->set_att("id",$this->get_ui_elem_id_and_set_js_init_param("container"));
@@ -188,7 +239,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	
 	}
 	
-	//
+	/**
+	 * Creates a Bootstrap modal element with a predefined ID and structure.
+	 * 
+	 * @return mwmod_mw_bootstrap_html_template_modal The created modal element.
+	 */
 	function create_ui_modal(){
 		$modal= new mwmod_mw_bootstrap_html_template_modal($this->get_ui_elem_id_and_set_js_init_param("modal"),"...");
 		if($modal_footer=$modal->get_key_cont("footer")){
@@ -208,6 +263,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return false;
 	}
+	/**
+	 * Creates a container with an iframe and form for file uploads or background operations.
+	 * 
+	 * @return mwmod_mw_html_elem The container element with iframe and form included.
+	 */
 	function create_ui_dom_elem_iframe_and_frm_container(){
 		$container= new mwmod_mw_html_elem("div");
 		$id=$this->get_ui_elem_id_and_set_js_init_param("iframeandfrm");
@@ -244,7 +304,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	
 	}
 	
-	
+	/**
+	 * Sets the ID of a UI element and returns the modified element.
+	 * 
+	 * @param string $cod Identifier code used to generate the DOM ID.
+	 * @param mwmod_mw_html_elem|string|null $elem Optional element or tag name to create.
+	 * 
+	 * @return mwmod_mw_html_elem The DOM element with ID set.
+	 */
 	function set_ui_dom_elem_id($cod,$elem=false){
 		if(!$elem){
 			
@@ -258,7 +325,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $elem;
 	
 	}
-	
+	/**
+	 * Initializes and stores a UI container element if not already set.
+	 * 
+	 * @param mwmod_mw_html_elem|null $container Optional container to use.
+	 * 
+	 * @return mwmod_mw_html_elem The DOM container element.
+	 */
 	function get_ui_dom_elem_container_empty($container=false){
 		if(!$container){
 			$container=	$this->create_ui_dom_elem_container();	
@@ -267,6 +340,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->ui_dom_elem_container;
 		
 	}
+	/**
+	 * Retrieves or creates the main UI DOM container element.
+	 * 
+	 * @return mwmod_mw_html_elem The DOM container element.
+	 */
 	function get_ui_dom_elem_container(){
 		if(!$this->ui_dom_elem_container){
 			$this->ui_dom_elem_container=$this->create_ui_dom_elem_container();	
@@ -274,7 +352,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->ui_dom_elem_container;
 	}
 	
-	
+	/**
+	 * Returns an alert element indicating the operation is not allowed.
+	 * 
+	 * @return mwmod_mw_bootstrap_html_specialelem_alert The alert HTML element.
+	 */
 	function get_bt_operation_not_allowed_html_elem(){
 		$msg=$this->lng_get_msg_txt("operation_not_allowed","Operación no permitida");
 		$alert=new mwmod_mw_bootstrap_html_specialelem_alert($msg,"danger");
@@ -287,6 +369,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	
 	
 	//js
+	/**
+	 * Creates a JavaScript function for populating the footer of a modal with Cancel and Accept buttons.
+	 *
+	 * The function will be assigned to `create_footer_input` on the given modal populator if provided.
+	 *
+	 * @param mwmod_mw_jsobj_obj|false $js_modalpopulator Optional JS modal populator to attach the footer creation function.
+	 * @return mwmod_mw_jsobj_functionext The generated function object.
+	 */
 	function create_modal_js_inputs_footer_cancel_ok_fnc($js_modalpopulator=false){
 		$fnc=new mwmod_mw_jsobj_functionext();
 		$fnc->add_fnc_arg("modalpopulator");
@@ -298,6 +388,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		//$this->create_new_doc_js_inputs_footer($fnc);
 	
 	}
+	/**
+	 * Adds Cancel and Accept buttons to a JS function for a modal footer.
+	 *
+	 * This method modifies the given JS function to include a button group with localized labels and actions.
+	 *
+	 * @param mwmod_mw_jsobj_functionext $js JavaScript function container to append button definitions.
+	 */
 	
 	function create_modal_js_inputs_footer_cancel_ok($js){
 		
@@ -327,7 +424,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$js->add_cont($js->get_arg_by_index().".set_footer_input(grfooter);\n");
 		
 	}
-	
+	/**
+	 * Creates a JavaScript header declaration item for the UI manager.
+	 *
+	 * @return mwmod_mw_html_manager_item_jscus JS custom item to be included in the HTML manager.
+	 */
 	
 	function create_js_man_ui_header_declaration_item(){
 		$cod=$this->get_js_ui_man_name();
@@ -335,6 +436,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$item= new mwmod_mw_html_manager_item_jscus($cod,$js);
 		return $item;	
 	}
+	/**
+	 * Creates a container for JavaScript header declarations.
+	 *
+	 * This includes variable declarations for the current UI object.
+	 *
+	 * @return mwmod_mw_jsobj_codecontainer
+	 */
 	function create_js_header_declaration(){
 		$js= new mwmod_mw_jsobj_codecontainer();
 		$vardec=$this->get_js_var_declaration();
@@ -347,20 +455,39 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 			
 	}
+	/**
+	 * Returns the cached or newly created JavaScript header declaration object.
+	 *
+	 * @return mwmod_mw_jsobj_codecontainer
+	 */
 	function get_js_header_declaration(){
 		if(!isset($this->js_header_declaration)){
 			$this->js_header_declaration=$this->create_js_header_declaration();
 		}
 		return $this->js_header_declaration;
 	}
-	
+	/**
+	 * Returns the JavaScript variable name for this UI manager.
+	 *
+	 * @return string The variable name, e.g. "uiman_section_users".
+	 */
 	function get_js_ui_man_name(){
 		return "uiman_".$this->get_full_cod("_");	
 	}
+	/**
+	 * Creates a new JavaScript UI object using the class name and initialization info.
+	 *
+	 * @return mwmod_mw_jsobj_newobject
+	 */
 	function new_ui_js(){
 		$js= new mwmod_mw_jsobj_newobject($this->js_ui_class_name,$this->get_ui_js_info());
 		return $js;	
 	}
+	/**
+	 * Returns the JavaScript variable declaration for the UI object.
+	 *
+	 * @return mwmod_mw_jsobj_vardeclaration
+	 */
 	function get_js_var_declaration(){
 		if(!isset($this->js_var_declaration)){
 			$varname=$this->get_js_ui_man_name();
@@ -369,7 +496,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->js_var_declaration;
 	}
-	
+	/**
+	 * Returns the current JS UI object or creates a new one if not already set.
+	 *
+	 * @return mwmod_mw_jsobj_newobject
+	 */
 	function get_js_ui_obj(){
 		if(!isset($this->js_ui_obj)){
 			$this->js_ui_obj=$this->new_ui_js();
@@ -377,7 +508,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->js_ui_obj;
 	}
 	
-	
+	/**
+	 * Generates a DOM element ID based on the UI element code and stores it in the JS initialization parameters.
+	 *
+	 * The ID is added under `uielemsids.{cod}` in the JavaScript initialization object.
+	 *
+	 * @param string $cod The code identifying the UI element.
+	 * @return string The generated DOM element ID.
+	 */
 	
 	function get_ui_elem_id_and_set_js_init_param($cod){
 		$r=$this->get_ui_elem_id($cod);
@@ -385,6 +523,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$js->set_prop("uielemsids.".$cod,$r);
 		return $r;
 	}
+	/**
+	 * Generates a DOM element ID for a given UI component code.
+	 *
+	 * The format is based on the UI element prefix and the full subinterface code.
+	 *
+	 * @param string $cod The code identifying the UI element.
+	 * @return string The DOM element ID.
+	 */
 	function get_ui_elem_id($cod){
 		
 		return $this->ui_elems_pref.$this->get_full_cod("_")."-".$cod;	
@@ -397,6 +543,24 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->ui_js_init_params;
 	}
+	/**
+	 * Returns an array of UI metadata used for JavaScript initialization.
+	 *
+	 * The data includes codes, titles, URLs for XML and downloads, 
+	 * main interface JS info, debug mode status, and UI element prefix.
+	 *
+	 * @return array{
+	 *     cod: string,
+	 *     full_cod: string,
+	 *     title: string,
+	 *     url: string,
+	 *     xmlurl: string,
+	 *     dlurl: string,
+	 *     mainui: array,
+	 *     debug_mode: bool,
+	 *     uielemspref: string
+	 * }
+	 */
 	function get_ui_js_info(){
 		$r=array();
 		$r["cod"]=$this->get_code_for_parent();
@@ -443,6 +607,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	
 	}
 	//rvh 20240214
+	/**
+	 * Hook method executed before processing a `getcmd` command.
+	 *
+	 * This method is intended to be overridden in subclasses to perform
+	 * setup or dependency loading before handling a getcmd request.
+	 *
+	 * @param array $params Parameters passed with the getcmd request.
+	 *
+	 * @return void
+	 */
 	function before_exec_get_cmd($params=array()){
 		//extender. cargar acá objetos dependientes
 	}
@@ -508,6 +682,18 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->$method($params,$filename);
 	}
 	//20250307
+	/**
+	 * Hook executed before setting the current subinterface during a getcmd request.
+	 *
+	 * Intended to be overridden for loading dependent objects or configurations
+	 * before the subinterface is resolved.
+	 *
+	 * @param string|false $cods     Subinterface code or false if not provided.
+	 * @param array        $params   Additional parameters passed to the request.
+	 * @param string|false $filename Optional filename for the request, if applicable.
+	 *
+	 * @return void
+	 */
 	function before_set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
 		//extender puede usarse para cargar objetos dependientes especialmente cuando las subinterfases se crean en dependencia a parametros de entrada	
 	}
@@ -805,6 +991,17 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->set_no_subinterface();
 			
 	}
+	/**
+	 * Sets the given subinterface as the currently active one.
+	 *
+	 * Optionally checks if the subinterface is allowed before assigning it. 
+	 * Also sets the `selected_as_current` flag on the subinterface.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs|false $item The subinterface to set as current, or false to unset.
+	 * @param bool $check_allowed Whether to verify if the subinterface is allowed.
+	 * 
+	 * @return mwmod_mw_ui_sub_uiabs|false The subinterface if successfully set, or false on failure.
+	 */
 	final function set_current_subinterface($item=false,$check_allowed=true){
 		if(!$item){
 			return false;	
@@ -850,7 +1047,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->subinterface_def_code;	
 	}
-	
+	/**
+	 * Retrieves a subinterface instance by its code.
+	 *
+	 * Validates the code, initializes subinterfaces if not already done, and creates
+	 * the subinterface if it doesn't exist yet.
+	 *
+	 * @param string $cod The subinterface code.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The subinterface instance if found or created, false otherwise.
+	 */
 	final function get_subinterface($cod){
 		if(!$cod=$this->check_str_key_alnum_underscore($cod)){
 			return false;
@@ -1048,6 +1254,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function add_mnu_items($mnu){
 		//
 	}
+	/**
+	 * Retrieves multiple subinterfaces by a comma-separated list or array of codes.
+	 *
+	 * Optionally checks if each subinterface is allowed before including it.
+	 *
+	 * @param string|array $code Comma-separated string or array of subinterface codes.
+	 * @param bool $checkallowed If true, only includes allowed subinterfaces.
+	 *
+	 * @return array<string, mwmod_mw_ui_sub_uiabs>|false Associative array of subinterfaces by code, or false if input is invalid or none found.
+	 */
 	function get_subinterfaces_by_code($code,$checkallowed=true){
 		if(!$code){
 			return false;
@@ -1537,6 +1753,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->current_item=$item;	
 	
 	}
+	/**
+	 * Returns the currently selected item for this UI subinterface.
+	 *
+	 * This is typically used in item-editing interfaces where an item has been selected or loaded.
+	 *
+	 * @return mwmod_mw_manager_item|null The current item object if set, or null otherwise.
+	 */
 	final function get_current_item(){
 		return $this->current_item; 	
 	}

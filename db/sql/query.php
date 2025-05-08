@@ -1,5 +1,16 @@
 <?php
 //20241002
+/**
+ * SQL query builder for structured and optionally parameterized SELECT statements.
+ *
+ * @property-read mwmod_mw_db_sql_select $select SQL SELECT clause manager.
+ * @property-read mwmod_mw_db_sql_from $from SQL FROM clause manager.
+ * @property-read mwmod_mw_db_sql_where $where SQL WHERE clause manager.
+ * @property-read mwmod_mw_db_sql_group $group SQL GROUP BY clause manager.
+ * @property-read mwmod_mw_db_sql_order $order SQL ORDER BY clause manager.
+ * @property-read mwmod_mw_db_sql_limit $limit SQL LIMIT clause manager.
+ * @property-read mwmod_mw_db_sql_having $having SQL HAVING clause manager.
+ */
 class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 	private $select;
 	private $from;

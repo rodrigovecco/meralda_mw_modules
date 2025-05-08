@@ -1,7 +1,9 @@
 <?php
 //v6
 //Rodrigo Vecco - 2024-03-13
-
+/**
+ * @property-read mwmod_mw_db_tbl $tblman
+ */
 abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	private $tblman;
 	//private $code;
@@ -68,6 +70,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		$this->set_new_item_inputs_data($subgr,$item);
 		//
 	}
+	
 	function set_new_item_inputs_data($gr,$item=false){
 		$input=$gr->add_sub_item_by_dot_cod(new mwmod_mw_datafield_input("name",$this->lng_common_get_msg_txt("name","Nombre")));
 		$input=$gr->add_sub_item_by_dot_cod(new mwmod_mw_datafield_checkbox("active",$this->lng_common_get_msg_txt("active","Activo")));
@@ -521,7 +524,11 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		return $tblman;
 
 	}
-	
+	/**
+	 * Returns the table manager instance, initializing it if not already set.
+	 *
+	 * @return mwmod_mw_db_tbl|false The table manager, or false if initialization fails.
+	 */
 	final function get_tblman(){
 		if(!isset($this->tblman)){
 			if(!$this->tblman=	$this->get_init_tblman()){

@@ -1,16 +1,32 @@
 <?php
+/**
+ * Class representing a DevExtreme DataGrid widget wrapper.
+ * Provides methods to configure columns, data, and interaction
+ * with Meralda UI and backend.
+ */
 class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_widget{
 	private $columns;
 	private $_data=array();
 	var $dont_rewrite_dataSourceProp=false;
 	var $dont_rewrite_columnsProp=false;
-	
+	/**
+	 * Initializes the DataGrid widget with an optional container ID.
+	 *
+	 * @param string $name Optional container ID for the DataGrid.
+	 */
 	function __construct($name="dxdatagrid"){
 		$this->set_container_id($name);
 		if($f=$this->get_formatter()){
 			$f->format_datagrid($this);	
 		}
 	}
+	/**
+	 * Generates a JavaScript helper for the DataGrid using a query.
+	 *
+	 * @param object $query The query object.
+	 * @param bool $add_cols Whether to include columns from the query.
+	 * @return object JavaScript helper object.
+	 */
 	function new_mw_helper_js_from_query($query,$add_cols=true){
 		$this->set_cols_and_data_from_query($query,$add_cols);
 		$gridhelper=$this->new_mw_helper_js();
@@ -21,6 +37,12 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 		return $gridhelper;
 		
 	}
+	/**
+	 * Adds internal data to a helper JavaScript object.
+	 *
+	 * @param object $helper Helper object to receive data.
+	 * @return bool True if data was added.
+	 */
 	function add_data2helper($helper){
 		if(!$doptiom=$this->get_data_as_doptim()){
 			return false;	
@@ -28,6 +50,12 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 		$helper->set_prop("dsoptim",$doptiom);
 		return true;
 	}
+	/**
+	 * Adds column definitions to the JavaScript helper.
+	 *
+	 * @param object $helper Helper object to receive column definitions.
+	 * @return bool True if columns were added.
+	 */
 	function add_cols2helper($helper){
 		$list=$helper->get_array_prop("columns");
 		$this->__get_priv_columns();
@@ -299,36 +327,84 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 		$this->js_props->set_prop("filterRow.visible",true);	
 			
 	}
+	 /**
+     * Adds a number column to the grid.
+     * @param string $cod Column code
+     * @param string $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_number
+     */
 	function add_column_number($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_number($cod,$lbl);
 		return $this->add_column($item);
 	}
+	/**
+     * Adds a date column to the grid.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_date
+     */
 	function add_column_date($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_date($cod,$lbl);
 		return $this->add_column($item);
 	}
+	/**
+     * Adds a string/text column to the grid.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_string
+     */
 	function add_column_string($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_string($cod,$lbl);
 		return $this->add_column($item);
 	}
+	
+    /**
+     * Adds a boolean (true/false) column to the grid.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_boolean
+     */
 	function add_column_boolean($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_boolean($cod,$lbl);
 		return $this->add_column($item);
 	}
+	 /**
+     * Adds a boolean column to the grid that shows textual representation instead of true/false.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_booleantxt
+     */
 	function add_column_boolean_txt($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_booleantxt($cod,$lbl);
 		return $this->add_column($item);
 	}
-	
+	/**
+     * Adds an HTML column to the grid.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_html
+     */
 	function add_column_html($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_html($cod,$lbl);
 		return $this->add_column($item);
 	}
+	/**
+     * Adds a menu column to the grid (usually for action buttons).
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_mnu
+     */
 	function add_column_mnu($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_mnu($cod,$lbl);
 		//$item=new mwmod_mw_devextreme_widget_datagrid_column_string($cod,$lbl);
 		return $this->add_column($item);
 	}
+	/**
+     * Adds a band column to the grid, useful for grouping other columns visually.
+     * @param string $cod Column code
+     * @param string|null $lbl Label for the column
+     * @return mwmod_mw_devextreme_widget_datagrid_column_band
+     */
 	function add_column_band($cod,$lbl=false){
 		$item=new mwmod_mw_devextreme_widget_datagrid_column_band($cod,$lbl);
 		
@@ -339,7 +415,7 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 		if(is_object($itemOrCod)){
 			$cod=$itemOrCod->cod;	
 		}else{
-			$cod=$cod;	
+			$cod=$itemOrCod;	
 		}
 		$this->__get_priv_columns();
 		if($columns=$this->columns->get_items()){
@@ -353,6 +429,11 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 		}
 		return -1;
 	}
+	/**
+     * Adds a new column object to the grid.
+     * @param mwmod_mw_devextreme_widget_datagrid_column $item
+     * @return mwmod_mw_devextreme_widget_datagrid_column
+     */
 	function add_column($item){
 		$this->__get_priv_columns();
 		$index=0;
