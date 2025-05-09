@@ -6,7 +6,7 @@
  * @property-read mwmod_mw_ui_template_abs $template UI rendering template.
  * @property-read mwmod_mw_mnu_man $mnu_man Menu manager.
  * @property-read mwmod_mw_data_xml_root $xmlResponse XML response for commands.
- * @property-read mwmod_mw_data_xml_js $ui_js_init_params JavaScript initialization parameters.
+ * @property-read mwmod_mw_data_xml_js $mwmod_mw_jsobj_obj JavaScript initialization parameters.
  * @property-read mwmod_mw_manager_man $items_man Manager for the items (can be subclassed with @method in children).
  * @property-read mwmod_mw_data_session_man_item $uiSessionDataMan Session manager for this UI.
  * @property-read mwmod_mw_manager_item $current_item Currently selected item in this UI.
