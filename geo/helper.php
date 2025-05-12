@@ -6,6 +6,43 @@ class mwmod_mw_geo_helper extends mw_apsubbaseobj{
     function __construct(){
     
     }
+   function normalizeWKTToLineArray($wkt) {
+        // Try to parse as POLYGON
+        if ($points = $this->parseWKTPolygon($wkt)) {
+            // If last point == first, remove it (polygons are closed)
+            if (count($points) > 1) {
+                $first = $points[0];
+                $last = end($points);
+                if ($first[0] === $last[0] && $first[1] === $last[1]) {
+                    array_pop($points);
+                }
+            }
+        } elseif ($points = $this->parseWKTLineStringToPolygon($wkt)) {
+            // Already a linestring
+        } else {
+            return false;
+        }
+
+        // Validate at least 2 points
+        if (count($points) < 2) {
+            return false;
+        }
+
+        return $points;
+    }
+    function lineArrayToWKT(array $points) {
+        if (count($points) < 2) {
+            return false;
+        }
+
+        $strPoints = [];
+        foreach ($points as $p) {
+            $strPoints[] = "{$p[1]} {$p[0]}"; // lng lat
+        }
+
+        return "LINESTRING (" . implode(', ', $strPoints) . ")";
+    }
+
     /*Poligons*/
     function polygonToJSArray(array $points) {
         $jsPoints = [];

@@ -211,7 +211,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		return $this->allowUpdate();
 	}
 	/**
-     * @return false|mwmod_mw_db_query
+     * @return false|mwmod_mw_db_sql_query
      */
 	function getQuery(){
 		
@@ -231,7 +231,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	}
 	/**
      * Hook to customize the query.
-     * @param mwmod_mw_db_query $query
+     * @param mwmod_mw_db_sql_query $query
      */
 	function afterGetQuery($query){
 		//extender	

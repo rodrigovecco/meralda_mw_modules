@@ -24,6 +24,90 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		$this->afterGetQuery($query);
 		return $query;
 	}
+	function updateRegById($id,$data){
+		//extender
+		return false;
+		
+		
+	}
+	function getRegDataById($id){
+		if(!$query=$this->getQuery()){
+			return false;
+		}
+		$query->where->add_where_crit("id",$id);
+
+		return $query->get_one_row_result();
+		
+	}
+	function execfrommain_getcmd_sxml_saveitem($params=array(),$filename=false){
+		$xml=$this->new_getcmd_sxml_answer(false);
+		
+		if(!$this->is_allowed()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$this->allow_admin()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+		if(!$man=$this->__get_priv_items_man()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		/*
+		if(!$item=$this->getOwnItem($_REQUEST["itemid"]??null)){
+			$xml->root_do_all_output();
+			return false;	
+				
+		}
+			*/
+		if(!$itemID=$_REQUEST["itemid"]??null){
+			$xml->root_do_all_output();
+			return false;	
+				
+		}
+		if(!(is_string($itemID)or(is_numeric($itemID)))){
+			
+			$xml->set_prop("error","itemid not valid");
+			$xml->root_do_all_output();
+			return false;	
+
+		}
+		$input=new mwmod_mw_helper_inputvalidator_request("nd");
+		if(!$input->is_req_input_ok()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$nd=$input->get_value_as_list()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+
+
+		if(!$this->updateRegById($itemID,$nd)){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$regData=$this->getRegDataById($itemID)){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+		//$item->do_save_data($nd);
+		
+		$xml->set_prop("ok",true);
+		$xml->set_prop("itemid",$itemID);
+		$xml->set_prop("itemdata",$this->get_reg_data($regData));
+		
+		
+		
+		$xml->root_do_all_output();
+		
+		//$item->tem
+
+	}
 	function get_reg_data($data){
 		if($this->dateColsCods){
 			$cods=explode(",",$this->dateColsCods);
@@ -68,6 +152,7 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 	function allowUpdate(){
 		return false;
 	}
+
 
 	function execfrommain_getcmd_sxml_loaddata($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);

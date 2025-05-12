@@ -1,4 +1,20 @@
 <?php
+/**
+ * DevExtreme DataGrid column representation for Meralda integration.
+ *
+ * @property-read string $cod Column identifier.
+ * @property-read mwmod_mw_jsobj_obj $js_data DevExtreme column configuration options.
+ * 
+ * @property mwmod_mw_jsobj_obj $lookup Lookup object with value/display expressions and dataSource.
+ * @property mwmod_mw_jsobj_array $lookup_ds JavaScript array acting as dataSource for lookups.
+ * @property string $mw_js_colum_class JavaScript class name used for the column object instantiation.
+ * @property mwmod_mw_jsobj_newobject $mw_js_colum_obj JavaScript object used for column customization.
+ * @property mwmod_mw_jsobj_obj $mw_js_colum_obj_params Parameters passed to the JavaScript column object.
+ * @property mwmod_mw_listmanager_listman $lookupOptionsList Internal list manager for static option values.
+ * @property mixed $dataGrid Associated datagrid instance.
+ * @property int $index Column index in the grid.
+ * @property bool $userColsSelectedRememberEnabled Whether the user’s column selection should be remembered.
+ */
 class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_elem{
 	var $lookup;
 	var $lookup_ds;
