@@ -1,5 +1,26 @@
 <?php
-abstract class  mwmod_mw_ap_apabs extends mw_baseobj{
+/**
+ * Base class for main application instances in Meralda.
+ *
+ * @property-read mwmod_mw_ap_util_submanagers $man Submanagers handler.
+ * @property-read mwmod_mw_data_cfg_man $cfg Configuration manager loaded from INI files.
+ * @property-read mwmod_mw_data_json_mancuspath $jsonCfgMan JSON-based configuration manager.
+ * @property-read mwmod_mw_ui_main_uimainabs|false $admin_ui Admin interface main UI (if configured).
+ * @property-read mwmod_mw_templates_templatesman $templates_man Template manager.
+ * @property-read array<string, mwmod_mw_ap_paths> $pathman Path managers for "system", "root", "instance", etc.
+ * @property-read string $root_path Absolute path to application root directory.
+ * @property-read string $system_path Absolute path to system directory.
+ * @property-read string $instance_path Absolute path to instance directory.
+ * @property-read string $public_path Absolute path to public directory.
+ * @property-read string $userfiles_sub_path Relative subpath for private user files (default: "appdata").
+ * @property-read string $userfilespublic_sub_path Relative subpath for public user files (default: "data").
+ * @property-read string $outofserviceURL URL to redirect when the database is unavailable (default: "/outofservice").
+ *
+ * @property-read mwmod_mw_users_usersman|false $usermanager General user manager.
+ * @property-read mwmod_mw_users_usersman|false $adminusermanager Admin user manager (defaults to general manager).
+ *
+ */
+abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 	private $pathman;
 	private $man;
 	//paths
