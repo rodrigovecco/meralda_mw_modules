@@ -710,74 +710,7 @@ abstract class  mwmod_mw_ap_apabs extends mw_baseobj{
 		return $man;	
 	}
 	
-	//tamplate
-	/*
-	function create_subtemplate($cod){
-		if($t=$this->get_template()){
-			return $t->create_subtemplate($cod);	
-		}
-	}
-	function get_subtemplate($cod){
-		if($t=$this->get_template()){
-			return $t->get_subtemplate($cod);	
-		}
-	}
-	function get_input_template(){
-		if($t=$this->get_template()){
-			return $t->get_input_template();	
-		}
-	}
-	function get_admininterface_template(){
-		if($t=$this->get_template()){
-			return $t->get_admininterface_template();	
-		}
-	}
-	function get_adminsubinterface_template(){
-		if($t=$this->get_template()){
-			return $t->get_adminsubinterface_template();	
-		}
-	}
-	*/
-	/*
-	function create_template(){
-		
-		//falta!!!!
-		$m=new mw_template($this);
-		return $m;	
-	}
-	final function get_template(){
-		if(isset($this->template)){
-			return 	$this->template;
-		}
-		if($m=$this->create_template()){
-			$this->template=$m;
-			return 	$this->template;	
-		}
-	}
-	*/
-	//autoloader
-	/*
-	function create_autoloadermanager(){
-		$man=mw_get_autoload_manager();
-		return $man;
-		
-	}
-	final function get_autoloadermanager(){
-		if(isset($this->autoloadermanager)){
-			return 	$this->autoloadermanager;
-		}
-		if($m=$this->create_autoloadermanager()){
-			$this->autoloadermanager=$m;
-			return 	$this->autoloadermanager;	
-		}
-	}
-	final function do_autoload($class_name){
-		if(!$m=$this->get_autoloadermanager()){
-			return false;
-		}
-		return $m->do_autoload($class_name);
-	}
-	*/
+	
 	//paths
 	function get_file_path_if_exists($filename,$subpath,$mode="userfiles"){
 		if(!$p=$this->get_file_path($filename,$subpath,$mode)){
@@ -917,18 +850,7 @@ abstract class  mwmod_mw_ap_apabs extends mw_baseobj{
 	
 	
 	
-	//priv
-	/*
-	final function __get_priv_template(){
-		return $this->template; 	
-	}
-	final function __get_priv_autoloadermanager(){
-		return $this->autoloadermanager; 	
-	}
-		private $userfiles_sub_path="userfiles";
-	private $userfilespublic_sub_path="userfiles";
-
-	*/
+	
 	final function __get_priv_userfiles_sub_path(){
 		return $this->userfiles_sub_path; 	
 	}
