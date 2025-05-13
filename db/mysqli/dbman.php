@@ -101,6 +101,10 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 		if($cfg["charset"]??null){
 			$mysqli->set_charset($cfg["charset"]);
 		}
+		if(!$cfg["servermode"]??null){
+			$mysqli->query("SET sql_mode=''");
+		}
+		
 		return $mysqli;
 		
 		
