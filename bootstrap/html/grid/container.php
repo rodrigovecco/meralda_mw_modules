@@ -20,6 +20,10 @@ class mwmod_mw_bootstrap_html_grid_container extends mwmod_mw_bootstrap_html_ele
 			$this->set_att("class","container");
 		}
 	}
+	/*
+	* Adds a new row to the container
+	* @return mwmod_mw_bootstrap_html_grid_row
+	*/
 	function addRow(){
 		$row=new mwmod_mw_bootstrap_html_grid_row();
 		$this->add_cont($row);

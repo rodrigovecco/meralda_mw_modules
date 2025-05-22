@@ -9,23 +9,37 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $editingMode="row";
 	public $excelExportName;
 	public $columnsChooserEnabled=false;
+	public $addColCodsToExcel=false;
 
 
-	public $userColsFiltersRememberEnabled=false;
+	//public $userColsFiltersRememberEnabled=false;
 	public $userColsOrderRememberEnabled=false;
 
 
 
 	public	$userColsSelectedRememberEnabled=false;
-	public $userFiltersRemember=false;
+	
 	public	$userColsSelectedRememberEnabledVisible=false;
 	public	$userColsPrefResetBtnEnabled=false;
-	public $tollbarItemsExportButtonAdded=false;
+	public	$clearFiltersBtnEnabled=false;
+	public	$rememberFiltersBtnEnabled=false;
+	public $userFiltersRemember=false;
+
+	public $toolbarItemsExportButtonAdded=false;
+	function setUserFilterRememberEnabledMode(){
+		
+		$this->clearFiltersBtnEnabled=true;
+		$this->userFiltersRemember=true;
+		$this->rememberFiltersBtnEnabled=true;
+
+	}
 	function setUserColsSelectedRememberEnabledMode(){
+		
+		
 		$this->userColsSelectedRememberEnabled=true;
 		$this->userColsSelectedRememberEnabledVisible=true;
 		$this->userColsPrefResetBtnEnabled=true;
-		$this->userColsFiltersRememberEnabled=true;
+		//$this->userColsFiltersRememberEnabled=true;
 		$this->userColsOrderRememberEnabled=true;
 	}
 	
@@ -43,6 +57,77 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		if($this->userColsSelectedRememberEnabled){
 			return $this->is_allowed();	
 		}
+	}
+	function allowSaveFilters(){
+		if($this->userFiltersRemember){
+			return $this->is_allowed();	
+		}
+	}
+
+	function execfrommain_getcmd_sxml_savefilters($params=array(),$filename=false){
+		$xml=$this->new_getcmd_sxml_answer(false);
+		$this->xml_output=$xml;
+		if(!$this->allowSaveFilters()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		
+		
+		if(!$dataItem=$this->get_user_ui_data("filters")){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		//$xml->set_prop("R",$_GET);
+		$input=new mwmod_mw_helper_inputvalidator_request("filters");
+		//todo: other filters
+		if(!$input->is_req_input_ok()){
+			$xml->set_prop("error","no input");
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$nd=$input->get_value_by_dot_cod_as_list("cols")){
+			$xml->set_prop("error","no input cols");
+			$xml->root_do_all_output();
+			return false;	
+		}
+		$xml->set_prop("newdata",$nd);
+		$chaged=false;
+		foreach($nd as $cod=>$val){
+			if(is_array($val)){
+				if($this->check_str_key_alnum_underscore($cod)){
+					
+					$dataItem->set_data($val,"cols.".$cod."");
+					$chaged=true;
+					
+					
+					
+					
+				
+				}
+			}
+
+			
+		}
+		if($chaged){
+			$dataItem->set_data(date("Y-m-d H:i:s"),"updatedTime");
+
+			$dataItem->save();
+		}
+
+
+
+		
+		
+		
+		$xml->set_prop("ok",true);
+		
+		$xml->set_prop("filters",$dataItem->get_data());
+		$xml->set_prop("notify.message",$this->lng_common_get_msg_txt("MSGfilteresSaved","Estado de filtros guardado correctamente."));
+		$xml->set_prop("notify.type","success");
+	
+		
+		$xml->root_do_all_output();
+
 	}
 	function execfrommain_getcmd_sxml_resetcolsstate($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
@@ -107,57 +192,11 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		foreach($nd as $cod=>$val){
 			if(is_array($val)){
 				if($this->check_str_key_alnum_underscore($cod)){
+					unset($val["filterValue"]);
+					unset($val["selectedFilterOperation"]);
 					$dataItem->set_data($val,"cols.".$cod."");
 					$chaged=true;
-					/*
 					
-					if($this->userColsFiltersRememberEnabled){
-						if(isset($val["filterValue"])){
-							$chaged=true;
-							$dataItem->set_data($val["filterValue"],"cols.".$cod.".filterValue");
-							if(isset($val["selectedFilterOperation"])){
-								$dataItem->set_data($val["selectedFilterOperation"],"cols.".$cod.".selectedFilterOperation");
-								$chaged=true;
-							}
-						}
-
-						
-
-					}
-					if($this->userColsOrderRememberEnabled){
-						if(isset($val["sortIndex"]) and isset($val["sortOrder"])){
-							if(is_numeric($val["sortIndex"])){
-								$val["sortIndex"]=abs(round($val["sortIndex"],0));
-								if(is_string($val["sortOrder"])){
-									if($val["sortOrder"]=="asc" or $val["sortOrder"]=="desc"){
-										$dataItem->set_data($val["sortIndex"],"cols.".$cod.".sortIndex");
-										$dataItem->set_data($val["sortOrder"],"cols.".$cod.".sortOrder");
-										$chaged=true;
-									}
-
-								}
-							}
-						}
-					}
-					if($this->userColsSelectedRememberEnabledVisible){
-						if(isset($val["visible"])){
-							if($val["visible"]){
-								$dataItem->set_data(true,"cols.".$cod.".visible");	
-							}else{
-								$dataItem->set_data(false,"cols.".$cod.".visible");	
-							}
-							$chaged=true;
-						}
-					}
-					if($this->userColsSelectedRememberEnabledVisibleIndex()){
-						if(isset($val["visibleIndex"])and(is_numeric($val["visibleIndex"]))){
-						
-							$dataItem->set_data($val["visibleIndex"],"cols.".$cod.".visibleIndex");	
-							
-							$chaged=true;
-						}
-					}
-					*/
 					
 					
 					
@@ -624,6 +663,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			
 			
 		}
+		
 		$datagrid->js_props->set_prop("columnAutoWidth",true);	
 		$datagrid->js_props->set_prop("allowColumnResizing",true);
 		if($this->allowUpdate()){
@@ -651,6 +691,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$datagrid->mw_helper_js_set_rdata_mode_from_ui($this,$gridhelper);
 		$gridhelper->set_prop("dataSourceMan.dataKey","id");//new!!
 		$gridhelper->set_fnc_name("mw_devextreme_datagrid_man_rdataedit");
+
+		if($this->addColCodsToExcel){
+			$gridhelper->set_prop("addColCodsToExcel",true);	
+		}
 		
 
 		$this->add_cols($datagrid);
@@ -702,6 +746,67 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			
 	}
 	function setColsUserPrefs($datagrid){
+		$this->setColsUserPrefsColsOptions($datagrid);
+		$this->setColsUserPrefsFilters($datagrid);
+
+		
+
+	}
+	function setColsUserPrefsFilters($datagrid){
+		if(!$this->userFiltersRemember){
+			return false;	
+		}
+		if(!$dataItem=$this->get_user_ui_data("filters")){
+			
+			return false;	
+		}
+		$cols=$datagrid->columns->get_items();
+		//var_dump($dataItem->get_data());
+		//die("setColsUserPrefs");
+		foreach($cols as $col){
+			if($col->userColsFiltersRememberEnabled){
+
+				$cod=$col->cod;
+				$datacod="cols.".$cod;
+				
+				
+				if($dataItem->is_data_defined($datacod.".filterValue")){
+						
+					if($col->isDate()){
+						if($filterValue=$dataItem->get_data($datacod.".filterValue")){
+							if(is_string($filterValue)){
+								if($filterValueTime=strtotime($filterValue)){
+									$filterValue=date("Y-m-d",$filterValueTime);
+									$filterValueObj=new mwmod_mw_jsobj_date($filterValue);
+									$col->js_data->set_prop("filterValue",$filterValueObj);
+								}
+							}
+						}
+
+					}else{
+						$col->js_data->set_prop("filterValue",$dataItem->get_data($datacod.".filterValue"));
+					}
+						
+
+					if($dataItem->is_data_defined($datacod.".selectedFilterOperation")){
+						$col->js_data->set_prop("selectedFilterOperation",$dataItem->get_data($datacod.".selectedFilterOperation"));
+
+					}
+				}
+					
+
+
+					
+
+				
+			}
+			
+			
+		}
+		
+
+	}
+	function setColsUserPrefsColsOptions($datagrid){
 		if(!$this->userColsSelectedRememberEnabled){
 			return false;	
 		}
@@ -717,36 +822,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 				$cod=$col->cod;
 				$datacod="cols.".$cod;
-				if($this->userColsFiltersRememberEnabled){
-					if($dataItem->is_data_defined($datacod.".filterValue")){
-						
-						if($col->isDate()){
-							if($filterValue=$dataItem->get_data($datacod.".filterValue")){
-								if(is_string($filterValue)){
-									if($filterValueTime=strtotime($filterValue)){
-										$filterValue=date("Y-m-d",$filterValueTime);
-										$filterValueObj=new mwmod_mw_jsobj_date($filterValue);
-										$col->js_data->set_prop("filterValue",$filterValueObj);
-									}
-								}
-							}
-
-						}else{
-							$col->js_data->set_prop("filterValue",$dataItem->get_data($datacod.".filterValue"));
-						}
-						
-
-						if($dataItem->is_data_defined($datacod.".selectedFilterOperation")){
-							$col->js_data->set_prop("selectedFilterOperation",$dataItem->get_data($datacod.".selectedFilterOperation"));
-
-						}
-					}
-					
-
-
-					
-
-				}
+				
 				if($this->userColsOrderRememberEnabled){
 					if($dataItem->is_data_defined($datacod.".sortIndex")){
 						if($dataItem->is_data_defined($datacod.".sortOrder")){
@@ -808,65 +884,91 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			$datagrid->js_props->set_prop("allowColumnReordering",true);
 			
 		}
+
+		$cusBtnsEnabled=false;
+		if($this->userColsSelectedRememberEnabled){
+			$cusBtnsEnabled=true;
+		}
+		if($this->clearFiltersBtnEnabled){
+			$cusBtnsEnabled=true;
+		}
 		
-		if($this->userColsPrefResetBtnEnabled){
+		if($this->rememberFiltersBtnEnabled){
+			$cusBtnsEnabled=true;
+		}
+			
+
+
+		
+		if($cusBtnsEnabled){
 			$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
-			///todo: creathe a method on datagrid to check what default btns nned to be added
-			/*
-			let grid = $("#miDataGrid").dxDataGrid("instance");
-			let toolbarItems = [];
-
-			toolbarItems.push({
-				location: "before",
-				widget: "dxButton",
-				options: {
-					icon: "fa-solid fa-rotate-left",
-					text: "Reset Columns",
-					onClick: function() { resetColumnPreferences(); }
-				}
-			});
-
-			// Check if the grid has specific features enabled and add the buttons dynamically
-			if (grid.option("editing.allowAdding")) toolbarItems.push("addRowButton");
-			if (grid.option("editing.mode") === "batch" || grid.option("editing.mode") === "cell") {
-				toolbarItems.push("saveButton");
-				toolbarItems.push("revertButton");
+			if($this->clearFiltersBtnEnabled){
+				$this->addBtnClearFilters($datagrid,$gridhelper);
 			}
-			if (grid.option("export.enabled")) toolbarItems.push("exportButton");
-			if (grid.option("columnChooser.enabled")) toolbarItems.push("columnChooserButton");
-			if (grid.option("searchPanel.visible")) toolbarItems.push("searchPanel");
+			if($this->rememberFiltersBtnEnabled){
+				$this->addBtnSaveFilters($datagrid,$gridhelper);
+			}
 
-			grid.option("toolbar.items", toolbarItems);
-			*/
 			if($this->allowInsert()){
 				$tollbarItems->add_data("addRowButton");
 			}			
 			if($this->columnsChooserEnabled){
 				$tollbarItems->add_data("columnChooserButton");
 			}
+			if($this->userColsPrefResetBtnEnabled){
+				$this->addBtnColsPrefReset($datagrid,$gridhelper);
+			}			
 			if($this->excelExportName){
 
-				if(!$this->tollbarItemsExportButtonAdded){
+				if(!$this->toolbarItemsExportButtonAdded){
 					$tollbarItems->add_data("exportButton");
-					$this->tollbarItemsExportButtonAdded=true;
+					$this->toolbarItemsExportButtonAdded=true;
 				}
 			}
 			
-			
-			$this->addBtnColsPrefReset($datagrid,$gridhelper);
 
+			
 
 		}
 			
 			
 	}
+	function addBtnClearFilters($datagrid,$gridhelper){
+		$var=$this->get_js_ui_man_name();
+		$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
+		
+		$btn=$tollbarItems->add_data_obj();
+		
+		$btn->set_prop("locateInMenu","auto");
+		$btn->set_prop("widget","dxButton");
+		$btn->set_prop("options.text",$this->lng_get_msg_txt("clearFilters","Quitar filtros"));
+		$btn->set_prop("options.icon","meralda-icon meralda-icon-filter-clear");
+		$fnc=new mwmod_mw_jsobj_functionext();
+		$fnc->add_cont("{$var}.clearFilters();");
+		$btn->set_prop("options.onClick",$fnc);
+
+	}
+	function addBtnSaveFilters($datagrid,$gridhelper){
+		$var=$this->get_js_ui_man_name();
+		$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
+		
+		$btn=$tollbarItems->add_data_obj();
+		
+		$btn->set_prop("locateInMenu","auto");
+		$btn->set_prop("widget","dxButton");
+		$btn->set_prop("options.text",$this->lng_get_msg_txt("rememberFilters","Recordar filtros"));
+		$btn->set_prop("options.icon","meralda-icon meralda-icon-filter-save");
+		$fnc=new mwmod_mw_jsobj_functionext();
+		$fnc->add_cont("{$var}.saveFilters();");
+		$btn->set_prop("options.onClick",$fnc);
+
+	}
 	function addBtnColsPrefReset($datagrid,$gridhelper){
 		$var=$this->get_js_ui_man_name();
 		$tollbarItems=$datagrid->js_props->get_array_prop("toolbar.items");
-		//$tollbarItems->add_data("columnChooserButton");
-		//$tollbarItems->add_data("exportButton");
+		
 		$btn=$tollbarItems->add_data_obj();
-		//$btn->set_prop("location","before");
+		$btn->set_prop("locateInMenu","auto");
 		$btn->set_prop("widget","dxButton");
 		$btn->set_prop("options.text",$this->lng_get_msg_txt("resetColumns","Restablecer columnas"));
 		$btn->set_prop("options.icon","undo");

@@ -317,7 +317,9 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		//$datagrid->mw_helper_js_set_editrow_mode_from_ui($this,$gridhelper,true,true,true);
 		$datagrid->mw_helper_js_set_rdata_mode_from_ui($this,$gridhelper);
 		$gridhelper->set_fnc_name("mw_devextreme_datagrid_man_rdataedit");
-		
+		if($this->addColCodsToExcel){
+			$gridhelper->set_prop("addColCodsToExcel",true);	
+		}
 
 		$this->add_cols($datagrid);
 		

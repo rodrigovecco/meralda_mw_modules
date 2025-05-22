@@ -325,7 +325,13 @@ class mwmod_mw_html_elem extends mwmod_mw_html_abselem implements mwmod_mw_html_
 			$this->add_cont($cont);	
 		}
 	}
-	
+	/*
+	* Adds a new element to the container
+	* @param mixed $cont The content of the element (optional)
+	* @param string $tag The tag name of the element (optional)
+	* @param mixed $atts The attributes of the element (optional)
+	* @return mwmod_mw_html_elem The new element
+	*/
 	function add_cont_elem($cont=false,$tag="div",$atts=false){
 		$c=new mwmod_mw_html_elem($tag,$atts,$cont);
 		$this->add_cont($c);

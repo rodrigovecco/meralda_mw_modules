@@ -41,6 +41,15 @@ class mwmod_mw_db_sql_from extends mwmod_mw_db_sql_querypart{
 			$item = new mwmod_mw_db_sql_from_tbl($tbl,$as,$this);
 			return $this->add_item($item);
 		}
+		if(is_object($tbl)){
+			if($tbl instanceof mwmod_mw_db_sql_query){
+				if(!$as){
+					$as="subquery";
+				}
+				$item = new mwmod_mw_db_sql_from_subquery($tbl,$as,$this);
+				return $this->add_item($item);
+			}
+		}
 	}
 	function get_sql_start(){
 		return " from ";	

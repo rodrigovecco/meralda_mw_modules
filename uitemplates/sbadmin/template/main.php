@@ -44,6 +44,10 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 
 		$item= new mwmod_mw_html_manager_item_css("cus","/res/css/cus.css");
 		$cssmanager->add_item_by_item($item);
+
+		$item= new mwmod_mw_html_manager_item_css("meraldaicons","/res/css/meralda_icons.css");
+		$cssmanager->add_item_by_item($item);
+		
 		
 		
 		

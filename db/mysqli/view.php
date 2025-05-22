@@ -23,6 +23,10 @@ class mwmod_mw_db_mysqli_view extends mwmod_mw_db_tbl {
                 $r[$id] = $data;
             }
         }
+        
+    
+
+    
         return $r;
     }
 
