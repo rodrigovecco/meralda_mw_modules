@@ -105,7 +105,16 @@ class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 	
 	
 	function do_exec_page_in(){
-		$container=$this->get_ui_dom_elem_container();
+
+		$MainContainer=$this->get_ui_dom_elem_container();
+		$container=$MainContainer;
+		if($this->mainPanelEnabled){
+			if($mainpanel=$this->createMainPanel()){
+				$MainContainer->add_cont($mainpanel);
+				$container=$mainpanel->panel_body->add_cont_elem();
+			}
+		}
+		
 
 		$gridcontainer=$this->set_ui_dom_elem_id("datagrid_container");
 		$body=$this->set_ui_dom_elem_id("datagrid_body");
@@ -117,7 +126,7 @@ class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 		
 		$this->getBotHtml($container);
 
-		echo $container->get_as_html();
+		echo $MainContainer->get_as_html();
 		
 		//
 		$js=new mwmod_mw_jsobj_jquery_docreadyfnc();

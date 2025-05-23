@@ -25,6 +25,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	private $___all_subinterfaces;
 	private $___all_subinterfaces_loaded;
 
+	public $mainPanelEnabled=false;
+	public $mainPanelClasses="";
+	public $mainPanel;
+	public $mainPanelTitle;
+
 	
 	//private $_subinterfaces=array();
 	private $parent_subinterface;
@@ -76,6 +81,26 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	private $uiSessionDataMan;
 	public $omitUIGeneralContainer=false;
 	public $xmlResponse;
+
+	function mainPanelEnable($title=false,$classes=""){
+		if(!$title){
+			$title=$this->get_title();	
+		}
+		$this->mainPanelEnabled=true;
+		$this->mainPanelTitle=$title;
+		$this->mainPanelClasses=$classes;
+
+		
+	}
+	function createMainPanel(){
+		$panel=new mwmod_mw_bootstrap_html_template_panel();
+		if($this->mainPanelClasses){
+			$panel->main_elem->add_additional_class($this->mainPanelClasses);	
+		}
+		$panel->panel_heading->add_cont($this->mainPanelTitle);
+		$this->mainPanel=$panel;
+		return $panel;
+	}
 	function get_lngmsgsmancod(){
 		if($this->parent_subinterface){
 			if(method_exists($this->parent_subinterface,"get_lngmsgsmancod")){
@@ -805,6 +830,8 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			echo $this->bottom_alert_msg;	
 		}
 	}
+	
+
 	//subinterface mnu
 	//un menu que crea un padre con is_responsable_for_sub_interface_mnu true para sí y sus hijos
 	function add_2_sub_interface_mnu($mnu){

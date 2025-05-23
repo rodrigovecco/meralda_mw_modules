@@ -55,6 +55,16 @@ class mwmod_mw_users_ui_user_fulldata extends mwmod_mw_users_ui_user_abs{
 		if(!$user->allowadmin_admin()){
 			return false;	
 		}
+
+		$MainContainer=$this->get_ui_dom_elem_container();
+		$container=$MainContainer;
+		if($this->mainPanelEnabled){
+			if($mainpanel=$this->createMainPanel()){
+				$MainContainer->add_cont($mainpanel);
+				$container=$mainpanel->panel_body->add_cont_elem();
+			}
+		}
+
 		$frm=$this->new_frm();
 		$frm->set_enctype_urlencoded();
 		$cr=$this->new_datafield_creator();
@@ -78,10 +88,12 @@ class mwmod_mw_users_ui_user_fulldata extends mwmod_mw_users_ui_user_abs{
 		$btnhtml->set_att("onclick","alert('sss')");
 		*/
 		$frm->set_datafieldcreator($cr);
-		echo "<div class='mw_ui_frm_container'>";
-		echo $frm->get_html();
-		echo $msgs->get_as_html();
-		echo "</div>";
+		$frmcontainer=$container->add_cont_elem();
+		$frmcontainer->addClass("mw_ui_frm_container");
+		$frmcontainer->add_cont($frm->get_html());
+		$frmcontainer->add_cont($msgs);
+
+		echo $MainContainer->get_as_html();
 		/*
 		if($msg){
 			$alert=new mwmod_mw_bootstrap_html_specialelem_alert($msg);

@@ -19,6 +19,15 @@ class mwmod_mw_users_ui_newuser extends mwmod_mw_ui_sub_withfrm{
 			return false;
 			
 		}
+		$MainContainer=$this->get_ui_dom_elem_container();
+		$container=$MainContainer;
+		if($this->mainPanelEnabled){
+			if($mainpanel=$this->createMainPanel()){
+				$MainContainer->add_cont($mainpanel);
+				$container=$mainpanel->panel_body->add_cont_elem();
+			}
+		}
+
 		$dm=$uman->get_user_data_man();
 		$dm->create_new_user_from_admin_ui(new mwmod_mw_helper_inputvalidator_request("nduser.usernd"),$this);
 		
@@ -32,9 +41,13 @@ class mwmod_mw_users_ui_newuser extends mwmod_mw_ui_sub_withfrm{
 		$cr->add_submit($this->lng_common_get_msg_txt("create","Crear"));
 		$frm->set_datafieldcreator($cr);
 		$frm->disable_on_submit=true;
-		$this->output_bottom_alert_msg();
+		if($this->bottom_alert_msg){
+			$container->add_cont($this->bottom_alert_msg);
+		}
 		
-		echo $frm->get_html();
+		$container->add_cont($frm->get_html());
+
+		echo $MainContainer->get_as_html();
 
 		
 	}

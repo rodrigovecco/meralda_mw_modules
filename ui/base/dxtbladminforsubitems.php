@@ -75,7 +75,15 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 			
 			return false;
 		}
-		$container=$this->get_ui_dom_elem_container();
+		$MainContainer=$this->get_ui_dom_elem_container();
+		$container=$MainContainer;
+		if($this->mainPanelEnabled){
+			if($mainpanel=$this->createMainPanel()){
+				$MainContainer->add_cont($mainpanel);
+				$container=$mainpanel->panel_body->add_cont_elem();
+			}
+		}
+		
 		
 
 		$gridcontainer=$this->set_ui_dom_elem_id("datagrid_container");
@@ -88,7 +96,7 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 		
 		$this->getBotHtml($container);
 
-		echo $container->get_as_html();
+		echo $MainContainer->get_as_html();
 		
 		//
 		$js=new mwmod_mw_jsobj_jquery_docreadyfnc();
