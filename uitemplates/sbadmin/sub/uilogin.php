@@ -200,13 +200,17 @@ class mwmod_mw_uitemplates_sbadmin_sub_uilogin extends mwmod_mw_uitemplates_sbad
 
 		}
 		*/
+
+		$subpanelbody=$panel_body->add_cont_elem();
+		$subpanelbody->addClass("login-other-info");
+		
 		if($uiremember=$this->maininterface->get_subinterface("rememberlogindata")){
 			if($uiremember->is_rememberlogindata()){
 				if($uiremember->is_enabled()){
 					if($html=$uiremember->get_html_link_on_login()){
 						//$alert=new mwmod_mw_bootstrap_html_specialelem_alert($html,"info");
 						$alert=new mwmod_mw_bootstrap_html_elem("div",false,$html);
-						$panel_body->add_cont($alert);
+						$subpanelbody->add_cont($alert);
 							
 					}
 				}
@@ -237,6 +241,8 @@ class mwmod_mw_uitemplates_sbadmin_sub_uilogin extends mwmod_mw_uitemplates_sbad
 		$js->add_cont($var.".init(".$this->ui_js_init_params->get_as_js_val().");\n");
 
 		echo $js->get_js_script_html();
+
+		
 
 
 		return;

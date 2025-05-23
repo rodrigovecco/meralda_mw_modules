@@ -187,6 +187,7 @@ class mwmod_mw_bootstrap_ui_sub_uiloginadv extends mwmod_mw_bootstrap_ui_sub_uil
 		$maincontainer->add_cont($iframaandfrm);
 		echo $maincontainer->get_as_html();
 		
+		
 		$js=new mwmod_mw_jsobj_jquery_docreadyfnc();
 		$this->set_ui_js_params();
 		
