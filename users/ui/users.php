@@ -1,6 +1,7 @@
 <?php
 class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 	public $queryHelper;//mwmod_mw_devextreme_data_queryhelper iniciado en getQuery
+	public $excelExportName=false;
 	function __construct($cod,$parent){
 		$this->init_as_main_or_sub($cod,$parent);
 		$this->set_def_title($this->lng_common_get_msg_txt("users","Usuarios"));
@@ -182,7 +183,11 @@ class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 
 	function do_exec_no_sub_interface(){
 		$util=new mwmod_mw_devextreme_util();
+		if($this->excelExportName){
+			$util->preapare_ui_exportExcel($this);
+		}
 		$util->preapare_ui_webappjs($this);
+
 		$jsman=$this->maininterface->jsmanager;
 		$jsman->add_item_by_cod_def_path("url.js");
 		$jsman->add_item_by_cod_def_path("ajax.js");
@@ -200,6 +205,7 @@ class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_datagrid_helper_rdata.js");
 		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_data.js");
 		$jsman->add_item_by_cod_def_path("ui/helpers/ajaxelem/devextreme_datagrid.js");
+
 		
 		
 		$this->add_req_js_scripts();	
@@ -236,6 +242,16 @@ class mwmod_mw_users_ui_users extends mwmod_mw_ui_sub_uiabs{
 		$datagrid->js_props->set_prop("remoteOperations.paging",true);
 		$datagrid->js_props->set_prop("remoteOperations.filtering",true);
 		$datagrid->js_props->set_prop("remoteOperations.sorting",true);
+		if($this->excelExportName){
+			$datagrid->js_props->set_prop("export.enabled",true);	
+			$datagrid->js_props->set_prop("export.fileName",$this->excelExportName);
+			
+			
+			
+			
+		}
+
+
 		//$datagrid->js_props->set_prop("editing.allowUpdating",true);
 		//$datagrid->js_props->set_prop("editing.allowAdding",true);
 		//$datagrid->js_props->set_prop("editing.allowDeleting",true);

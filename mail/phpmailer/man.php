@@ -4,7 +4,9 @@ class mwmod_mw_mail_phpmailer_man extends mw_apsubbaseobj{
 		//	
 	}
 	function new_phpmailer(){
+		set_time_limit(20);
 		$obj=new PHPMailer();
+		
 		return $obj;	
 	}
 	function checkemail($add){
@@ -20,6 +22,8 @@ class mwmod_mw_mail_phpmailer_man extends mw_apsubbaseobj{
 			$man->cfg_phpmailer($phpMailer);
 
 		}
+		$phpMailer->Timeout = 10;///added!
+		
 		return $phpMailer;
 		
 	}

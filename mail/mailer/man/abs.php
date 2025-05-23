@@ -54,7 +54,7 @@ abstract class mwmod_mw_mail_mailer_man_abs extends mw_apsubbaseobj{
 		}
 		
 		if($val=$this->get_cfg_data("auth.useSMTPssl")){
-			$mailer->useSMTPssl     = true;
+			//$mailer->useSMTPssl     = true;
 			$mailer->SMTPSecure="ssl";
 		}
 		if($val=$this->get_cfg_data("auth.SMTPSecure")){
