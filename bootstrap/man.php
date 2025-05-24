@@ -6,6 +6,8 @@ class mwmod_mw_bootstrap_man extends mw_apsubbaseobj{
 	function createIcons(){
 		$r=array();
 		
+		$this->createIconsFromList("meralda-icon","meralda",$r,"meralda-icon");
+
 		$this->createIconsFromList("glyphicon","glyphicon",$r);
 		//$this->createIconsFromList("glyphicon","glyphicon_sb",$r);
 		//$this->createIconsFromList("glyphicon","glyphicon_bt",$r);

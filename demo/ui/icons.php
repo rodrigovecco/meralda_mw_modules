@@ -38,10 +38,38 @@ class mwmod_mw_demo_ui_icons extends mwmod_mw_demo_ui_abs{
 		$fncicon=new mwmod_mw_jsobj_functionext();
 		$fncicon->add_fnc_arg("cellElement");
 		$fncicon->add_fnc_arg("cellInfo");
-		//$fnctogglesel->add_cont("alert('dddd');\n");
+
+		$fncicon->add_cont("c=$('<div style=\'float: left; padding:5px\'>')\n");
+        $fncicon->add_cont(".appendTo(cellElement);\n");
+		$fncicon->add_cont("$('<span style=\'font-size:60px\'>')\n");
+      	$fncicon->add_cont(".addClass(cellInfo.data['iconclass']+'')\n");
+        $fncicon->add_cont(".appendTo(c);\n");
+
+		$fncicon->add_cont("var c=$('<div  style=\'padding:5px\'>')\n");
+        $fncicon->add_cont(".appendTo(cellElement);\n");
+
+
 		$fncicon->add_cont("$('<span>')\n");
       	$fncicon->add_cont(".addClass(cellInfo.data['iconclass']+'')\n");
-        $fncicon->add_cont(".appendTo(cellElement);\n");
+        $fncicon->add_cont(".appendTo(c);\n");
+
+		$fncicon->add_cont("$('<span style=\'color:#ff0000\'>')\n");
+      	$fncicon->add_cont(".addClass(cellInfo.data['iconclass']+'')\n");
+        $fncicon->add_cont(".appendTo(c);\n");
+
+
+
+		$fncicon->add_cont("var btnCont = $('<div style=\"padding:5px;\">').appendTo(c);\n");
+		$fncicon->add_cont("$('<div>')\n");
+		$fncicon->add_cont(".appendTo(btnCont)\n");
+		$fncicon->add_cont(".dxButton({\n");
+		$fncicon->add_cont("    icon: cellInfo.data['iconclass'],\n");
+		$fncicon->add_cont("    text: cellInfo.data['iconclass'],\n");
+		$fncicon->add_cont("    elementAttr: { style: 'font-size:14px;' }\n");
+		$fncicon->add_cont("});\n");
+
+		
+
 		$col->js_data->set_prop("cellTemplate",$fncicon);	
 		$col=$datagrid->add_column_string("iconclass","iconclass");
 		
