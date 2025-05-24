@@ -118,13 +118,16 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 	
 
 	
-	function addAllTblFields($tblman){
+	function addAllTblFields($tblman,$tblalias=false){
 		$r=array();
+		if(!$tblalias){
+			$tblalias=$tblman->tbl;	
+		}
 		//getFields
 		//if($tblfields=$tblman->get_tbl_fields()){
 		if($tblfields=$tblman->getFields()){
 			foreach($tblfields as $c=>$f){
-				if($item=$this->addFieldBySqlExp($c,$tblman->tbl.".".$c)){
+				if($item=$this->addFieldBySqlExp($c,$tblalias.".".$c)){
 					$r[]=$item;
 					if($this->autoSetOptions){
 						$item->setOptionsByField($f);	
@@ -145,9 +148,13 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		}
 	}
 	function addFieldByQuerySelect($selectItem){
+		if($selectItem->isMultiple){
+			return false;	
+		}
 		if(!$cod=$selectItem->get_cod()){
 			$cod=$selectItem->get_sql_in();
 		}
+
 		if(!$field=$this->addFieldBySqlExp($cod,$selectItem->get_sql_in())){
 			return false;
 		}
