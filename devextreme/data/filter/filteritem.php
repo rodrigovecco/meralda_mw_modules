@@ -167,6 +167,56 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 		}
 	}
 	function parseExpressionByArray($expression) {
+		if (!is_array($expression) || empty($expression)) {
+			return "error";
+		}
+
+		// Detecta negación al inicio
+		if ($expression[0] === "!") {
+			$this->negative = true;
+			array_shift($expression); // quitamos el "!"
+		}
+
+		$subExpressions = [];
+		$currentOperator = "AND";
+
+		foreach ($expression as $item) {
+			if (is_string($item)) {
+				$upper = strtoupper(trim($item));
+				if ($upper === "AND" || $upper === "OR") {
+					$currentOperator = $upper;
+				}
+				continue;
+			}
+
+			if (is_array($item)) {
+				$subExpressions[] = [
+					"op" => $currentOperator,
+					"data" => $item
+				];
+				$currentOperator = "AND"; // por defecto después de cada operador
+			}
+		}
+
+		$count = count($subExpressions);
+
+		if ($count > 1) {
+			foreach ($subExpressions as $sub) {
+				if ($child = $this->addChild($this->newChild())) {
+					$child->setConnectiveOperator($sub["op"]);
+					$child->parseExpression($sub["data"]);
+				}
+			}
+			return "multiple";
+		} elseif ($count === 1) {
+			return $this->parseExpressionByArray($subExpressions[0]["data"]);
+		} else {
+			// Si no se encontraron subarrays, intentamos tratarlo como expresión simple
+			return $this->parseExpressionSimpleByArray($expression) ? "single" : "error";
+		}
+	}
+	///a borrar
+	function _______parseExpressionByArrayOLD($expression) {
 		//$result = "(";
 		$prevItemWasArray = false;
 		$childrenmode=false;
@@ -180,6 +230,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 						continue;
                     }
 					if(isset($expression) && is_array($expression)){
+						
 						$this->parseExpressionSimpleByArray($expression);
 						return "single";
 					}else{
@@ -264,7 +315,11 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
         }else if ($itemsCount == 3) {
 			$this->setClause($expression[1]);
 			$this->setValue($expression[2]);
-        }
+        }elseif ($itemsCount == 4) {
+			$this->setClause($expression[1]);
+			$this->setValue($expression[2]);
+			//$this->setConnectiveOperator($expression[3]);
+		}
 		return true;
     }
 	function setClause($clause){
@@ -310,8 +365,11 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 			
 			$r["value"]=$this->getValue();
 			$r["fildName"]=$this->getFieldName();
+			$r["clause"]=$this->clause;
 			if($f=$this->getField()){
 				$r["fildOK"]=true;	
+			}else{
+				$r["fildOK"]=false;	
 			}
 		}
 		return $r;
@@ -322,25 +380,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 		//return $this->convertDateTimeToMySQLValue($this->value);
 		return $this->value;	
 	}
-	/*
-    function convertDatePartToISOValue($date) {
-	    $dateParts = explode("/", $date);
-	    return sprintf("%s-%s-%s", $dateParts[2], $dateParts[0], $dateParts[1]);
-    }
-    function convertDateTimeToMySQLValue($strValue) {
-	    $result = $strValue;
-    	if (preg_match("/^\d{1,2}\/\d{1,2}\/\d{4}$/", $strValue) === 1) {
-	    	$result = $this->convertDatePartToISOValue($strValue);
-	    }
-	    else if (preg_match("/^\d{1,2}\/\d{1,2}\/\d{4} \d{2}:\d{2}:\d{2}\.\d{3}$/", $strValue) === 1) {
-		    $spacePos = strpos($strValue, " ");
-            $datePart = substr($strValue, 0, $spacePos);
-		    $timePart = substr($strValue, $spacePos + 1);
-		    $result = sprintf("%s %s", $this->convertDatePartToISOValue($datePart), $timePart);
-	    }
-	    return $result;
-    }
-	*/
+	
 	
 	final function isOk(){
 		if(!isset($this->_isOK)){

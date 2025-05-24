@@ -230,6 +230,7 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 		$myFile= fopen($f,'a'); // Open the file for writing
 		fputs($myFile, $string); // Write the data ($string) to the text file
 		fclose($myFile); // Closing the file after writing data to it
+		chmod($f, 0664);
 		return true;
 	}
 	function get_and_create_path(){

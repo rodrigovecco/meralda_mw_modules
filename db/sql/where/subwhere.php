@@ -51,6 +51,9 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 	}
 	 
 	function is_ok(){
+		if(!$items=	$this->get_items_ok()){
+			return false;	
+		}
 		return true;	
 	}
 	
@@ -102,7 +105,8 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 			
 			$item->append_to_parameterized_sql($pq,$sqlItemsTemp);	
 			if($this->debug_mode){
-				$sql.="\n";
+				
+				//$pq->appendSQL("\n");
 			}
 
 		}

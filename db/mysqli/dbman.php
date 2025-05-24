@@ -5,6 +5,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 	function __construct($ap){
 		$this->init($ap);	
 	}
+	
 
 	function create_views_managers() {
 		$sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 

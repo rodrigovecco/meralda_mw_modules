@@ -39,6 +39,7 @@ class mwmod_mw_data_json_item extends mwmod_mw_data_tree_item{
 		$myFile= fopen($f,'a'); 
 		fputs($myFile, $string); 
 		fclose($myFile); 
+		chmod($f, 0664);
 		return true;
 	}
 	function get_data_to_load(){

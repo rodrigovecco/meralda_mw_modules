@@ -182,12 +182,28 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		}
 		if($this->debugOutputEnabled()){
 			$xml->set_prop("debug.sql",$query->get_sql());
+			$xml->set_prop("debug.sqlcount",$query->get_count_sql());
+			$xml->set_prop("debug.isParameterizedMode",$query->isParameterizedMode());
 		}
 		
 		
+		$totalCount=0;
+		if($totaldata=$query->get_total_data()){
+			if(isset($totaldata[$query->sql_count_name])){
+				$totalCount=intval($totaldata[$query->sql_count_name]);
+				unset($totaldata[$query->sql_count_name]);
+				if(sizeof($totaldata)>0){
+					$summary=$js->get_array_prop("summary");
+					foreach($totaldata as $k=>$v){
+						$summary->add_data($v);
+					}
+				}
+
+			}
+		}
+
 		
-		
-		$js->set_prop("totalCount",$query->get_total_regs_num());
+		$js->set_prop("totalCount",$totalCount);
 		
 		
 		

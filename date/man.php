@@ -44,15 +44,20 @@ class mwmod_mw_date_man extends mw_apsubbaseobj{
 		}
 		$timeOrDate=str_replace("/","-",$timeOrDate);
 		
-		if($timeOrDate=="0000-00-00"){
-			return false;	
+		if (strpos($timeOrDate, '0000-00-00') === 0) {
+			return false;
 		}
-		if($timeOrDate=="0000-00-00 00:00"){
-			return false;	
+
+		// Detecta posible formato ISO
+		if (strpos($timeOrDate, 'T') !== false || strpos($timeOrDate, 'Z') !== false || preg_match('/[+-][0-9]{2}:[0-9]{2}$/', $timeOrDate)) {
+			if($dateTime = date_create($timeOrDate)){
+				$timestamp = $dateTime->getTimestamp();
+				if($timestamp > 0){
+					return $this->checkTime($timestamp);
+				}
+			}
 		}
-		if($timeOrDate=="0000-00-00 00:00:00"){
-			return false;	
-		}
+
 		$a=explode(" ",$timeOrDate);
 		if(!$date=$a[0]){
 			return false;	

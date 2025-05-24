@@ -30,12 +30,20 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 
 	public $currentParameterizedQuery;
 
+	public $totalsSelectsSQL=false;
+
 	
 	function __construct($from=false){
 		if($from){
 			$f=$this->__get_priv_from();
 			$f->add_from($from);
 		}
+	}
+	function getTotalsSelectsSQL(){
+		if($this->totalsSelectsSQL){
+			return $this->totalsSelectsSQL;	
+		}
+		return false;
 	}
 	function isParameterizedMode(){
 		if(isset($this->parameterizedMode)){
@@ -132,13 +140,21 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 			$sql.=$part->get_sql();	
 
 		}
-		return "select count(*) as ".$this->sql_count_name." from ($sql) as zz";
+		$extra="";
+		if($totals=$this->getTotalsSelectsSQL()){
+			$extra=", ".$totals."";	
+		}
+		return "select count(*) as ".$this->sql_count_name." {$extra} from ($sql) as zz";
 			
 	}
 	function get_count_sql_parameterized_full_query_mode(){
 		$pq=new mwmod_mw_db_paramstatement_paramquery();
 		$pq->sql="";
-		$pq->appendSQL("select count(*) as ".$this->sql_count_name." from (");
+		$extra="";
+		if($totals=$this->getTotalsSelectsSQL()){
+			$extra=", ".$totals."";	
+		}
+		$pq->appendSQL("select count(*) as ".$this->sql_count_name." {$extra}  from (");
 		$parts=array(
 		"select"=>$this->__get_priv_select(),
 		"from"=>$this->__get_priv_from(),
@@ -167,8 +183,12 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 
 		$pq=new mwmod_mw_db_paramstatement_paramquery();
 		$pq->sql="";
+		$extra="";
+		if($totals=$this->getTotalsSelectsSQL()){
+			$extra=", ".$totals."";	
+		}
 
-		$pq->appendSQL("select ".$this->sql_count." as ".$this->sql_count_name." ");
+		$pq->appendSQL("select ".$this->sql_count." as ".$this->sql_count_name."  {$extra} ");
 		$parts=array(
 		"from"=>$this->__get_priv_from(),
 		"where"=>$this->__get_priv_where(),
@@ -190,9 +210,12 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		}
 		
 		
+		$extra="";
+		if($totals=$this->getTotalsSelectsSQL()){
+			$extra=", ".$totals."";	
+		}
 		
-		
-		$sql="select ".$this->sql_count." as ".$this->sql_count_name." ";
+		$sql="select ".$this->sql_count." as ".$this->sql_count_name."  {$extra} ";
 		$parts=array(
 		"from"=>$this->__get_priv_from(),
 		"where"=>$this->__get_priv_where(),
@@ -224,8 +247,22 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		if(!$d=$this->dbman->get_array_from_sql($sql)){
 			return 0;	
 		}
+		if(!isset($d[$this->sql_count_name])){
+			
+			return 0;	
+		}
+
+		return intval($d[$this->sql_count_name]);
+	}
+	function get_total_data(){
 		
-		return $d[$this->sql_count_name]+0;
+		$sql=$this->get_count_sql_or_parameterized_query();
+		//$sql=$this->get_count_sql();
+		if(!$d=$this->dbman->get_array_from_sql($sql)){
+			return null;	
+		}
+		
+		return $d;
 	}
 
 	function execute(){

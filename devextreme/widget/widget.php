@@ -1,4 +1,15 @@
 <?php
+/**
+ * Base class for DevExtreme widgets in Meralda.
+ *
+ * Provides common structure for HTML container, JavaScript properties, and widget initialization.
+ *
+ * @property string $container_id The HTML element ID for the widget container. Defaults to "dxwidget".
+ * @property-read mwmod_mw_jsobj_obj $js_props JavaScript configuration object for the DevExtreme widget.
+ * @property-read mwmod_mw_html_elem $htmlelem The HTML element representing the container for the widget.
+ * @property mwmod_mw_devextreme_formatter $formatter Formatter used for formatting widget data or appearance.
+ * @property-read mwmod_mw_devextreme_man $devextreme_man DevExtreme manager responsible for integration support.
+ */
 class mwmod_mw_devextreme_widget_widget extends mw_apsubbaseobj{
 	var $container_id="dxwidget";
 	private $js_props;

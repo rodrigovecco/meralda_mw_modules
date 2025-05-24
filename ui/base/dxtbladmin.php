@@ -320,9 +320,27 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		if($this->debugOutputEnabled()){
 			$xml->set_prop("debug.sql",$query->get_sql());
 		}
+
+		$totalCount=0;
+		if($totaldata=$query->get_total_data()){
+			if(isset($totaldata[$query->sql_count_name])){
+				$totalCount=intval($totaldata[$query->sql_count_name]);
+				unset($totaldata[$query->sql_count_name]);
+				if(sizeof($totaldata)>0){
+					$summary=$js->get_array_prop("summary");
+					foreach($totaldata as $k=>$v){
+						$summary->add_data($v);
+					}
+				}
+
+			}
+		}
+
+		
+		$js->set_prop("totalCount",$totalCount);
 		
 		
-		$js->set_prop("totalCount",$query->get_total_regs_num());
+		//$js->set_prop("totalCount",$query->get_total_regs_num());
 		
 		
 		
@@ -887,7 +905,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
      * @param mwmod_mw_devextreme_widget_datagrid $datagrid
      * @param mwmod_mw_devextreme_widget_datagrid_helper_dgman $gridhelper
      */
-	function afterDatagridCreated($datagrid,$gridhelper){
+	function afterDatagridCreatedAddDefaultToolbarItems($datagrid,$gridhelper){
 		$var=$this->get_js_ui_man_name();
 		
 		if($this->columnsChooserEnabled){
@@ -907,6 +925,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		}
 		
 		if($this->rememberFiltersBtnEnabled){
+			$cusBtnsEnabled=true;
+		}
+		if($this->excelExportName){
 			$cusBtnsEnabled=true;
 		}
 			
@@ -936,6 +957,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 				if(!$this->toolbarItemsExportButtonAdded){
 					$tollbarItems->add_data("exportButton");
 					$this->toolbarItemsExportButtonAdded=true;
+					
 				}
 			}
 			
@@ -943,6 +965,14 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			
 
 		}
+
+	}
+	/**
+	 * @param mwmod_mw_devextreme_widget_datagrid $datagrid
+	 * @param mwmod_mw_devextreme_widget_datagrid_helper_dgman $gridhelper
+	 */
+	function afterDatagridCreated($datagrid,$gridhelper){
+		$this->afterDatagridCreatedAddDefaultToolbarItems($datagrid,$gridhelper);
 			
 			
 	}
