@@ -46,6 +46,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	private $def_title;
 	private $urlparams=array();
 	private $cmdparams=array();
+	public $inheritCMDParams=true;
 	private $code;
 	public $sucods;
 	public $xml_output;
@@ -83,21 +84,27 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	public $xmlResponse;
 
 	function mainPanelEnable($title=false,$classes=""){
-		if(!$title){
-			$title=$this->get_title();	
-		}
+		//if(!$title){
+			//$title=$this->get_title();	
+		//}
 		$this->mainPanelEnabled=true;
 		$this->mainPanelTitle=$title;
 		$this->mainPanelClasses=$classes;
 
 		
 	}
+	function getMainPanelTitle(){
+		if($this->mainPanelTitle){
+			return $this->mainPanelTitle;	
+		}
+		return $this->get_title();
+	}
 	function createMainPanel(){
 		$panel=new mwmod_mw_bootstrap_html_template_panel();
 		if($this->mainPanelClasses){
 			$panel->main_elem->add_additional_class($this->mainPanelClasses);	
 		}
-		$panel->panel_heading->add_cont($this->mainPanelTitle);
+		$panel->panel_heading->add_cont($this->getMainPanelTitle());
 		$this->mainPanel=$panel;
 		return $panel;
 	}
@@ -803,6 +810,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return mw_array_get_sub_key($this->cmdparams,$key);	
 	}
+	final function get_cmd_param_exists($key){
+		if($this->cmdparams){
+			if(isset($this->cmdparams[$key])){
+				return true;
+			}
+		}
+		return false;
+		
+	}
 	final function set_cmd_param($key,$val){
 
 		mw_array_set_sub_key($key,$val,$this->cmdparams);
@@ -976,9 +992,32 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 		//$this->set_url_param("interface",$this->code);
 	}
+	function init_cmd_params(){
+		if($this->current_parent_subinterface){
+			if($this->inheritCMDParams){
+				if($params=$this->current_parent_subinterface->get_cmd_param()){
+					foreach($params as $cod=>$v){
+						if(!$this->get_cmd_param_exists($cod)){
+							$this->set_cmd_param($cod,$v);	
+						}
+						
+					}
+				}
+			}
+			
+			
+		}
+
+		//$this->set_url_param("interface",$this->code);
+	}
 	final function reset_url_params(){
 		$this->urlparams=array();
 		$this->init_url_params();	
+	}
+	function setRequestParam($key,$val){
+		$this->set_url_param($key,$val);
+		$this->set_cmd_param($key,$val);
+
 	}
 	final function set_url_param($key,$val){
 		mw_array_set_sub_key($key,$val,$this->urlparams);	
@@ -1643,8 +1682,10 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function added_as_child($cod,$parent){
 		$this->set_current_parent_sub_interface($cod,$parent);
 		$this->reset_url_params();
+		$this->init_cmd_params();//new 20250525
 		return true;	
 	}
+	
 	function get_code_for_parent(){
 		if($this->code_for_parent){
 			return $this->code_for_parent;	

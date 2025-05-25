@@ -196,6 +196,7 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 					$summary=$js->get_array_prop("summary");
 					foreach($totaldata as $k=>$v){
 						$summary->add_data($v);
+						$js->set_prop("summaryMap.{$k}",$v);
 					}
 				}
 

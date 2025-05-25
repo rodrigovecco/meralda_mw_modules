@@ -5,7 +5,7 @@ class mwmod_mw_demo_ui extends mwmod_mw_ui_base_basesubuia{
 		$this->set_lngmsgsmancod("demo");
 		$this->set_def_title($this->lng_get_msg_txt("demo","Demo"));
 		$this->sucods="inputs,icons,extmods";
-		$this->mnuIconClass="meralda-icon meralda-icon-cat";
+		$this->mnuIconClass="meralda-icon-color meralda-icon-cat2";
 
 		
 	}

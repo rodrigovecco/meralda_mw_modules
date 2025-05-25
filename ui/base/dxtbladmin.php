@@ -35,7 +35,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	}
 	function setUserColsSelectedRememberEnabledMode(){
 		
-		
+		$this->columnsChooserEnabled=true;
 		$this->userColsSelectedRememberEnabled=true;
 		$this->userColsSelectedRememberEnabledVisible=true;
 		$this->userColsPrefResetBtnEnabled=true;
