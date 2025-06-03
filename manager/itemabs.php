@@ -1,4 +1,16 @@
 <?php
+/**
+ * Abstract class for representing items managed by a manager (e.g., database records, files, etc.).
+ * Provides utility methods for accessing and managing structured data, related objects, and paths.
+ * @property-read int $id The unique identifier of the item.
+ * @property-read mwmod_mw_db_row $tblitem The wrapped database row.
+ * @property-read mwmod_mw_manager_man $man The manager that owns this item.
+ * @property-read mwmod_mw_data_json_man|false $jsonDataMan JSON data manager (if enabled).
+ * @property-read mwmod_mw_data_tree_man|false $_treedataman Tree data manager (lazy-loaded).
+ * @property-read mwmod_mw_data_str_man|false $_strdataman String data manager (lazy-loaded).
+ * @property-read mwmod_mw_data_xmltree_man|false $_xmldataman XML data manager (lazy-loaded).
+ */
+ 
 abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	private $id;
 	private $tblitem;
@@ -14,7 +26,18 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	
 	
 	private $_related_objects_man;
-	
+	/**
+	 * Constructor.
+	 *
+	 * Initializes the manager item with the provided database table item and manager instance.
+	 * Delegates the actual initialization to {@see init()}.
+	 *
+	 * @param mwmod_mw_db_sql_table_item $tblitem The database row wrapper.
+	 * @param mwmod_mw_manager_manager $man The manager responsible for this item.
+	 */
+	function __construct($tblitem,$man){
+		$this->init($tblitem,$man);	
+	}
 	//20250202 HAC 
 	function getDataAsDate($format="c"){
 		$r=$this->get_data();
@@ -37,6 +60,15 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 		}
 		return $r;
 	}
+	/**
+	 * Hook method to create and return a related objects manager.
+	 *
+	 * Can be overridden in subclasses to return an instance of
+	 * {@see mwmod_mw_manager_related_man}. By default, returns `false`,
+	 * meaning no related object manager is available.
+	 *
+	 * @return mwmod_mw_manager_related_man|false The related objects manager or false if not implemented.
+	 */
 	function create_related_objects_man(){
 		return false;	
 	}
@@ -64,6 +96,15 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 		}
 		return $r;
 	}
+	/**
+	 * Returns the related objects manager for this item.
+	 *
+	 * This method initializes the manager only once by calling {@see create_related_objects_man()}.
+	 * The result is cached in the private property `$_related_objects_man`, which can be either
+	 * an instance of {@see mwmod_mw_manager_related_man} or `false` if not implemented.
+	 *
+	 * @return mwmod_mw_manager_related_man|false Cached related objects manager or false.
+	 */
 	final function get_related_objects_man(){
 		if(!isset($this->_related_objects_man)){
 			if(!$this->_related_objects_man=$this->create_related_objects_man()){
@@ -79,6 +120,17 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	final function enable_jsondata($val=true){
 		$this->_can_create_jsondata=$val;
 	}
+	/**
+	 * Returns a JSON data item (sub-manager) for this item.
+	 *
+	 * Retrieves the internal JSON data manager via {@see __get_priv_jsonDataMan()} and returns
+	 * a sub-manager for the specified code and optional path. Returns `null` if the JSON data
+	 * manager is not available (e.g., not enabled via {@see enable_jsondata()}).
+	 *
+	 * @param string $code The identifier of the JSON data item (default is "data").
+	 * @param string|false $path Optional subpath within the JSON manager.
+	 * @return mwmod_mw_data_json_item|false|null The requested JSON data manager item, or null/false if not available.
+	 */
 	function getJsonDataItem($code="data",$path=false){
 		if($m=$this->__get_priv_jsonDataMan()){
 			return $m->get_datamanager($code,$path);	
@@ -110,7 +162,17 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	}
 	
 	
-	/////xml data
+	/**
+	 * Returns an XML data item (sub-manager) for this item.
+	 *
+	 * Retrieves the XML data manager via {@see get_xmldataman()} and returns
+	 * a sub-manager for the specified code and optional path. Returns `null`
+	 * if the XML data manager is not available (e.g., not enabled via {@see enable_xmldata()}).
+	 *
+	 * @param string $code Identifier of the XML data item (default is "data").
+	 * @param string|false $path Optional subpath within the XML manager.
+	 * @return mwmod_mw_data_xmltree_item|false|null The requested XML data manager item, or null/false if not available.
+	 */
 	function get_xmldata_item($code="data",$path=false){
 		if($m=$this->get_xmldataman()){
 			return $m->get_datamanager($code,$path);	
@@ -151,15 +213,21 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	
 	
 	/////////
-	function mwmod_mw_manager_item($tblitem,$man){
-		$this->init($tblitem,$man);	
-	}
+	
 	function allow_admin(){
 		return $this->man->allow_admin();
 	}
 	function allow_delete(){
 		return false;
 	}
+	/**
+	 * Returns the file manager associated with this item's manager.
+	 *
+	 * Delegates the call to {@see mwmod_mw_manager_manager::get_filemanager()}.
+	 * This may return a general-purpose file manager used for item-related files.
+	 *
+	 * @return mwmod_mw_helper_fileman|false The file manager instance, or false if not available.
+	 */
 	function get_filemanager(){
 		return $this->man->get_filemanager();
 	}
@@ -173,12 +241,7 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	final function enable_treedata($val=true){
 		$this->_can_create_treedata=$val;
 	}
-	/*
-	function get_content_html(){
-		//debe extenderse
-		return $this->get_name();	
-	}
-	*/
+	
 	
 	function delete(){
 		if(!$this->allow_delete()){
@@ -311,7 +374,18 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 		
 		return $p."/data";	
 	}
-	
+	/**
+	 * Returns a sub path manager for accessing a directory under this item's file structure.
+	 *
+	 * Constructs a path based on the item’s base directory, optionally appending a subpath,
+	 * and returns a path manager using the specified mode (`userfiles` or `userfilespublic`).
+	 *
+	 * Delegates to {@see mwmod_mw_ap_base::get_sub_path_man()}.
+	 *
+	 * @param string|false $subpath Optional subdirectory inside the item's folder.
+	 * @param bool $public Whether to use the public file storage mode.
+	 * @return mwmod_mw_ap_paths_subpath|false Path manager for the resolved subpath or false if base path is unavailable.
+	 */
 	function get_sub_path_man($subpath=false,$public=false){
 		//nueva
 		if($public){

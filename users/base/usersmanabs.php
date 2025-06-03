@@ -578,7 +578,10 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			return $db->get_tbl_manager($code);	
 		}
 	}
-
+	/**
+	* retorna el manejador de la tabla de usuarios
+	*@return mwmod_mw_db_tbl
+	*/
 	final function get_tblman(){
 		return $this->__get_priv_tblman();
 	}

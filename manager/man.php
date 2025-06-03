@@ -70,11 +70,14 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		$this->set_new_item_inputs_data($subgr,$item);
 		//
 	}
-	
+	/*
+	 * @param mwmod_mw_datafield_group $gr
+	 * @param mwmod_mw_manager_item $item
+	 */
 	function set_new_item_inputs_data($gr,$item=false){
 		$input=$gr->add_sub_item_by_dot_cod(new mwmod_mw_datafield_input("name",$this->lng_common_get_msg_txt("name","Nombre")));
 		$input=$gr->add_sub_item_by_dot_cod(new mwmod_mw_datafield_checkbox("active",$this->lng_common_get_msg_txt("active","Activo")));
-		if($item){
+		if(($item)and is_object($item)){
 			$gr->set_value($item->get_data());	
 		}
 		
