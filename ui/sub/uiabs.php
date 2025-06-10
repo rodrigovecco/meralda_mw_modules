@@ -729,7 +729,24 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function before_set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
 		//extender puede usarse para cargar objetos dependientes especialmente cuando las subinterfases se crean en dependencia a parametros de entrada	
 	}
+	public $requestedCMDParams;
+	function getRequestedParam($key){
+		if(is_array($this->requestedCMDParams)){
+			if(isset($this->requestedCMDParams[$key])){
+				return $this->requestedCMDParams[$key];
+				
+			}
+		}
+		if(is_array($_REQUEST)){
+			if(isset($_REQUEST[$key])){
+				return $_REQUEST[$key];	
+			}
+		}
+		
+		
+	}
 	function set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
+		$this->requestedCMDParams=$params;
 		$this->before_set_current_subinterface_for_getcmd($cods,$params,$filename);
 		
 		if(!$cods){

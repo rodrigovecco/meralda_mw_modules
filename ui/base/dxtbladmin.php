@@ -863,6 +863,10 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 						}
 
 					}
+					if($dataItem->is_data_defined($datacod.".width")){
+						$col->js_data->set_prop("width",$dataItem->get_data($datacod.".width"));
+
+					}
 					
 				}
 
