@@ -746,7 +746,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 	}
 	function set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
-		$this->requestedCMDParams=$params;
+		
 		$this->before_set_current_subinterface_for_getcmd($cods,$params,$filename);
 		
 		if(!$cods){
@@ -766,6 +766,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			return false;	
 		}
 		if(!isset($cods[1]) or !$cods[1]){
+			$sub_ui->requestedCMDParams=$params;
 			return $sub_ui;	
 		}
 		return $sub_ui->set_current_subinterface_for_getcmd($cods[1],$params,$filename);

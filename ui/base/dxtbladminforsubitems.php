@@ -160,6 +160,7 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 	function get_exec_cmd_sxml_url($xmlcmd="debug",$params=array()){
 		if($this->maininterface){
 			if($this->mainItem){
+				$params=$this->get_cmd_params($params);//new
 				if(!is_array($params)){
 					$params=array();
 				}
@@ -174,6 +175,7 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 	}
 
 	function execfrommain_getcmd_sxml($cmdcod,$params=array(),$filename=false){
+		$this->before_exec_get_cmd($params);
 		$this->loadMainItemCMDMode($params);
 		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
 			$xml=$this->new_getcmd_sxml_answer(false,"Invalid command");
@@ -190,6 +192,7 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 		return $this->$method($params,$filename);
 	}
 	function execfrommain_getcmd_dl($cmdcod,$params=array(),$filename=false){
+		$this->before_exec_get_cmd($params);
 		$this->loadMainItemCMDMode($params);
 		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
 			$errmsg="invalid command";
