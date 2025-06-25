@@ -89,6 +89,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 		return false;
 	}
 	function exec_getcmd_dl($params=array(),$filename=false){
+		
 		if(!is_array($params)){
 			return $this->exec_getcmd_dl_not_allowed($params,$filename);	
 		}
@@ -103,7 +104,9 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 				return $this->exec_getcmd_dl_not_allowed($params,$filename);	
 			}
 		}
+		
 		if(!$sub_ui=$this->set_current_subinterface_for_getcmd($params["ui"],$params,$filename)){
+			
 			return $this->exec_getcmd_dl_not_allowed($params,$filename);		
 		}
 		$filename=$filename."";
@@ -112,6 +115,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 		if(!strpos($fn,".")){
 			$fn=$filename;
 		}
+		
 		return $sub_ui->execfrommain_getcmd_dl($f[0],$params,$fn);
 			
 	}

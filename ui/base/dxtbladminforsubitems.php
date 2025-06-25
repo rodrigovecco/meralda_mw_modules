@@ -37,6 +37,7 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 		$this->finalSetMainItem($item);
 		//$this->mainItem=$item;
 		$this->set_url_param($this->mainItemReqParam,$item->get_id());
+		return $item;
 	}
 	final function finalSetMainItem($item){
 		$this->mainItem=$item;

@@ -1,5 +1,5 @@
 <?php
-class mwmod_mw_jsobj_dataoptim extends mwmod_mw_jsobj_obj{
+class mwmod_mw_jsobj_dataoptim extends mwmod_mw_jsobj_obj implements JsonSerializable{
 	private $_data_fields=array();
 	private $_data=array();
 	private $has_fields=false;
@@ -14,6 +14,10 @@ class mwmod_mw_jsobj_dataoptim extends mwmod_mw_jsobj_obj{
 			$this->set_cod($cod);	
 		}
 	}
+	public function jsonSerialize(): mixed {
+		return $this->toSerializable();
+	}
+
 	function toSerializable(){
 		$result=new stdClass();
 		$result->keys=$this->get_data_keys();

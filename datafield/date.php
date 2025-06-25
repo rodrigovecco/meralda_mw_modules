@@ -5,6 +5,7 @@ class mwmod_mw_datafield_date extends mwmod_mw_datafield_datafielabs{
 	function __construct($name,$lbl=false,$value=NULL,$req=false,$att=array(),$style=array(),$calmode=true){
 		$this->init($name,$lbl,$value,$req,$att,$style);
 		$this->set_calendar_mode($calmode);	
+		$this->setInputAtt("type","date");
 	}
 	/*
 	

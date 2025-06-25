@@ -9,6 +9,9 @@ class mwmod_mw_html_manager_uipreparers_htmlfrm extends mwmod_mw_html_manager_ui
 			return false;	
 		}
 		$jsman->add_item_by_cod_def_path("inputsman.js");
+		//$jsman->add_item_by_cod_def_path("inputsman/calendar.js");
+		//$jsman->add_item_by_cod_def_path("mwcalendar.js");
+		$jsman->add_item_by_cod_def_path("inputsman/btdatepicker.js");
 		$jsman->add_item_by_cod_def_path("validator.js");
 
 	}
