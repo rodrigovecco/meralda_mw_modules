@@ -443,7 +443,7 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 		if(!is_array($input)){
 			return false;	
 		}
-		$this->do_save_data($input["data"]);
+		$this->do_save_data($input["data"]??null);
 	
 	}
 	
