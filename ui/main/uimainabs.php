@@ -357,6 +357,8 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	}
 	function exec_sub_interface(){
 		$this->before_exec();
+		
+
 		if($si=$this->set_current_subinterface_by_code($this->get_sub_insterface_request_code())){
 			if($si->is_allowed()){
 				$si->do_exec();	
@@ -904,6 +906,7 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	}
 	function get_admin_current_user(){
 		if($man=$this->get_admin_user_manager()){
+			
 			return $man->get_current_user();	
 		}
 		
