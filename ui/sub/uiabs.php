@@ -746,7 +746,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 	}
 	function set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
-		
+		$this->setCMDParamsFromRequest($params);
 		$this->before_set_current_subinterface_for_getcmd($cods,$params,$filename);
 		
 		if(!$cods){
@@ -772,6 +772,22 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $sub_ui->set_current_subinterface_for_getcmd($cods[1],$params,$filename);
 		
 
+	}
+	function setCMDParamsFromRequest($params){
+		if(!is_array($params)){
+			return false;	
+		}
+		if(!is_array($this->requestedCMDParams)){
+			$this->requestedCMDParams=array();	
+		}
+		
+		foreach($params as $key=>$val){
+			$this->requestedCMDParams[$key]=$val;
+			
+		}
+		
+		return true;
+		
 	}
 	function is_allowed_for_get_cmd($sub_ui_cods=false,$params=array(),$filename=false){
 		return $this->is_allowed();	
@@ -1421,19 +1437,26 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->do_exec_no_sub_interface();
 	}
 	function do_exec(){
+		
 		if(!$this->is_allowed()){
 			return false;	
 		}
 		$this->in_exec_chain=true;
 		$this->before_exec();
 		if($si=$this->set_current_subinterface_by_code($this->get_sub_insterface_request_code())){
+			
 			if($si->is_allowed()){
 				$si->do_exec();	
 			}
+
+			
 		}else{
+			
 			$this->prepare_and_do_exec_no_sub_interface();	
 		}
+		//$this->do_exec_after_subui();
 	}
+	
 	//exec output
 	function do_exec_page_in_as_sub(){
 		if(!$template=$this->get_template()){

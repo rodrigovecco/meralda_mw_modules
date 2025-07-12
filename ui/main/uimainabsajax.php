@@ -122,7 +122,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 	
 	
 	function set_current_subinterface_for_getcmd($cods,$params=array(),$filename=false){
-		//$cods str sep by -	
+	
 		if(!$cods){
 			return false;	
 		}
@@ -133,7 +133,10 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 		if(!$sub_ui=$this->get_subinterface($cods[0])){
 			return false;	
 		}
+		$sub_ui->setCMDParamsFromRequest($params);
+
 		if(!$sub_ui->is_allowed_for_get_cmd($cods[1]??null,$params,$filename)){
+			
 			return false;	
 		}
 		if(!$this->set_current_subinterface($sub_ui)){
@@ -143,6 +146,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 		if(!$cods1){
 			return $sub_ui;	
 		}
+		
 		return $sub_ui->set_current_subinterface_for_getcmd($cods[1],$params,$filename);
 		
 		//is_allowed_for_get_cmd
@@ -182,6 +186,8 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 	}
 	function exec_getcmd_sxml_not_allowed($params=array(),$filename=false){
 		$xml=$this->get_new_sxml_data($params,$filename,$this->sxml_add_debug_info);
+
+		$xml->set_prop("params",$params);
 		$xmlroot=$xml->get_root();
 		$xmlroot->xml_output_start();
 		$xmlroot->output_all();

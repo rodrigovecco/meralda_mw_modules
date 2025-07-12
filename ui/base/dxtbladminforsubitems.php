@@ -117,7 +117,16 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 	}
 	
 	function loadMainItemFromReq(){
-		if($item=$this->loadMainItemFromID($_REQUEST[$this->mainItemReqParam]??null)){
+		//esto cambia mucho!
+		if(!$id=$this->getRequestedParam($this->mainItemReqParam)){
+			$id=$_REQUEST[$this->mainItemReqParam]??null;
+		}
+		if(!$id){
+			return false;	
+		}
+		
+		
+		if($item=$this->loadMainItemFromID($id)){
 			return $this->setMainItem($item);
 		}
 	}
@@ -174,6 +183,8 @@ abstract class mwmod_mw_ui_base_dxtbladminforsubitems extends mwmod_mw_ui_base_d
 		
 		
 	}
+
+	
 
 	function execfrommain_getcmd_sxml($cmdcod,$params=array(),$filename=false){
 		$this->before_exec_get_cmd($params);

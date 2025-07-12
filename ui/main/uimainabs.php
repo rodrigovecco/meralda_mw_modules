@@ -442,6 +442,15 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		$m= new mwmod_mw_html_manager_css();
 		return $m;
 	}
+	function overrideTemplate_title_for_nav_html(){
+		return false;	
+	}
+	function get_title_for_nav_html(){
+		$container=new mwmod_mw_html_elem();
+		$container->addClass("uiBrandTitle");
+		$container->add_cont($this->get_ui_title_for_nav());
+		return $container;
+	}
 	function add_default_css_sheets($cssmanager){
 		if($t=$this->get_template()){
 			$t->add_default_css_sheets($cssmanager);	
