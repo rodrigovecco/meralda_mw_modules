@@ -385,6 +385,11 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 		return $this->insert_item($data);
 	}
+
+	/**
+	 * @param array $data 
+	 * @return mwmod_mw_manager_item 
+	 */
 	function insert_item($data){
 		//no debe validar
 		if(!$man=$this->get_tblman()){
