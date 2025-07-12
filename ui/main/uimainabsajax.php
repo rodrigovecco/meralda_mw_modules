@@ -155,6 +155,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 	}
 	function exec_getcmd_sxml($params=array(),$filename=false){
 		if(!$this->sxml_cmd_ok()){
+			
 			return $this->exec_getcmd_sxml_not_allowed($params,$filename);	
 		}
 		if(!is_array($params)){
