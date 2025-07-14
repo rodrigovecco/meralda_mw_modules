@@ -775,6 +775,16 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		return $p."/".$subpath;
 		
 	}
+	function get_abs_url($url=""){
+		$r="";
+		if($_SERVER['HTTPS']??null){
+			$r="https://";	
+		}else{
+			$r="http://";	
+		}
+		$r.=$_SERVER['HTTP_HOST'];
+		return $r.$url;
+	}
 
 	function get_path($mode="userfiles"){
 		switch ($mode){

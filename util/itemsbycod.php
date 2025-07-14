@@ -1,4 +1,7 @@
 <?php
+/**
+ * @template T
+ */
 class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 	var $items=array();
 	public $addItemsAssocMode=false;
@@ -9,9 +12,18 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 	function __construct(){
 		
 	}
+	/**
+     * @return int
+     */
 	function getItemsNum(){
 		return sizeof($this->items);
 	}
+	/**
+     * @param array<int, array<string, mixed>> $allData
+     * @param string $codField
+     * @param string $nameField
+     * @return void
+     */
 	function addItemsByDataArray($allData,$codField="id",$nameField="name"){
 		//mw_array2list_echo($allData);
 		if(is_array($allData)){
@@ -20,6 +32,12 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 			}
 		}
 	}
+	/**
+     * @param array<string, mixed> $data
+     * @param string $codField
+     * @param string $nameField
+     * @return T|false
+     */
 	function addItemByData($data,$codField="id",$nameField="name"){
 		
 		if(!is_array($data)){
@@ -45,6 +63,9 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		return $this->add_item($item);
 
 	}
+	/**
+     * @return T|null
+     */
 	function getDefaultItem(){
 		if(isset($this->defaultItem)){
 			return $this->defaultItem;	
@@ -53,16 +74,31 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 			return $this->setDefaultItem($item);
 		}
 	}
+	/**
+     * @return T|false
+     */
 	function loadDefaultItem(){
 		return false;	
 	}
+	/**
+     * @param T $item
+     * @return T
+     */
 	function setDefaultItem($item){
 		$this->defaultItem=$item;
 		return $item;
 	}
+	 /**
+     * @param int|string $cod
+     * @return T|null
+     */
 	function getItem($cod){
 		return $this->get_item($cod);	
 	}
+	/**
+     * @param string|false $method
+     * @return array<int|string, string>
+     */
 	function getItemsNames($method=false){
 		if(!$method){
 			$method=$this->itemNameMethod;	
@@ -78,7 +114,9 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		}
 	}
 
-	
+	/**
+     * @return array<int|string, T>|null
+     */
 	function getItemsIfAny(){
 		if($list=$this->getItems()){
 			if(sizeof($list)){
@@ -86,12 +124,24 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 			}
 		}
 	}
+	/**
+     * @return array<int|string, T>
+     */
 	function getItems(){
 		return $this->get_items();
 	}
+	 /**
+     * @param bool $opossite
+     * @return array<int|string, T>|false
+     */
 	function getItemsEnabled($opossite=false){
 		return $this->getItemsByMethod($this->isEnabledMethod,$opossite);
 	}
+	/**
+     * @param string|null $method
+     * @param bool $opossite
+     * @return array<int|string, T>|false
+     */
 	function getItemsByMethod($method,$opossite=false){
 		if(!$method){
 			return false;	
@@ -114,8 +164,10 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		
 		return $r;
 	}
-	
-	
+	 /**
+     * @param array<int|string, T> $items
+     * @return int
+     */	
 	function addItemsAssoc($items){
 		$n=0;
 		if(is_array($items)){
@@ -127,6 +179,10 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		}
 		return $n;
 	}
+	/**
+     * @param array<int, T> $items
+     * @return int
+     */
 	function addItemsUnssoc($items){
 		$n=0;
 		if(is_array($items)){
@@ -138,6 +194,10 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		}
 		return $n;
 	}
+	/**
+     * @param array<int|string, T> $items
+     * @return int
+     */
 	function addItems($items){
 		if($this->addItemsAssocMode){
 			return $this->addItemsAssoc($items);
@@ -145,11 +205,16 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		}
 		return $this->addItemsUnssoc($items);
 	}
-	
+	 /**
+     * @return array<int|string, T>
+     */
 	function get_items(){
 		return $this->items;
 	}
-	
+	/**
+     * @param int|string $cod
+     * @return T|null
+     */
 	function get_item($cod){
 		if(!$cod){
 			return false;	
@@ -159,10 +224,18 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 		}
 		
 	}
+	 /**
+     * @param T $item
+     * @return T|false
+     */
 	function add_item($item){
 		$cod=$this->get_item_cod($item);
 		return $this->add_itemByCod($cod,$item);
 	}
+	/**
+     * @param T $item
+     * @return int|string|false
+     */
 	function get_item_cod($item){
 		if($this->getItemCodMethod){
 			$methods=explode(",",$this->getItemCodMethod);
@@ -178,6 +251,11 @@ class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 			}
 		}
 	}
+	/**
+     * @param int|string $cod
+     * @param T $item
+     * @return T
+     */
 	function add_itemByCod($cod,$item){
 		if(!$cod){
 			return false;	

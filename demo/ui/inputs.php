@@ -86,6 +86,10 @@ class mwmod_mw_demo_ui_inputs extends mwmod_mw_demo_ui_abs{
 		$input->set_prop("lbl","Fecha");
 		$input->set_prop("nohour",true);
 
+		$input=$subGR->addNewChild("rating","rating");
+		$input->set_prop("lbl","Valoración");
+
+
 		$mainInputsGroup->set_value($finalvalue);
 
 
@@ -125,6 +129,7 @@ class mwmod_mw_demo_ui_inputs extends mwmod_mw_demo_ui_abs{
 		$jsman->add_item_by_cod("/res/js/ui/mwui.js");
 		$jsman->add_item_by_cod("/res/js/mw_bootstrap_helper.js");
 		$jsman->add_item_by_cod("/res/js/validator.js");
+		$jsman->add_item_by_cod("/res/js/mw_star_rating.js");
 
 		
 		$item=$this->create_js_man_ui_header_declaration_item();

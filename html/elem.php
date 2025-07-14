@@ -338,6 +338,12 @@ class mwmod_mw_html_elem extends mwmod_mw_html_abselem implements mwmod_mw_html_
 		return $c;
 		
 	}
+	function addChild($tag="div"){
+		$c=new mwmod_mw_html_elem($tag);
+		$this->add_cont($c);
+		return $c;
+
+	}
 	function addCont($cont=false){
 		if($cont){
 			if(is_object($cont)){
