@@ -285,6 +285,12 @@ abstract class mwmod_mw_helper_inputvalidator_abs extends mw_baseobj{
 		
 		
 	}
+	function getTextRawValue($cod=false){
+		if(!$item=$this->get_item_by_dot_cod_or_this($cod)){
+			return "";	
+		}
+		return $item->get_text_value();
+	}
 	final function add_item($item){
 		$cod=$item->cod;
 		$this->_items[$cod]=$item;
