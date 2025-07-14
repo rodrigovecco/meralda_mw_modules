@@ -125,6 +125,10 @@ class mwmod_mw_jsobj_obj extends mw_object_as_array{
 		$this->set_prop($cod,$p);
 		return $p;
 	}
+	/**
+	 * @param string $cod 
+	 * @return mwmod_mw_jsobj_array 
+	 */
 	final function get_array_prop($cod){
 		if($this->_array_props[$cod]??null){
 			return $this->_array_props[$cod];	

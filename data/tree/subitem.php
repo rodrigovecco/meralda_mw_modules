@@ -20,6 +20,16 @@ class mwmod_mw_data_tree_subitem extends mw_baseobj{
 		
 		
 	}
+	function getDataInt($cod,$def=null){
+		if($this->is_data_defined($cod)){
+			if($v=$this->get_data($cod)){
+				if(is_numeric($v)){
+					return intval($v);	
+				}
+			}
+		}
+		return $def;
+	}
 	function get_sub_data_debug_info($key=false){
 		$r=array();
 		$r["key"]=$key;

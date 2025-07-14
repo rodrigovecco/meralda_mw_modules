@@ -55,6 +55,16 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 		mw_array_set_sub_key($key,$data,$this->data);
 		return true;
 	}
+	function getDataInt($cod,$def=null){
+		if($this->is_data_defined($cod)){
+			if($v=$this->get_data($cod)){
+				if(is_numeric($v)){
+					return intval($v);	
+				}
+			}
+		}
+		return $def;
+	}
 	function get_data_as_list($key=false,$falseonfail=false){
 		if($data=$this->get_data($key)){
 			if(is_array($data)){
