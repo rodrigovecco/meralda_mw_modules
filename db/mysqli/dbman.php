@@ -41,6 +41,62 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 
 
 
+	function useAlwaysParameterizedMode(){
+		return true;
+	}
+	function query($sql) {
+		if (!$l = $this->get_link()) {
+			return false;
+		}
+
+		try {
+			// Soporte para paramQuery
+			if (is_object($sql) && method_exists($sql, 'getSQL') && method_exists($sql, 'getParamsItems')) {
+				$stmt = $l->prepare($sql->getSQL());
+				if (!$stmt) {
+					$this->lastException = new Exception($l->error);
+					return false;
+				}
+
+				$params = $sql->getParamsItems();
+				if (!empty($params)) {
+					$types = '';
+					$values = [];
+					$__vals = [];
+
+					foreach ($params as $p) {
+						$types .= $p->getValueTypeCod();
+						$val = $p->getValue();
+						$__vals[] = $val;
+						$values[] = &$__vals[array_key_last($__vals)];
+					}
+
+					array_unshift($values, $types);
+					call_user_func_array([$stmt, 'bind_param'], $values);
+				}
+				if (!$stmt->execute()) {
+					$this->lastException = new Exception($stmt->error);
+					return false;
+				}
+
+				$result = $stmt->get_result();
+				return $result !== false ? $result : $stmt;
+			}
+
+			// Consulta directa (string)
+			if (is_string($sql)) {
+				$result = $l->query($sql);
+				return ($result !== false) ? $result : false;
+			}
+
+		} catch (Exception $e) {
+			$this->lastException = $e;
+			return false;
+		}
+
+		return false;
+	}
+	/*
 	function query($sql){
 		if(!is_string($sql)){
 			return false;
@@ -62,8 +118,11 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
         	return false;
     	}
 	}
+		*/
 
-	function insert($sql){
+	
+	/*
+		function insert($sql){
 		if(!is_string($sql)){
 			return false;
 		}
@@ -74,6 +133,19 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			return $l->insert_id;
 		}
 		
+	}
+		*/
+	function insert($sql) {
+		if (!$l = $this->get_link()) {
+			return false;
+		}
+
+		$result = $this->query($sql);
+		if ($result === false) {
+			return false;
+		}
+
+		return $l->insert_id;
 	}
 
 

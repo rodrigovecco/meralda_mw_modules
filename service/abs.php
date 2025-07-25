@@ -1,5 +1,7 @@
 <?php
-//20250201 by Hernan A.
+/**
+ * @property-read mwmod_mw_data_var_man $JsonRequestBodyData
+ */
 abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 	public $cod;
 	public $baseurl="";
@@ -16,11 +18,22 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 
 	public $JsonPostKey="json_data";
 
+	private $JsonRequestBodyData;
+
 	final function __get_priv_JsonRequestBody(){
 		if(!isset($this->JsonRequestBody)){
 			$this->JsonRequestBody=$this->loadJsonRequestBody();
 		}
 		return $this->JsonRequestBody;
+	}
+	function __get_priv_JsonRequestBodyData(){
+		if(!isset($this->JsonRequestBodyData)){
+			$this->JsonRequestBodyData=new mwmod_mw_data_var_man();
+			if($data=$this->getJsonRequestBody()){
+				$this->JsonRequestBodyData->set_data($data);
+			}
+		}
+		return $this->JsonRequestBodyData;
 	}
 	function getJsonRequestBody(){
 		return $this->__get_priv_JsonRequestBody();

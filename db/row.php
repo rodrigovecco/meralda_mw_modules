@@ -70,6 +70,8 @@ class  mwmod_mw_db_row extends mw_apsubbaseobj{
 					if($field=$this->tblman->getField($c)){
 						//20241113
 						if(is_object($v)){
+
+							//todo: verificar como se comporta esto con los null
 							if(is_a($v, "mwmod_mw_db_sql_value_abs")){
 								$this->data[$c]=$v->getValueAsData();
 								$cc="`$c`";
@@ -98,11 +100,12 @@ class  mwmod_mw_db_row extends mw_apsubbaseobj{
 									$updatelistPH[]="$c=? ";
 								}else{
 									$updatelist[]="`$c`=NULL ";
-									$updatelistPH[]="`$c`=? ";
+									//$updatelistPH[]="`$c`=? ";
+									$updatelistPH[]="`$c`=NULL ";
 								}
 								
 								if($paramQuery){
-									$paramQuery->addParam(null);
+									//$paramQuery->addParam(null);
 								}
 							}else{
 								if($this->tblman->dbman->dbModeCheckSQLsrv()){
@@ -172,6 +175,7 @@ class  mwmod_mw_db_row extends mw_apsubbaseobj{
 		}
 
 		if($this->tblman->dbman->useAlwaysParameterizedMode()){
+			
 			$this->tblman->dbman->query($paramQuery);
 		}else{
 			$this->tblman->dbman->query($sql);

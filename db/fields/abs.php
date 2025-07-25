@@ -114,7 +114,31 @@ abstract class mwmod_mw_db_fields_abs extends mw_apsubbaseobj{
 		if($man=$this->get_dbman()){
 			return $man->real_escape_string($txt);	
 		}
-		return mysql_real_escape_string($val);	
+		$input=$txt;
+
+		if (is_null($input)) {
+			return 'NULL';
+		}
+
+		// Convertimos a string y forzamos UTF-8
+		$str = (string)$input;
+		$str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
+
+		// Reemplazamos manualmente los caracteres peligrosos
+		$search = [
+			"\\"  => "\\\\",
+			"\x00" => "\\0",
+			"\n"  => "\\n",
+			"\r"  => "\\r",
+			"'"   => "\\'",
+			'"'   => '\\"',
+			"\x1a" => "\\Z",
+		];
+		$escaped = strtr($str, $search);
+		return $escaped;
+
+		//return mysql_real_escape_string($val);	
+		
 	}
 	function load_dbman(){
 		if($this->tbldef){
