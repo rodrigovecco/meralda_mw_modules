@@ -56,7 +56,18 @@ class mwmod_mw_db_paramstatement_paramquery extends mw_apsubbaseobj{
 			}
 			
 		}
-		$r["paramsValues"]=$this->getParams();
+		//$r["paramsValues"]=$this->getParams();
+
+		$r["paramsValues"]=array();
+		if($values= $this->getParams()){
+			$x=1;
+			foreach ($values as $v) {
+				$r["paramsValues"][$x]=$v;
+				$x++;
+			}
+		}
+
+
 		return $r;
 	}
 

@@ -4,6 +4,9 @@ abstract class mwmod_mw_db_sql_querysubpart extends mwmod_mw_db_sql_abs{
 	var $sql="";
 	var $cod="";
 	var $querypart;
+
+	public $isFirst=false;
+
 	function get_sql_other_prev(){
 		return " ,";
 	}

@@ -338,6 +338,9 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		$r["class"]=get_class($this);
 		$r["dbmanclass"]=get_class($this->dbman);
 		$r["sql"]=$this->get_sql();
+
+
+		/*
 		if($items=$this->get_parts()){
 			
 			$r["parts"]=array();
@@ -345,9 +348,23 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 				$r["parts"][$cod]=$item->get_debug_data();	
 			}
 		}
+		*/
+		if($this->isParameterizedMode()){
+			$r["isParameterizedMode"]=true;
+			if($sql=$this->get_sql_or_parameterized_query()){
+				if(is_object($sql)){
+					$r["parameterizedQUERY"]=$sql->getDebugData();
+				}
+			}
+			
+		}
+
+
+		
 		return $r;
 			
 	}
+
 
 	
 	//todas esta pueden cambiar por un iniciador

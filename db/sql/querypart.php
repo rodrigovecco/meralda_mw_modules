@@ -12,7 +12,14 @@ abstract class mwmod_mw_db_sql_querypart extends mwmod_mw_db_sql_abs{
 		}
 		$pq->appendSQL($this->get_sql_start());
 		$sqlItemsTemp="";
+		$firstDone=false;
 		foreach ($items as $item){
+			if(!$firstDone){
+				$item->isFirst=true;
+				$firstDone=true;
+			}else{
+				$item->isFirst=false;
+			}
 			if($this->debug_mode){
 				$item->debug_mode=true;	
 			}
@@ -41,11 +48,17 @@ abstract class mwmod_mw_db_sql_querypart extends mwmod_mw_db_sql_abs{
 		if(!$items=	$this->get_items_ok()){
 			return $this->get_sql_no_items();	
 		}
+		$firstDone=false;
 		foreach ($items as $item){
 			if($this->debug_mode){
 				$item->debug_mode=true;	
 			}
-			
+			if(!$firstDone){
+				$item->isFirst=true;
+				$firstDone=true;
+			}else{
+				$item->isFirst=false;
+			}
 			$item->append_to_sql($sql);	
 			if($this->debug_mode){
 				$sql.="\n";

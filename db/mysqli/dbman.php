@@ -42,7 +42,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 
 
 	function useAlwaysParameterizedMode(){
-		return false;
+		return true;
 	}
 	function query($sql) {
 		if (!$l = $this->get_link()) {
@@ -52,11 +52,17 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 		try {
 			// Soporte para paramQuery
 			if (is_object($sql) && method_exists($sql, 'getSQL') && method_exists($sql, 'getParamsItems')) {
+				
+				
 				$stmt = $l->prepare($sql->getSQL());
+				
 				if (!$stmt) {
 					$this->lastException = new Exception($l->error);
+					
 					return false;
 				}
+
+				
 
 				$params = $sql->getParamsItems();
 				if (!empty($params)) {
@@ -75,6 +81,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 					call_user_func_array([$stmt, 'bind_param'], $values);
 				}
 				if (!$stmt->execute()) {
+					
 					$this->lastException = new Exception($stmt->error);
 					return false;
 				}
@@ -90,6 +97,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			}
 
 		} catch (Exception $e) {
+			
 			$this->lastException = $e;
 			return false;
 		}
