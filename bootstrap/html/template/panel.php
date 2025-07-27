@@ -1,4 +1,11 @@
 <?php
+
+/** @property-read mwmod_mw_bootstrap_html_specialelem_panel $main_elem
+ * @property mwmod_mw_bootstrap_html_def $panel_heading
+ * @property mwmod_mw_bootstrap_html_def $panel_body
+ * @property mwmod_mw_bootstrap_html_def $panel_footer
+ */
+
 class mwmod_mw_bootstrap_html_template_panel extends mwmod_mw_bootstrap_html_template_abs{
 	var $panel_heading;
 	var $panel_body;

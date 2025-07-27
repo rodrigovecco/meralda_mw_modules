@@ -27,6 +27,7 @@ class mwmod_mw_data_json_item extends mwmod_mw_data_tree_item{
 	
 	}
 	function save(){
+		$this->modified=false;
 		$this->delete_file();
 		if(!$p=$this->get_and_create_path()){
 			return false;	

@@ -1,11 +1,12 @@
 <?php
 class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
-	//sólo debe ser creado por mw_baseobjects_treedata
+	
 	private $mainman;
 	private $path;
 	private $code;
 	private $fullcode;
 	private $data;
+	public $modified=false;
 	private $_dataloaded;
 	var $is_new;
 	function __construct($mainman,$code,$fullcode,$path){
@@ -48,6 +49,7 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 	
 	final function set_data($data,$key=false){
 		$this->is_new=false;
+		$this->modified=true;
 		if(!$key){
 			return $this->set_data_all($data);
 		}
@@ -229,6 +231,7 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 	
 	}
 	function save(){
+		$this->modified=false;
 		$this->delete_file();
 		if(!$p=$this->get_and_create_path()){
 			return false;	
@@ -373,6 +376,14 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 		$this->path=$path;
 		$this->mainman=$mainman;
 		$this->set_mainap($this->mainman->mainap);	
+	}
+	final function setCode($code){
+		$this->code=$code;
+		
+
+	}
+	final function __get_priv_code(){
+		return $this->code;	
 	}
 
 }
