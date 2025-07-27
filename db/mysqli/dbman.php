@@ -42,7 +42,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 
 
 	function useAlwaysParameterizedMode(){
-		return true;
+		return false;
 	}
 	function query($sql) {
 		if (!$l = $this->get_link()) {
