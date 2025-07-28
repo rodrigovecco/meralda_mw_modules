@@ -14,6 +14,8 @@ class mwmod_mw_db_sql_from_tbl extends mwmod_mw_db_sql_querysubpart{
 		$this->set_cod($cod);
 		$this->set_query_part($querypart);
 	}
+
+
 	function set_as_mode($as_cod=false){
 		if(!$as_cod){
 			$as_cod=$this->get_cod();	
@@ -92,6 +94,17 @@ class mwmod_mw_db_sql_from_tbl extends mwmod_mw_db_sql_querysubpart{
 
 		return $r;	
 		//return $this->get_tbl();	
+	}
+
+	function get_alias_or_table() {
+		if ($cod = $this->get_as_cod()) {
+			return $cod;
+		}
+		if ($cod = $this->get_cod()) {
+			return $cod;
+		}
+
+		return $this->get_tbl();
 	}
  
 	function get_sql_in(){

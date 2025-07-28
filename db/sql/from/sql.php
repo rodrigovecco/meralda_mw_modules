@@ -1,12 +1,14 @@
 <?php
 class mwmod_mw_db_sql_from_sql extends mwmod_mw_db_sql_from_tbl{
-	
+	//si no es as_mode, se usa el cod como alias,
+	//si es as_mode, se usa el cod como alias y se usa el sql como tabla
 	var $sql="";
 	
 	function __construct($sql,$cod,$querypart=false){
 		$this->sql=$sql;
 		$this->set_cod($cod);
 		$this->set_query_part($querypart);
+		$this->set_as_mode($cod);//20250727 
 	}
 	function set_join_both(){
 		$this->join_mode="join";
