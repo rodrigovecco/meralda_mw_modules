@@ -284,7 +284,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $modal;
 	}
 	function debugOutputEnabled(){
-		return $this->is_debug_mode();
+		if($this->debug_mode){
+			return true;	
+		}
+		if($this->allow("debug")){
+			return true;	
+		}
+		return false;
 	}
 	function is_debug_mode(){
 		if(!$this->debug_mode){
