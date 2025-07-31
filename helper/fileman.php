@@ -663,6 +663,34 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		}
 		return $this->allowed_exts;
 	}
+
+	function get_max_upload_size_bytes() {
+		$upload_max = ini_get('upload_max_filesize');
+		$post_max = ini_get('post_max_size');
+		return min($this->convert_to_bytes($upload_max), $this->convert_to_bytes($post_max));
+	}
+
+	function convert_to_bytes($val) {
+		$val = trim($val);
+		$last = strtolower($val[strlen($val)-1]);
+		$num = (float)$val;
+		switch($last) {
+			case 'g': $num *= 1024;
+			case 'm': $num *= 1024;
+			case 'k': $num *= 1024;
+		}
+		return (int)$num;
+	}
+
+	function format_bytes($bytes, $decimals = 2) {
+		$units = ['B', 'KB', 'MB', 'GB'];
+		$factor = floor((strlen($bytes) - 1) / 3);
+		return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . ' ' . $units[$factor];
+	}
+	function get_max_upload_size_formatted() {
+		$max_size = $this->get_max_upload_size_bytes();
+		return $this->format_bytes($max_size);
+	}
 	
 	
 }
