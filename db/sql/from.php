@@ -1,9 +1,21 @@
 <?php
+/** @package  */
 class mwmod_mw_db_sql_from extends mwmod_mw_db_sql_querypart{
 	function __construct($query=false){
 		if($query){
 			$this->set_query($query);	
 		}
+	}
+	function hasAlias($alias){
+		if($items=$this->get_items_ok()){
+			foreach($items as $item){
+				if($item->checkAlias($alias)){
+					return true;	
+				}
+				
+			}
+		}
+		return false;
 	}
 	function add_from_join_sql($sql,$as){
 		if(is_string($sql)){
@@ -21,6 +33,13 @@ class mwmod_mw_db_sql_from extends mwmod_mw_db_sql_querypart{
 
 	}
 	
+	/**
+	 * @param string $tbl 
+	 * @param string $external_field 
+	 * @param string $inner_join_field 
+	 * @param string $as 
+	 * @return mwmod_mw_db_sql_from_tbl|void 
+	 */
 	function add_from_join_external($tbl,$external_field,$inner_join_field="id",$as=false){
 		if(is_string($tbl)){
 			$item = new mwmod_mw_db_sql_from_tbl($tbl,$as,$this);

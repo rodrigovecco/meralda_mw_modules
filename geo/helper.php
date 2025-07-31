@@ -1,4 +1,7 @@
 <?php
+/**
+ * @property-read mwmod_mw_geo_geohash $geoHash
+ */
 class mwmod_mw_geo_helper extends mw_apsubbaseobj{
     private $geoHash;
     public $defaultGeohashLength=5;

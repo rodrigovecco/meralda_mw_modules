@@ -1,7 +1,10 @@
 <?php
 /**
  * @template T
+ * 
  */
+//Para declarar la class de los item usar:
+//@property-read mwmod_mw_util_itemsbycod<class de los items> $propiedad
 class  mwmod_mw_util_itemsbycod extends mw_apsubbaseobj{
 	var $items=array();
 	public $addItemsAssocMode=false;

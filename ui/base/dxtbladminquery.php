@@ -175,7 +175,7 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		//$xml->set_prop("debug.loadoptions",$_REQUEST["lopts"]);
 		$dataqueryhelper=$this->queryHelper;
 		$dataqueryhelper->setLoadOptions($_REQUEST["lopts"]);
-		//$xml->set_prop("debug.dataqueryhelper",$dataqueryhelper->getDebugData());
+		$xml->set_prop("debug.dataqueryhelper",$dataqueryhelper->getDebugData());
 		$dataqueryhelper->aplay2Query($query);
 		if(!$dataqueryhelper->sorted){
 			$this->setDefaultQuerySort($query);

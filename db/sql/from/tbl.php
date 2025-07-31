@@ -83,6 +83,15 @@ class mwmod_mw_db_sql_from_tbl extends mwmod_mw_db_sql_querysubpart{
 		}
 		return $r;
 	}
+	function checkAlias($alias){
+		if($alias==$this->get_as_cod()){
+			return true;
+		}
+		if($alias==$this->get_tbl()){
+			return true;	
+		}
+		return false;
+	}
 
 	function get_sql_as_first(){
 		$r=" ".$this->get_tbl();
