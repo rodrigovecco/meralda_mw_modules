@@ -39,6 +39,14 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	function setReadOnly($val=true){
 		$this->set_prop("state.readOnly",$val);
 	}
+	function setReadOnlySelfAndChildren($val=true){
+		$this->setReadOnly($val);
+		if($children=$this->get_children()){
+			foreach($children as $child){
+				$child->setReadOnlySelfAndChildren($val);
+			}
+		}
+	}
 	/**
 	 * Sets the input as disabled.
 	 *
