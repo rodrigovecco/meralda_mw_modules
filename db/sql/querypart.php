@@ -129,6 +129,9 @@ abstract class mwmod_mw_db_sql_querypart extends mwmod_mw_db_sql_abs{
 		$r["class"]=get_class($this);
 		$r["dbmanclass"]=get_class($this->dbman);
 		$r["sql"]=$this->get_sql();
+		$r["addedAsFirst"]=$this->addedAsFirst;
+		$r["isFirst"]=$this->isFirst;
+		$r["debugInfo"]=$this->debugInfo;
 		if($items=$this->get_items()){
 			$x=1;
 			$r["items"]=array();

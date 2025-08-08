@@ -364,6 +364,29 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		return $r;
 			
 	}
+	function get_parts_debug_data(){
+		$r=array();
+		$r["class"]=get_class($this);
+		$r["dbmanclass"]=get_class($this->dbman);
+		
+
+		
+		if($items=$this->get_parts()){
+			
+			$r["parts"]=array();
+			foreach($items as $cod=>$item){
+				$r["parts"][$cod]=$item->get_debug_data();	
+			}
+		}
+		
+		
+
+
+		
+		return $r;
+			
+	}
+
 
 
 	

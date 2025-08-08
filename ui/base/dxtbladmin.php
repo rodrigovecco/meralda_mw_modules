@@ -317,9 +317,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		if(!$dataqueryhelper->sorted){
 			$this->setDefaultQuerySort($query);
 		}
-		if($this->debugOutputEnabled()){
-			$xml->set_prop("debug.sql",$query->get_sql());
-		}
+		
 
 		$totalCount=0;
 		if($totaldata=$query->get_total_data()){
@@ -354,6 +352,20 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 				$dataoptim->add_data($data);	
 			}
 			
+		}
+		if($this->debugOutputEnabled()){
+			$xml->set_prop("debug.sql",$query->get_sql());
+			if($query->isParameterizedMode()){
+				$xml->set_prop("debug.parammode",true);
+				if($query->currentParameterizedQuery){
+					$xml->set_prop("debug.paramquery",$query->currentParameterizedQuery->getDebugData());
+					
+				}
+			
+				
+			}
+			//$xml->set_prop("debug.error",$query->dbman->get_error());
+			//$xml->set_prop("debug.full",$query->get_parts_debug_data());
 		}
 		$xml_js=new mwmod_mw_data_xml_js("js",$js);
 		

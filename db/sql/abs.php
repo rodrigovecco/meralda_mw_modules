@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @property-read mwmod_mw_db_mysqli_dbman $dbman
+ */
 abstract class mwmod_mw_db_sql_abs extends mw_apsubbaseobj{
 	private $dbman;
 	private $helper;

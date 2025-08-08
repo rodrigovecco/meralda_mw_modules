@@ -6,6 +6,8 @@ abstract class mwmod_mw_db_sql_querysubpart extends mwmod_mw_db_sql_abs{
 	var $querypart;
 
 	public $isFirst=false;
+	public $addedAsFirst=null;
+	public $debugInfo=array();
 
 	function get_sql_other_prev(){
 		return " ,";
@@ -52,8 +54,10 @@ abstract class mwmod_mw_db_sql_querysubpart extends mwmod_mw_db_sql_abs{
 		}
 		$s=$sql;
 		if(strlen(trim($s))){
+			$this->addedAsFirst=false;
 			return true;	
 		}
+		$this->addedAsFirst=true;
 		return false;
 		
 	}
@@ -80,6 +84,9 @@ abstract class mwmod_mw_db_sql_querysubpart extends mwmod_mw_db_sql_abs{
 		$r["dbmanclass"]=get_class($this->dbman);
 		$r["cod"]=$this->get_cod();
 		$r["sql"]=$this->get_sql();
+		$r["addedAsFirst"]=$this->addedAsFirst;
+		$r["isFirst"]=$this->isFirst;
+		$r["debugInfo"]=$this->debugInfo;
 		return $r;
 			
 	}

@@ -9,10 +9,17 @@ class mwmod_mw_db_sql_where_wherevalpair extends mwmod_mw_db_sql_where_abs{
 	}
 	
 	function append_to_parameterized_sql($pq,&$tempSubSQLstr=""){
-		
+		$this->debugInfo["prev"]=$tempSubSQLstr;
 		if($this->pre_append_to_sql($tempSubSQLstr)){
 			
+			$this->debugInfo["pre_append_to_sql"]=true;
+			
 			$pq->appendSQL($this->get_sql_other_prev(),$tempSubSQLstr);	
+		}else{
+			
+			$this->debugInfo["pre_append_to_sql"]=false;
+			
+			//$pq->appendSQL($this->get_sql_as_first(),$tempSubSQLstr);		
 		}
 		$pq->appendSQL(" ".$this->field.$this->cond."?",$tempSubSQLstr);
 		$pq->addParam($this->crit);
