@@ -1,4 +1,6 @@
 <?php
+
+/** @property-read mwmod_mw_html_manager_js $jsmanager   */
 abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	private $___subinterfaces=array();
 	private $___all_subinterfaces;
