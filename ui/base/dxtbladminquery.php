@@ -39,6 +39,45 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		return $query->get_one_row_result();
 		
 	}
+	function deleteByRegId($id,$xml=false){
+		
+		return false;
+		
+	}
+	function execfrommain_getcmd_sxml_deleteitem($params=array(),$filename=false){
+		$xml=$this->new_getcmd_sxml_answer(false);
+		
+		if(!$this->is_allowed()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$this->allowDelete()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$man=$this->__get_priv_items_man()){
+			$xml->root_do_all_output();
+			return false;	
+		}
+		if(!$itemID=$_REQUEST["itemid"]??null){
+			$xml->root_do_all_output();
+			return false;	
+				
+		}
+		
+		
+		if($this->deleteByRegId($itemID,$xml)){
+			$xml->set_prop("ok",true);
+		}
+		if($d=$this->getUniqItemsIds()){
+			$xml->set_prop("uniqItemsIds",$d);
+		}
+		
+		$xml->root_do_all_output();
+		
+
+	}
+	
 	function execfrommain_getcmd_sxml_saveitem($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		
