@@ -3,6 +3,8 @@ abstract class mwmod_mw_db_sql_querypart extends mwmod_mw_db_sql_abs{
 	private $query;
 	private $_items=array();
 	private $_items_by_cod=array();
+
+	public $isFirst=false;
 	
 	function append_to_parameterized_sql($pq,&$tempSubSQLstr=""){
 
