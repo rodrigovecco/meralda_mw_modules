@@ -16,7 +16,7 @@ abstract class  mwmod_mw_service_base extends mwmod_mw_service_abs{
 	}
 	function isAllowed(){
 		return $this->isAllowedByParent();
-		return false;	
+		
 	}
 	
 	function validateAllowedAsChild(){

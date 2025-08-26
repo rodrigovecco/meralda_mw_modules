@@ -11,6 +11,7 @@ class mwmod_mw_users_ui_myaccount extends mwmod_mw_ui_sub_uiabs{
 		$si=$this->add_new_subinterface(new mwmod_mw_users_ui_myaccount_data("data",$this));
 		$si=$this->add_new_subinterface(new mwmod_mw_users_ui_myaccount_pass("pass",$this));
 		$si=$this->add_new_subinterface(new mwmod_mw_users_ui_myaccount_img("img",$this));
+		$si=$this->add_new_subinterface(new mwmod_mw_users_ui_myaccount_token("token",$this));
 	}
 	
 	function is_responsable_for_sub_interface_mnu(){
@@ -23,7 +24,7 @@ class mwmod_mw_users_ui_myaccount extends mwmod_mw_ui_sub_uiabs{
 		//$item=$this->add_2_mnu($mnu);
 		//$item->etq=$this->lng_get_msg_txt("information","Información");
 		
-		if($subs=$this->get_subinterfaces_by_code("data,img,pass",true)){
+		if($subs=$this->get_subinterfaces_by_code("data,img,pass,token",true)){
 			foreach($subs as $su){
 				$su->add_2_sub_interface_mnu($mnu);	
 			}

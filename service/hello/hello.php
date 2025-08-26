@@ -5,7 +5,7 @@ class  mwmod_mw_service_hello_hello extends mwmod_mw_service_test_test_abs{
 	}
 	function doExecOk($path=false){
 		$info=array(
-			"msg"=>"Hello! Is site is powerd by Meralda",
+			"msg"=>"Hello! This site is powered by Meralda",
 
 			"class"=>get_class($this),
 

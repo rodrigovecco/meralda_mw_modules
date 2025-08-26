@@ -1,4 +1,5 @@
 <?php
+//deprecated: use mwmod_mw_users_jwt_man instead
 class  mwmod_mw_users_tokens_man extends mwmod_mw_manager_man{
 	private $usersMan;
 	public $tokenLength=100;
@@ -17,7 +18,7 @@ class  mwmod_mw_users_tokens_man extends mwmod_mw_manager_man{
 	}
 	function setInvalidtokenEreror($code,$msg){
 		$this->invalidtokenErrorCode=$code;
-		$this->invalidtokenErrorMsg=$this->lng_get_msg_txt("INVALIDtoken_".$cod,$msg);
+		$this->invalidtokenErrorMsg=$this->lng_get_msg_txt("INVALIDtoken_".$code,$msg);
 	}
 	function gettokenByInput($inputStr){
 		if(!$inputStr=$inputStr.""){
@@ -193,7 +194,7 @@ class  mwmod_mw_users_tokens_man extends mwmod_mw_manager_man{
 	}
 	
 	final function inittokensMan($code,$tblName,$userMan){
-		$this->init($cod,$userMan->mainap,$tblName);
+		$this->init($code,$userMan->mainap,$tblName);
 		$this->usersMan=$userMan;	
 	}
 	final function __get_priv_usersMan(){

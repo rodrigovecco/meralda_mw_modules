@@ -1,5 +1,11 @@
 <?php
-//
+/**
+ * @property-read mwmod_mw_db_tbl_item|false $tblitem         Item de la tabla asociado a este usuario
+ * @property-read bool|null                  $usersinitdone   Flag de inicialización de usuarios (puede ser null/false/true)
+ * @property-read string|null                $sessionvarname  Nombre de la variable de sesión asociada al usuario actual
+ * @property-read mwmod_mw_users_base_usersmanabs $man        Manejador principal de usuarios al que pertenece este objeto
+ * @property-read int|null                   $id              ID numérico del usuario (clave primaria en tabla)
+ */
 abstract class mwmod_mw_users_userabs extends mw_apsubbaseobj{
 	private $man;
 	private $id;

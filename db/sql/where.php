@@ -50,15 +50,24 @@ class mwmod_mw_db_sql_where extends mwmod_mw_db_sql_querypart{
 		$item=new mwmod_mw_db_sql_where_whereinnumlist($field,$list,$cod);
 		return $this->add_item($item);
 	}
+	/**
+	 * @return mwmod_mw_db_sql_where_whereinstrlist 
+	 */
 	function add_where_str_list($field,$list,$cod=false){
 		$item=new mwmod_mw_db_sql_where_whereinstrlist($field,$list,$cod);
 		return $this->add_item($item);
 	}
+	/**
+	 * @return mwmod_mw_db_sql_where_wherevalpair 
+	 */
 	function add_where_crit($field,$val,$cod=false){
 		$item = new mwmod_mw_db_sql_where_wherevalpair($field,$val,$cod,$this);
 		return $this->add_item($item);
 		
 	}
+	/**
+	 * @return mwmod_mw_db_sql_where_textcomp 
+	 */
 	function add_where_crit_like($field,$val,$cod=false){
 		$item = new mwmod_mw_db_sql_where_textcomp($field,$val,$cod,$this);
 		return $this->add_item($item);

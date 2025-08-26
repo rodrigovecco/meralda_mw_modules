@@ -97,7 +97,13 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		$all=apache_request_headers();
 		return $all[$cod]??null;
 	}
-	
+	function getRequestTokenBearer(){
+		if($t=$this->getRequestedHeader("Authorization")){
+			if(preg_match('/Bearer\s(\S+)/',$t,$matches)){
+				return $matches[1];
+			}
+		}
+	}
 	function isAllowedByParent(){
 		if($p=$this->getParent()){
 			return $p->isAllowed();	
@@ -251,8 +257,18 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		if(!sizeof($list)){
 			return $ch;
 		}
-		return $ch->getChildByCodsList($list);
 		
+		if($r=$ch->getChildByCodsList($list)){
+			return $r;	
+		}
+		if($ch->returnSelfOnNoChildren()){
+			return $ch;	
+		}
+
+		
+	}
+	function returnSelfOnNoChildren(){
+		return true;
 	}
 	
 	

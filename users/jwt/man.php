@@ -1,4 +1,5 @@
 <?php
+/** @property-read mwmod_mw_users_usersman $usersMan */
 class mwmod_mw_users_jwt_man extends mw_apsubbaseobj{
 	private $usersMan;
 	function __construct($usersMan=false){
@@ -62,6 +63,27 @@ class mwmod_mw_users_jwt_man extends mw_apsubbaseobj{
 		
 		
 
+
+	}
+	function validateAndRetrieveUser($token){
+		if(!$payload=$this->validateToken($token)){
+			return false;
+		}
+		
+		if(!$user_id=$payload['user_id']??null){
+			return false;
+		}
+		
+		if(!$user=$this->usersMan->get_user($user_id)){
+			return false;
+		}
+		
+		if(!$this->validateTokenForUser($user,$token)){
+			
+			return false;
+		}
+		
+		return $user;
 	}
 	function getUserSecret($user){
 		$userPasswordHash=$user->get_password();

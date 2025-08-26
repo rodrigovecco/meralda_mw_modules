@@ -3,6 +3,7 @@
 class mwmod_mw_users_def_usersman extends mwmod_mw_users_usersman{
 	function __construct($ap,$tbl,$sessionvar="__current_user_data"){
 		$this->init_tbl_mode($ap,$tbl,$sessionvar);
+		$this->createRolsAndPermissions();
 		
 	}
 	function create_user_data_man(){

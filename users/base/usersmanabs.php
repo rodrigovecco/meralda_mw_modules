@@ -1,5 +1,17 @@
 <?php
-//
+/**
+ *
+ * @property-read mwmod_mw_users_jwt_man   $jwtMan             Gestor JWT (si la app lo provee; de lo contrario false)
+ * @property-read mwmod_mw_util_itemsbycod       $usersList          Lista ligera de usuarios (id => data) para selects/UI
+ * @property-read mwmod_mw_users_tokens_man $tokensMan               Gestor de tokens transitorios (puede ser false si no se implementa)
+ * @property-read string                         $manRelPathRoot     Prefijo de rutas del manager (por defecto "users")
+ * @property-read string                         $userRelPath        Prefijo de rutas del usuario (por defecto "user")
+ * @property-read mwmod_mw_jsobj_obj             $login_js_response  Objeto JS con el estado/respuesta del login (ok, msg, timeout)
+ * @property-read mwmod_mw_bruteforce_man        $bruteForceMan      Gestor anti-fuerza-bruta desde mainap->get_submanager("bruteforce")
+ * @property-read mwmod_mw_db_tbl          $tblman                   Manejador de la tabla de usuarios (false si no inicializado)
+ * @property-read string|null                    $tblname            Nombre lógico de la tabla de usuarios (null si no se ha establecido)
+ * @property-read bool|null                      $usersinitdone      Flag de inicialización de usuarios (null/false/true)
+ */
 abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $sessionvarname;
 	var $current_user_cookie_name="mw_current_user";
@@ -15,6 +27,8 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $login_js_response;
 
 	public $disableUserIPsessionValidations=false;
+
+	public $ServiceMode=false;//true para servicios web (no maneja sesiones)
 	
 	
 	private $tokensMan;
@@ -45,6 +59,27 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $manRelPathRoot="users";
 	private $userRelPath="user";
 	private $usersList;
+
+	private $jwtMan;
+
+	function createJwtMan(){
+		//return new mwmod_mw_users_jwt_access($this);
+		return false;	
+	}
+	function createRolsAndPermissions(){
+		//create roles and permissions
+		//the default behavior is that this is run on the /managers/user.php script, but it your app initializes users man from the method create_submanager_user
+		//you can extend this method.
+
+	}
+	final function __get_priv_jwtMan(){
+		if(!isset($this->jwtMan)){
+			$this->jwtMan=$this->createJwtMan();
+		}
+		return $this->jwtMan;
+	}
+
+
 	function usersListCreate($list){
 		$tblman=$this->get_tblman();
 		$query=$tblman->new_query();
@@ -730,16 +765,29 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		
 		//return $this->set_current_user_and_session_var($user);
 	}
+
+	function login_user_service_mode($user){
+		$this->ServiceMode=true;
+		$r=$this->login_user($user);
+		
+		return $r;
+	}
 	function login_user($user){
 		$this->unset_currentuser();
 		if(!$user->can_login()){
 			$this->after_user_changed();
 			return false;	
 		}
+		if($this->ServiceMode){
+			//no maneja sesiones
+			$this->set_currentuser_obj($user);
+			return $user;	
+		}else{
+			$this->set_current_session_var($user);
+			$user->on_login();
+			$this->exec_user_validation();	
+		}
 		
-		$this->set_current_session_var($user);
-		$user->on_login();
-		$this->exec_user_validation();	
 		return $user;
 	
 	}
@@ -771,6 +819,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 
 	function set_login_security_sess_data($val,$key){
+		if($this->ServiceMode){
+			return false;
+		}
 		if(!$sv=$this->get_login_security_sess_var_name()){
 			return false;	
 		}
@@ -784,6 +835,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		
 	}
 	function get_login_security_sess_data($key=false){
+		if($this->ServiceMode){
+			return false;
+		}
 		if(!$sv=$this->get_login_security_sess_var_name()){
 			return false;	
 		}
@@ -1025,6 +1079,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	
 	
 	final function unset_session_data(){
+		if($this->ServiceMode){
+			return false;
+		}
 		if(!$sv=$this->get_sv_var_name()){
 			return false;	
 		}
@@ -1087,6 +1144,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		return $this->sessionvarname;
 	}
 	final function set_sv_data($val,$key){
+		if($this->ServiceMode){
+			return false;
+		}
 		if(!$sv=$this->get_sv_var_name()){
 			return false;	
 		}
@@ -1100,6 +1160,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		
 	}
 	final function get_sv_data($key=false){
+		if($this->ServiceMode){
+			return false;
+		}
 		if(!$sv=$this->get_sv_var_name()){
 			return false;	
 		}
