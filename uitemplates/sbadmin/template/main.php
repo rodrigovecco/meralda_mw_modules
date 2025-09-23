@@ -57,20 +57,7 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		$subinterface->do_exec_page_single_mode();
 	}
 
-	function exec_page_nav_topbar($subinterface){
-		$mnu_man=$this->main_ui->mnu_man;
-		$mnu=$mnu_man->get_item("topbar");
-		$nav=new mwmod_mw_html_elem("nav");
-		$nav->addClass("sb-topnav navbar navbar-expand {$this->css_topbar}");
-
-		$brand=new mwmod_mw_html_cont_varcont();
-		$brand->add_cont("<!-- Navbar Brand-->");
-		$a=new mwmod_mw_html_elem("a");
-		$a->addClass("navbar-brand ps-3");
-		$a->add_cont($this->main_ui->get_ui_title_for_nav()."");
-		$brand->add_cont($a);
-		$nav->add_cont($brand);
-
+	function add_nav_toggle($nav){
 		$navE=new mwmod_mw_html_cont_varcont();
 		$nav->add_cont($navE);
 		$navE->add_cont("<!-- Sidebar Toggle-->");
@@ -81,6 +68,37 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		$navBtn->set_att("id","sidebarToggle");
 		$navBtn->set_att("href","#!");
 		$navBtn->add_cont("<i class='fas fa-bars'></i>");
+	}
+	function exec_page_nav_topbar($subinterface){
+		$mnu_man=$this->main_ui->mnu_man;
+		$mnu=$mnu_man->get_item("topbar");
+		$nav=new mwmod_mw_html_elem("nav");
+		$nav->addClass("sb-topnav navbar navbar-expand {$this->css_topbar}");
+
+		
+		
+		$this->add_nav_toggle($nav);
+		
+		
+		$brand=new mwmod_mw_html_cont_varcont();
+		$brand->add_cont("<!-- Navbar Brand-->");
+		$a=new mwmod_mw_html_elem("a");
+		$a->addClass("navbar-brand ps-3");
+		$a->add_cont($this->main_ui->get_ui_title_for_nav()."");
+		$brand->add_cont($a);
+		$nav->add_cont($brand);
+		/*
+		$navE=new mwmod_mw_html_cont_varcont();
+		$nav->add_cont($navE);
+		$navE->add_cont("<!-- Sidebar Toggle-->");
+		$navBtn=new mwmod_mw_html_elem("button");
+		$navE->add_cont($navBtn);
+		$navBtn->addClass("btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0");
+		//$navBtn->addClass("btn-sm order-1 order-lg-0 me-4 me-lg-0 sidebarToggleBtn");
+		$navBtn->set_att("id","sidebarToggle");
+		$navBtn->set_att("href","#!");
+		$navBtn->add_cont("<i class='fas fa-bars'></i>");
+		*/
 
 		$navCentral=new mwmod_mw_html_elem("div");
 		$navCentral->addClass("d-md-inline-block ms-auto");
@@ -335,7 +353,7 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 	function get_html_fullScrren_btn(){
 		//	
 		//$var=$this->main_ui->get_js_ui_man_name();
-		$html.= "<div class='toggleFullScreenBtnContainer' id='toggleFullScreenBtnContainer'>\n";
+		$html= "<div class='toggleFullScreenBtnContainer' id='toggleFullScreenBtnContainer'>\n";
 		//$html.= "<div   class='toggleFullScreenBtn collapse' aria-expanded='false' id='toggleFullScreenBtn'>\n";
 		$html.= "<div   class='toggleFullScreenBtn' id='toggleFullScreenBtn'>\n";
 		$html.= "<span class='fa fa-navicon'>&nbsp;</span>\n";

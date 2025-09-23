@@ -175,7 +175,7 @@ class  mwmod_mw_bootstrap_ui_template_main extends mwmod_mw_ui_main_uimaintempla
 	function get_html_fullScrren_btn(){
 		//	
 		//$var=$this->main_ui->get_js_ui_man_name();
-		$html.= "<div class='toggleFullScreenBtnContainer' id='toggleFullScreenBtnContainer'>\n";
+		$html= "<div class='toggleFullScreenBtnContainer' id='toggleFullScreenBtnContainer'>\n";
 		//$html.= "<div   class='toggleFullScreenBtn collapse' aria-expanded='false' id='toggleFullScreenBtn'>\n";
 		$html.= "<div   class='toggleFullScreenBtn' id='toggleFullScreenBtn'>\n";
 		$html.= "<span class='fa fa-navicon'>&nbsp;</span>\n";
@@ -210,11 +210,11 @@ class  mwmod_mw_bootstrap_ui_template_main extends mwmod_mw_ui_main_uimaintempla
 		echo "<!-- Topbar -->\n";
 		echo "<nav class='navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow'>\n";
 		echo "<!-- Sidebar Toggle (Topbar) -->\n";
-		//echo "<form class='form-inline'>\n";
+		
 		echo "<button id='sidebarToggleTop' class='btn btn-link d-md-none rounded-circle mr-3'>\n";
         echo "<i class='fa fa-bars'></i>\n";
 		echo "</button>";
-		//echo "</form>\n";
+		
 		
 		$this->exec_page_nav_topbar($subinterface);
 		echo  "</nav>";
