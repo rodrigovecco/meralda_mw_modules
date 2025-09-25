@@ -7,6 +7,8 @@
 class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_widget{
 	private $columns;
 	private $_data=array();
+
+	public $nextHidingPriority=0;
 	var $dont_rewrite_dataSourceProp=false;
 	var $dont_rewrite_columnsProp=false;
 	/**
@@ -472,6 +474,52 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 	}
 	function get_js_widget_fnc_name(){
 		return "dxDataGrid";	
+	}
+	function setColsAutoHidingPriority($colsCods,$reverse=true){
+		if(!is_array($colsCods)){
+			$colsCods=explode(",",$colsCods);	
+		}
+		if(!is_array($colsCods)){
+			return false;	
+		}
+		if($reverse){
+			$colsCods=array_reverse($colsCods);	
+		}
+		
+		foreach($colsCods as $cod){
+			if($cod=trim($cod)){
+				$this->setColHidingPriority($cod);
+				
+			}
+				
+		}
+		return true;
+		
+	}
+	function setColHidingPriority($col,$priority=false){
+		if(!$col){
+			return false;
+		}
+		if(is_string($col)){
+			$col=$this->get_col($col);	
+		}
+		
+		if(!is_object($col)){
+			return false;	
+		}
+		if($priority===false){
+			$priority=$this->nextHidingPriority;	
+			$this->nextHidingPriority++;
+		}
+		$col->js_data->set_prop("hidingPriority",$priority);
+		return true;
+		
+	}
+
+	function get_col($cod){
+		$this->__get_priv_columns();
+		
+		return $this->columns->get_item($cod);
 	}
 	
 	final function __get_priv_columns(){
