@@ -248,6 +248,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		if(!$items=$man->get_items_by_mwQuery($query)){
 			return false;
 		}
+		$r=array();
 		foreach ($items as $itemtbl){
 			if($item=$this->get_or_create_item($itemtbl)){
 				if($id=$item->get_id()){
