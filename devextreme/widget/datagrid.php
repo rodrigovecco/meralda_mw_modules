@@ -475,6 +475,30 @@ class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_wid
 	function get_js_widget_fnc_name(){
 		return "dxDataGrid";	
 	}
+
+	function setColsAutoHidingPriorityAll($excludeColsCods=false,$reverse=true){
+		
+		$cods=array();
+		if($excludeColsCods){
+			if(is_string($excludeColsCods)){
+				$excludeColsCods=explode(",",$excludeColsCods);	
+			}
+			
+		}
+		if(!is_array($excludeColsCods)){
+			$excludeColsCods=array();	
+		}
+		if($items=$this->columns->get_items()){
+			foreach($items as $cod=>$item){
+				if(!in_array($cod,$excludeColsCods)){
+					$cods[]=$cod;
+				}
+				
+			}
+		}
+		return $this->setColsAutoHidingPriority($cods,$reverse);
+		
+	}
 	function setColsAutoHidingPriority($colsCods,$reverse=true){
 		if(!is_array($colsCods)){
 			$colsCods=explode(",",$colsCods);	
