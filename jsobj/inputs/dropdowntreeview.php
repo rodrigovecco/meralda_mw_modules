@@ -28,7 +28,7 @@ class mwmod_mw_jsobj_inputs_dropdowntreeview extends mwmod_mw_jsobj_inputs_input
 		
 	}
 	function setLevel($level=0){
-		$this->set_prop("DXOptions.level",$level);
+		$this->set_prop("DXOptions.levelIndex",$level);
 	}
 	function setDataSource($datasourceObj,$valueExpr="id",$displayExpr="name"){
 		// Datos para el DropDownTreeView

@@ -7,7 +7,7 @@ class mwmod_mw_jsobj_inputs_select extends mwmod_mw_jsobj_inputs_input{
 		$this->init_js_input($cod,$objclass);
 	}
 	function setDXMode(){
-		//under construction
+		
 		$this->DXMode=true;
 		$this->set_js_class("mw_datainput_dx_selectBox");
 	}
