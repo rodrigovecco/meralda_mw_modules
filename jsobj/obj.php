@@ -102,6 +102,11 @@ class mwmod_mw_jsobj_obj extends mw_object_as_array{
 		return $def;
 	}
 	
+	/**
+	 * @param string $cod 
+	 * @param string $key 
+	 * @return mwmod_mw_jsobj_dataoptim 
+	 */
 	function new_doptim_prop($cod,$key="id"){
 		$doptim=new mwmod_mw_jsobj_dataoptim();
 		$this->set_prop($cod,$doptim);

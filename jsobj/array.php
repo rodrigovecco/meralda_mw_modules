@@ -37,6 +37,10 @@ class mwmod_mw_jsobj_array extends mwmod_mw_jsobj_obj{
 	
 	
 	
+	/**
+	 * @param mixed $val 
+	 * @return mwmod_mw_jsobj_obj 
+	 */
 	function add_data_obj($val=false){
 		if(!$val){
 			$val= new mwmod_mw_jsobj_obj();	

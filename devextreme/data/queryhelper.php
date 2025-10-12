@@ -32,12 +32,52 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		}
 		return $data;
 	}
+	
 	function aplay2Query($query){
+		//typo!!!
+		return $this->apply2Query($query);
+	}
+	function apply2Query($query){
 		$this->query=$query;
-		$this->filterQuery($query);
-		$this->sortQuery($query);
-		$this->limitQuery($query);
 		
+		$b=$this->setBatchModeQuery($query);
+		$this->filterQuery($query);
+		if(!$b){
+			$this->sortQuery($query);
+			
+		}
+		$this->limitQuery($query);
+	}
+	/**
+	 * @param mwmod_mw_db_sql_query $query 
+	 * @return bool 
+	 */
+	function setBatchModeQuery($query){
+		if(!$this->getLoadOptions("batchMode")){
+			return false;	
+		}
+		if(!$key=$this->getLoadOptions("batchKey")){
+			$key="id";
+		}
+		if(!$field=$this->getField($key)){
+			return false;	
+		}
+		
+		if(!$field->allowSort()){
+			return false;	
+		}
+		$s=$query->order->add_order($field->getSqlExp());
+		$this->sorted=true;
+		if($last=$this->getLoadOptions("lastKey")){
+			if(is_scalar($last)){
+				$crit=$query->where->add_where_crit($field->getSqlExp(),$last);
+				$crit->set_operator_greater();
+			}
+			
+			
+		}
+
+		return true;
 	}
 	function limitQuery($query){
 		if($this->noLimit){
@@ -236,6 +276,10 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 	final function getFields(){
 		return $this->fields;	
 	}
+	/**
+	 * @param mixed $cod 
+	 * @return mwmod_mw_devextreme_data_fields_abs 
+	 */
 	final function getField($cod){
 		if(!$cod){
 			return false;	
