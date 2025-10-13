@@ -1,4 +1,5 @@
 <?php
+
 class  mwmod_mw_db_row extends mw_apsubbaseobj{
 	private $tblman;
 	private $id;
@@ -43,6 +44,11 @@ class  mwmod_mw_db_row extends mw_apsubbaseobj{
 	function get_update_sql($data){
 		return $this->generate_update_sql($data);
 	}
+	/**
+	 * @param mixed $data 
+	 * @param mwmod_mw_db_paramstatement_paramquery|false $paramQuery 
+	 * @return false|string 
+	 */
 	function generate_update_sql($data,$paramQuery=false){
 		if(!is_array($data)){
 			return false;	

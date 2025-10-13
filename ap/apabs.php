@@ -721,6 +721,10 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		$man=new mwmod_mw_helper_fileman($this);
 		return $man;	
 	}
+	/** @return mwmod_mw_helper_fileman  */
+	function getFileManager(){
+		return $this->get_submanager("fileman");
+	}
 	function create_submanager_lng(){
 		$man=new mwmod_mw_lng_lngman($this);
 		$this->after_set_lng_manager($man);

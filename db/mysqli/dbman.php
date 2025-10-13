@@ -37,7 +37,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 	}
 	
 
-	//todo paramquery
+	
 
 
 
@@ -214,6 +214,9 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 		
 	}
 	function real_escape_string($txt){
+		if(is_null($txt)){
+			return "";	
+		}
 		if(!$l=$this->get_link()){
 			return false;	
 		}

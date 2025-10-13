@@ -23,6 +23,27 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	function __construct($cod,$objclass=false){
 		$this->init_js_input($cod,$objclass);
 	}
+	///quick props setters//////////
+	function setLabel($lbl){
+		$this->set_prop("lbl",$lbl);
+	}
+
+	function setNotes($notes){
+		$this->set_prop("notes",$notes);
+	}
+	function setInputName($name){
+		$this->set_prop("input_name",$name);
+	}
+
+
+
+
+
+
+
+
+
+	//////////
 	/**
 	 * Sets the input as required.
 	 *
@@ -72,6 +93,16 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		$gr=new mwmod_mw_jsobj_inputs_def($cod,$type,$p);
 		return $this->add_child($gr);
 			
+	}
+	function setFileMode($filetypesStr=false){
+		$this->set_js_type("file");
+		$this->set_prop("inputAttsCfgEnabled",true);	
+		if($filetypesStr){
+			$this->set_prop("inputAtts.accept",$filetypesStr);
+			
+			
+		}
+		
 	}
 	/**
 	 * Sets the JavaScript input type and updates the JS class accordingly.
