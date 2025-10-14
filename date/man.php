@@ -157,7 +157,7 @@ class mwmod_mw_date_man extends mw_apsubbaseobj{
 		return $this->_months;
 	}
 	function load_months(){
-		$sh=explode(",","ene,feb,mar,abr,may,jun,lul,ago,sep,oct,nov,dic");
+		$sh=explode(",","ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic");
 		$l=explode(",","Enero,Febrero,Marzo,Abril,Mayo,Junio,Julio,Agosto,Septiembre,Octubre,Noviembre,Diciembre");
 		$r=array();
 		
@@ -202,6 +202,10 @@ class mwmod_mw_date_man extends mw_apsubbaseobj{
 		
 			
 	}
+	/**
+	 * @param mixed $n 
+	 * @return mwmod_mw_date_month_def 
+	 */
 	final function get_month($n){
 		if(!$n=$n+0){
 			return false;	

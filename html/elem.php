@@ -201,8 +201,11 @@ class mwmod_mw_html_elem extends mwmod_mw_html_abselem implements mwmod_mw_html_
 		}
 		return $att->set_att($key,$val);	
 	}
-	
+	function get_dom_id(){
+		return $this->get_att("id");
+	}
 	function get_att($cod=false){
+		$this->__get_priv_atts();
 		return $this->atts->get_att($cod);	
 	}
 	function set_att($key,$val){
@@ -356,9 +359,61 @@ class mwmod_mw_html_elem extends mwmod_mw_html_abselem implements mwmod_mw_html_
 		return $c;
 		
 	}
+	function addContArray($cont=false){
+		if($cont){
+			if(is_array($cont)){
+				foreach($cont as $c){
+					$this->addContAuto($c);	
+				}
+			
+			}
+		}
+		
+	}
+	/** @return void  */
+	function addMultiCont(){
+		$args=func_get_args();
+		if($args){
+			foreach($args as $a){
+				$this->addContAuto($a);	
+			}
+		}
+
+	}
+	function addContAuto($cont){
+		if($cont){
+			if(is_object($cont)){
+				$this->add_cont($cont);
+				return $cont;
+			}elseif(is_array($cont)){
+				$this->addContArray($cont);
+				return;
+			}
+		}
+		if(is_numeric($cont)or is_string($cont)){
+			$cont=(string)$cont;
+			if(substr($cont,0,3)==="[T]"){
+				$cont="".substr($cont,3)."";
+				$this->addContPlainText($cont);	
+				return;
+			}
+			$this->add_cont($cont);
+			return;
+			
+		}
+		
+	}
+	function addContPlainText($cont){
+		if(is_string($cont)or is_numeric($cont)){
+			$this->add_cont(htmlspecialchars((string)$cont));
+			return true;
+		}
+		
+		
+	}
 	/**
-	* @param string $cont sdasd
-	* @return mwmod_mw_html_elem balbla bla
+	* @param string $cont The content to be added as HTML
+	* @return mwmod_mw_html_elem The new element
 	*/
 	function add_cont_as_html($cont){
 		if(!$cont){

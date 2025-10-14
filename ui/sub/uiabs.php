@@ -1054,6 +1054,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->urlparams=array();
 		$this->init_url_params();	
 	}
+	/**
+	 * @param string $key 
+	 * @param mixed $val 
+	 * @return void 
+	 */
 	function setRequestParam($key,$val){
 		$this->set_url_param($key,$val);
 		$this->set_cmd_param($key,$val);

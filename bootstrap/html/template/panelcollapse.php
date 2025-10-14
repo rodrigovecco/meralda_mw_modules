@@ -1,4 +1,12 @@
 <?php
+/** 
+ * @property-read mwmod_mw_bootstrap_html_specialelem_panel $main_elem
+ * @property-read mwmod_mw_bootstrap_html_def $panel_heading
+ * @property-read mwmod_mw_bootstrap_html_def $panel_collapse
+ * @property-read mwmod_mw_bootstrap_html_def $panel_body
+ * @property-read mwmod_mw_bootstrap_html_def $panel_footer
+ * @property-read mwmod_mw_bootstrap_html_def $collapsbtn
+ */
 class mwmod_mw_bootstrap_html_template_panelcollapse extends mwmod_mw_bootstrap_html_template_abs{
 	var $collapse_dataparent_id;
 	var $collapse_body_id;
