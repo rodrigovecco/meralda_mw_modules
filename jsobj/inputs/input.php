@@ -138,6 +138,20 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		return $this->add_child($input);
 		
 	}
+	
+	/**
+	 * @param mixed $cod 
+	 * @return mwmod_mw_jsobj_inputs_btgridgr 
+	 */
+	function addNewGrGrid($cod){
+		$p=false;
+		if($this->passJsClassPref2Children){
+			$p=$this->def_js_class_pref;	
+		}
+		
+		$gr=new mwmod_mw_jsobj_inputs_btgridgr($cod,$p);
+		return $this->add_child($gr);
+	}
 	/**
 	 * Adds a new input group.
 	 *

@@ -80,6 +80,21 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		
 		$elem=new mwmod_mw_bootstrap_html_def("avatar-wrapper");
 		$this->set_key_cont("wrapper",$elem);
+		// 🧩 Estilos de seguridad para evitar el problema visual:
+		$elem->set_att("style", implode(";", [
+			"width:100%",
+			"max-width:100%",
+			"min-height:400px",     // altura visible antes de cargar imagen
+			"max-height:75vh",      // evita que se salga de la pantalla
+			"margin:0 auto",
+			"overflow:hidden",
+			"background-color:#f3f3f3",
+			"display:flex",
+			"justify-content:center",
+			"align-items:center"
+		]));
+
+
 		$form->add_cont($elem);
 		
 		////other btns
