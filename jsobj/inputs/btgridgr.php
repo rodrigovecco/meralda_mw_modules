@@ -1,25 +1,14 @@
 <?php
 /**
  * Extended Bootstrap Grid Group for Meralda JS Input System.
- *
- * This class provides an easy way to build and manage btGrid-style layouts
- * with rows, columns, and inputs. It supports optional coded row/col references
- * and safely repositions existing children without duplicating them.
- *
- * Example:
- *   $grid = new mwmod_mw_jsobj_inputs_btgridgr("data");
- *   $grid->addRowWithCols(3, 4, "maininfo");
- *   $grid->addColCode("maininfo", 1, "projectcol");
- *   $grid->addColCode("maininfo", 2, "clientcol");
- *   $grid->addColCode("maininfo", 3, "typecol");
- *
- *   $grid->addInputInCell("project_name", "maininfo", "projectcol", "Project");
- *   $grid->addInputInCell("client_name",  "maininfo", "clientcol",  "Client");
- *   $grid->addInputInCell("type_name",    "maininfo", "typecol",    "Type");
+ * 
+ * This class builds dynamic grid structures compatible with
+ * mwmod_mw_jsobj_obj and mwmod_mw_jsobj_array.
+ * 
+ * It automatically creates missing rows/columns and safely
+ * repositions existing children.
  */
 class mwmod_mw_jsobj_inputs_btgridgr extends mwmod_mw_jsobj_inputs_gr {
-
-    private $_rows = [];
     private $_rowCodes = [];
     private $_colCodes = [];
 
@@ -28,22 +17,142 @@ class mwmod_mw_jsobj_inputs_btgridgr extends mwmod_mw_jsobj_inputs_gr {
         $this->set_js_type("group_btGrid");
     }
 
+    //────────────────────────────────────────────
+    // Core grid helpers
+    //────────────────────────────────────────────
+
     /**
-     * Adds a new row with the given number of columns.
-     * Optionally assign a code to the row (so you can reference it by name).
-     *
-     * @param int $colsCount Number of columns.
-     * @param int|false $colSpan Optional colSpan for each column.
-     * @param string|false $rowCod Optional row code.
-     * @return object The created row object.
+     * Get or create the main rows array.
+     * @return mwmod_mw_jsobj_array
+     */
+    protected function getRowsArray() {
+        return $this->get_array_prop("btGrid.rows");
+    }
+
+    /**
+     * Retrieve or create a row (mwmod_mw_jsobj_obj) by index or code.
+     */
+    function getOrCreateRow($rowCodOrIndex, $colsIfCreate = 1) {
+        $rows = $this->getRowsArray();
+        $rowIndex = $this->resolveRowIndex($rowCodOrIndex);
+
+        // Numeric index
+        if (!$rowIndex) {
+            if (is_numeric($rowCodOrIndex)) {
+                $rowIndex = intval($rowCodOrIndex);
+            } else {
+                // New code
+                $rowIndex = count($rows->get_data()) + 1;
+                $this->_rowCodes[$rowCodOrIndex] = $rowIndex;
+            }
+        }
+
+        // Create missing rows
+        $rowsCount = count($rows->get_data());
+        while ($rowsCount < $rowIndex) {
+            $newRow = $rows->add_data_obj();
+            $newRow->get_array_prop("cols");
+            $rowsCount++;
+        }
+
+        $row = $rows->get_data()[$rowIndex - 1];
+        if (!$row) {
+            $row = $rows->add_data_obj();
+            $row->get_array_prop("cols");
+        }
+
+        return $row;
+    }
+
+    /**
+     * Retrieve or create a column inside a given row.
+     */
+    function getOrCreateCol($rowObj, $colCodOrIndex, $defaultSpan = 4) {
+        $cols = $rowObj->get_array_prop("cols");
+
+        // If col is referenced by code
+        if (!is_numeric($colCodOrIndex) && isset($this->_colCodes[$colCodOrIndex])) {
+            list($rowIdx, $colIdx) = $this->_colCodes[$colCodOrIndex];
+            return $cols->get_data()[$colIdx - 1] ?? $cols->add_data_obj();
+        }
+
+        $colIndex = intval($colCodOrIndex);
+        if ($colIndex < 1) $colIndex = 1;
+
+        // Create missing columns
+        $colsCount = count($cols->get_data());
+        while ($colsCount < $colIndex) {
+            $newCol = $cols->add_data_obj();
+            $newCol->set_prop("colSpan", $defaultSpan);
+            $colsCount++;
+        }
+
+        return $cols->get_data()[$colIndex - 1];
+    }
+
+    /**
+     * Assign a code to a column.
+     */
+    function addColCode($rowCodOrIndex, $colIndex, $colCod) {
+        $rowIndex = $this->resolveRowIndex($rowCodOrIndex);
+        if ($rowIndex) {
+            $this->_colCodes[$colCod] = [$rowIndex, $colIndex];
+        }
+    }
+
+    /**
+     * Resolve a row code or index to a numeric index.
+     */
+    private function resolveRowIndex($rowCodOrIndex) {
+        if (is_numeric($rowCodOrIndex)) return (int)$rowCodOrIndex;
+        return $this->_rowCodes[$rowCodOrIndex] ?? null;
+    }
+
+    //────────────────────────────────────────────
+    // Main API
+    //────────────────────────────────────────────
+
+    /**
+     * Add or move an input to a specific cell.
+     * Automatically creates rows/columns as needed.
+     */
+    function addInputInCell($codOrInput, $rowCodOrIndex, $colCodOrIndex, $lbl = false, $type = false) {
+        // Ensure row/col exist
+        $rowObj = $this->getOrCreateRow($rowCodOrIndex);
+        $colObj = $this->getOrCreateCol($rowObj, $colCodOrIndex);
+
+        // Resolve input object
+        if (is_object($codOrInput)) {
+            $input = $codOrInput;
+            if (!$this->get_child($input->cod)) {
+                $this->add_child($input);
+            }
+        } else {
+            if ($existing = $this->get_child($codOrInput)) {
+                $input = $existing;
+            } else {
+                $input = $this->addNewChild($codOrInput, $type);
+                if ($lbl) $input->set_prop("lbl", $lbl);
+            }
+        }
+
+        // Row & column numeric indexes for saving props
+        $rowIndex = $this->resolveRowIndex($rowCodOrIndex) ?: 1;
+        $colIndex = is_numeric($colCodOrIndex) ? intval($colCodOrIndex) : 1;
+
+        $input->set_prop("parentGrid.row", $rowIndex);
+        $input->set_prop("parentGrid.col", $colIndex);
+        if ($lbl) $input->set_prop("lbl", $lbl);
+
+        return $input;
+    }
+
+    /**
+     * Add a row with fixed number of columns.
      */
     function addRowWithCols($colsCount = 1, $colSpan = false, $rowCod = false) {
-        if (!$colSpan) {
-            $colSpan = intval(12 / $colsCount);
-        }
-        $rows = $this->get_array_prop("btGrid.rows");
-        $rowIndex = count($this->_rows) + 1;
-
+        $rows = $this->getRowsArray();
+        if (!$colSpan) $colSpan = intval(12 / $colsCount);
         $row = $rows->add_data_obj();
         $cols = $row->get_array_prop("cols");
 
@@ -52,138 +161,21 @@ class mwmod_mw_jsobj_inputs_btgridgr extends mwmod_mw_jsobj_inputs_gr {
             $col->set_prop("colSpan", $colSpan);
         }
 
-        $this->_rows[$rowIndex] = [
-            "obj" => $row,
-            "cols" => $cols,
-            "count" => $colsCount,
-            "cod" => $rowCod ?: "row{$rowIndex}"
-        ];
-
         if ($rowCod) {
-            $this->_rowCodes[$rowCod] = $rowIndex;
+            $index = count($rows->get_data());
+            $this->_rowCodes[$rowCod] = $index;
         }
-
         return $row;
     }
 
-    /**
-     * Optionally assign a code to a specific column of a given row.
-     */
-    function addColCode($rowCodOrIndex, $colIndex, $colCod) {
-        $rowIndex = $this->resolveRowIndex($rowCodOrIndex);
-        if ($rowIndex && isset($this->_rows[$rowIndex])) {
-            $this->_colCodes[$colCod] = [$rowIndex, $colIndex];
-        }
-    }
-
-    /**
-     * Resolve a row code or index into its numeric index.
-     */
-    private function resolveRowIndex($rowCodOrIndex) {
-        if (is_numeric($rowCodOrIndex)) return (int)$rowCodOrIndex;
-        return $this->_rowCodes[$rowCodOrIndex] ?? null;
-    }
-
-    /**
-     * Resolve a column code or index into its numeric coordinates.
-     */
-    private function resolveColCoords($rowCodOrIndex, $colCodOrIndex) {
-        if (is_numeric($colCodOrIndex)) {
-            return [$this->resolveRowIndex($rowCodOrIndex), (int)$colCodOrIndex];
-        }
-        if (isset($this->_colCodes[$colCodOrIndex])) {
-            return $this->_colCodes[$colCodOrIndex];
-        }
-        return [null, null];
-    }
-
-    /**
-     * Retrieve a row object by index or code.
-     */
-    function getRow($rowCodOrIndex) {
-        $i = $this->resolveRowIndex($rowCodOrIndex);
-        return $i ? ($this->_rows[$i]["obj"] ?? null) : null;
-    }
-
-    /**
-     * Retrieve a column object by row/col index or code.
-     */
-    function getCol($rowCodOrIndex, $colCodOrIndex) {
-        list($r, $c) = $this->resolveColCoords($rowCodOrIndex, $colCodOrIndex);
-        if ($r && $c && isset($this->_rows[$r])) {
-            return $this->_rows[$r]["cols"]->get_item_by_index($c - 1);
-        }
-        return null;
-    }
-
-    /**
-     * Change the span (width) of a specific column.
-     */
     function setColSpan($rowCodOrIndex, $colCodOrIndex, $span) {
-        if ($col = $this->getCol($rowCodOrIndex, $colCodOrIndex)) {
-            $col->set_prop("colSpan", $span);
-        }
+        $row = $this->getOrCreateRow($rowCodOrIndex);
+        $col = $this->getOrCreateCol($row, $colCodOrIndex);
+        if ($col) $col->set_prop("colSpan", $span);
     }
 
-    /**
-     * Add or move an input to a specific cell.
-     * - If the input already exists in this group, it is simply moved.
-     * - If not, it is added.
-     * - If you pass a string code, it reuses or creates a new input.
-     *
-     * @param object|string $codOrInput Input object or code.
-     * @param string|int $rowCodOrIndex Row code or index.
-     * @param string|int $colCodOrIndex Column code or index.
-     * @param string|false $lbl Optional label.
-     * @param string|false $type Optional input type.
-     * @return object|false The input object.
-     */
-    function addInputInCell($codOrInput, $rowCodOrIndex, $colCodOrIndex, $lbl = false, $type = false) {
-		list($rowIndex, $colIndex) = $this->resolveColCoords($rowCodOrIndex, $colCodOrIndex);
-		if (!$rowIndex || !$colIndex) {
-			return false;
-		}
-
-		// Case 1: argument is an existing object
-		if (is_object($codOrInput)) {
-			$input = $codOrInput;
-			// If not already registered in this group, add it
-			if (!$this->get_child($input->cod)) {
-				$this->add_child($input);
-			}
-		}
-		// Case 2: argument is a code (string)
-		else {
-			// Try to reuse existing input
-			if ($existing = $this->get_child($codOrInput)) {
-				$input = $existing;
-			} else {
-				// Create it if not found
-				$input = $this->addNewChild($codOrInput, $type);
-				if ($lbl) {
-					$input->set_prop("lbl", $lbl);
-				}
-			}
-		}
-
-		// Update grid coordinates
-		$input->set_prop("parentGrid.row", $rowIndex);
-		$input->set_prop("parentGrid.col", $colIndex);
-
-		// Optional: update label if provided (even for existing ones)
-		if ($lbl) {
-			$input->set_prop("lbl", $lbl);
-		}
-
-		return $input;
-	}
-
-
-    /**
-     * Return the number of rows currently created.
-     */
     function getRowsCount() {
-        return count($this->_rows);
+        return count($this->getRowsArray()->get_data());
     }
 }
 ?>
