@@ -563,6 +563,10 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 	function after_connect_db_ok(){
 		$this->after_connect_db_ok_sub();
 	}
+	/** @return mwmod_mw_db_mysqli_dbman  */
+	function getDBManager(){
+		return $this->get_submanager("db");	
+	}
 	function setDBtimezoneAfterConnect(){
 		if($man=$this->get_submanager("db")){
 			$connection=$man->get_link();

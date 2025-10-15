@@ -101,6 +101,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 	function useAlwaysParameterizedMode(){
 		return false;
 	}
+	/** @return mwmod_mw_db_sql_query  */
 	function new_query(){
 		$query=new mwmod_mw_db_sql_query();
 		$query->set_dbman($this);

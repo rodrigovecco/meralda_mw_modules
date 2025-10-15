@@ -55,6 +55,11 @@ class mwmod_mw_db_sql_from extends mwmod_mw_db_sql_querypart{
 			return $this->add_item($item);
 		}
 	}
+	/**
+	 * @param mixed $tbl 
+	 * @param string|false $as 
+	 * @return mwmod_mw_db_sql_from_tbl|void 
+	 */
 	function add_from($tbl,$as=false){
 		if(is_string($tbl)){
 			$item = new mwmod_mw_db_sql_from_tbl($tbl,$as,$this);
