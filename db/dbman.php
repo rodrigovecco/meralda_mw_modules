@@ -10,6 +10,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 	}
 	//db methods
 	function do_connect($cfg){
+		/*
 		if ($dblink=mysql_connect ($cfg["host"],$cfg["user"],$cfg["pass"],true)){
 			if (mysql_selectdb($cfg["db"],$dblink)){
 				mysql_set_charset($cfg["charset"],$dblink); 
@@ -17,6 +18,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 						
 			}
 		}
+			*/
 			
 	}
 	////////////////views no implemented
@@ -126,24 +128,26 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 		if(!is_string($sql)){
 			return false;
 		}
+		/*
 	
 		if($query=mysql_query($sql,$l)){
 			return 	$query;
 		}
+			*/
 	}
 	function fetch_array($query){
 		
 		
-		return mysql_fetch_array($query);	
+		//return mysql_fetch_array($query);	
 	}
 	
 	function fetch_assoc($query){
 		
 		
-		return mysql_fetch_assoc($query);	
+		//return mysql_fetch_assoc($query);	
 	}
 	function real_escape_string($txt){
-		return mysql_real_escape_string($txt);	
+		//return mysql_real_escape_string($txt);	
 	}
 	function insert($sql){
 		if(!is_string($sql)){
@@ -152,9 +156,11 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 		if(!$l=$this->get_link()){
 			return false;	
 		}
+		/*
 		if($query=mysql_query($sql,$l)){
 			return 	mysql_insert_id($l);
 		}
+			*/
 	}
 	function exec_update($sql,$unsafe=false){
 		if(!is_string($sql)){
@@ -191,17 +197,18 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 		if(!$l=$this->get_link()){
 			return false;	
 		}
-	
+		/*
 		if($query=mysql_query($sql,$l)){
 			return 	mysql_affected_rows($l);
 		}
+			*/
 	}
 	function get_error(){
 		if(!$l=$this->get_link()){
 			
 			return false;	
 		}
-		return mysql_error($l);
+		//return mysql_error($l);
 			
 	}
 	function get_errorno(){
@@ -209,7 +216,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 			
 			return false;	
 		}
-		return mysql_errno($l);
+		//return mysql_errno($l);
 			
 	}
 	function affected_rows(){
@@ -217,7 +224,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 			
 			return false;	
 		}
-		return mysql_affected_rows($l);
+		//return mysql_affected_rows($l);
 			
 	}
 	
