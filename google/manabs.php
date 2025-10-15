@@ -8,6 +8,15 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
 		
 	}
 
+	function getMapID(){
+		if($td=$this->getJsonDataItem("maps")){
+			if($v=$td->get_data("mapid")){
+				return $v;	
+			};	
+		}
+		return	"mwmapid";
+	}
+
 	function prepareMainUIForMaps($ui,$libraries=false){
 		
     	$ui->jsmanager->add_item_by_cod_def_path("google/mw_google_maps.js");

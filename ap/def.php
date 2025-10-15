@@ -23,6 +23,14 @@ class mwmod_mw_ap_def  extends mwmod_mw_ap_apbase{
 		$man=new mwmod_mw_mail_mailer_man_systemwithqueue($this);
 		return $man;	
 	}
+	function create_submanager_google(){
+		$man=new mwmod_mw_google_man("google",$this);
+		return $man;	
+		
+	}
+	function getGoogleMan(){
+		return $this->get_submanager("google");
+	}
 	function on_shutdown(){
 		if($this->cfg->get_value_boolean("register_lng_msg")){
 			if($man=$this->get_submanager("lng")){

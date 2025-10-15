@@ -10,12 +10,16 @@ class mwmod_mw_google_ui_cfg_maps extends mwmod_mw_google_ui_cfg_abs{
 	
 		$input=$inputsgrdata->addNewChild("apikey");
 		$input->set_prop("lbl","Apikey");
+		$input=$inputsgrdata->addNewChild("mapid");
+		$input->set_prop("lbl","Map ID");
+		$input->set_prop("help",$this->lng_get_msg_txt("mapidhelpMSG","(opcional) Identificador de estilo de mapa personalizado. Ver https://developers.google.com/maps/documentation/javascript/get-api-key#map-id"));
 		
 		if($man=$this->getGoogleMan()){
 			if($td=$man->getJsonDataItem("maps")){
 				$inputsgrdata->set_value($td->get_data());	
 			}
 		}
+			
 	}
 	function save_from_request(){
 		$input=new mwmod_mw_helper_inputvalidator_request("cfg");
