@@ -31,51 +31,17 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	function setNotes($notes){
 		$this->set_prop("notes",$notes);
 	}
+	function setPlaceholder($txt){
+		$this->set_prop("placeholder", $txt);
+		return $this;
+	}
 	function setInputName($name){
 		$this->set_prop("input_name",$name);
 	}
 
 
+	////child creation methods//////
 
-
-
-
-
-
-
-	//////////
-	/**
-	 * Sets the input as required.
-	 *
-	 * @param bool $val Whether the input is required (default: true).
-	 */
-	function setRequired($val=true){
-		$this->set_prop("state.required",$val);
-	}
-	/**
-	 * Sets the input as disabled.
-	 *
-	 * @param bool $val Whether the input is disabled (default: true).
-	 */	
-	function setReadOnly($val=true){
-		$this->set_prop("state.readOnly",$val);
-	}
-	function setReadOnlySelfAndChildren($val=true){
-		$this->setReadOnly($val);
-		if($children=$this->get_children()){
-			foreach($children as $child){
-				$child->setReadOnlySelfAndChildren($val);
-			}
-		}
-	}
-	/**
-	 * Sets the input as disabled.
-	 *
-	 * @param bool $val Whether the input is disabled (default: true).
-	 */
-	function setDisabled($val=true){
-		$this->set_prop("state.disabled",$val);
-	}
 	/**
 	 * Adds a new default child input.
 	 *
@@ -105,18 +71,16 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		
 	}
 	/**
-	 * Sets the JavaScript input type and updates the JS class accordingly.
-	 *
-	 * @param string|false $type Optional type to set; defaults to $def_js_class_type.
+	 * @param string $cod 
+	 * @param string $objclass 
+	 * @return mwmod_mw_jsobj_inputs_date 
 	 */
-	function set_js_type($type=false){
-		if(!$type){
-			$type=$this->def_js_class_type;
-		}
-		$this->js_type=$type;
-		$c=$this->get_js_class_from_type($this->js_type);
-		$this->set_js_class($c);
+	function addNewDate($cod,$objclass=false){
+		$input = new mwmod_mw_jsobj_inputs_date($cod, $objclass);
+		$this->add_child($input);
+		return $input;
 	}
+	
 	/**
 	 * Adds a new select input.
 	 *
@@ -200,6 +164,47 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		$gr=new mwmod_mw_jsobj_inputs_btn($cod,$type,$p);
 		return $this->add_child($gr);
 	}
+
+
+
+
+
+
+
+	//////////
+	/**
+	 * Sets the input as required.
+	 *
+	 * @param bool $val Whether the input is required (default: true).
+	 */
+	function setRequired($val=true){
+		$this->set_prop("state.required",$val);
+	}
+	/**
+	 * Sets the input as disabled.
+	 *
+	 * @param bool $val Whether the input is disabled (default: true).
+	 */	
+	function setReadOnly($val=true){
+		$this->set_prop("state.readOnly",$val);
+	}
+	function setReadOnlySelfAndChildren($val=true){
+		$this->setReadOnly($val);
+		if($children=$this->get_children()){
+			foreach($children as $child){
+				$child->setReadOnlySelfAndChildren($val);
+			}
+		}
+	}
+	/**
+	 * Sets the input as disabled.
+	 *
+	 * @param bool $val Whether the input is disabled (default: true).
+	 */
+	function setDisabled($val=true){
+		$this->set_prop("state.disabled",$val);
+	}
+	
 	/**
 	 * Sets the JavaScript class name prefix.
 	 *
@@ -216,6 +221,19 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 			$this->passJsClassPref2Children=true;	
 		}
 		return true;
+	}
+	/**
+	 * Sets the JavaScript input type and updates the JS class accordingly.
+	 *
+	 * @param string|false $type Optional type to set; defaults to $def_js_class_type.
+	 */
+	function set_js_type($type=false){
+		if(!$type){
+			$type=$this->def_js_class_type;
+		}
+		$this->js_type=$type;
+		$c=$this->get_js_class_from_type($this->js_type);
+		$this->set_js_class($c);
 	}
 	/**
 	 * Generates the JavaScript class name from a given type.

@@ -6,10 +6,15 @@ class mwmod_mw_jsobj_inputs_select extends mwmod_mw_jsobj_inputs_input{
 		$this->def_js_class="mw_datainput_item_select";
 		$this->init_js_input($cod,$objclass);
 	}
-	function setDXMode(){
+	function setDXMode($autosetparams=false){
 		
 		$this->DXMode=true;
 		$this->set_js_class("mw_datainput_dx_selectBox");
+		if($autosetparams){
+			$this->set_prop("DXOptions.searchEnabled",true);
+			
+			
+		}
 	}
 	function set_multiple_elems_choise_mode(){
 		$this->multiple_elems_choise_mode=true;
