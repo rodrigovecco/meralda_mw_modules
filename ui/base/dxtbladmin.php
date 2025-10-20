@@ -559,6 +559,8 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 				
 		}
 		if(!$this->allowDeleteItem($item)){
+			$xml->set_prop("notify.message",$this->lng_get_msg_txt("cant_eliminate","No se pudo eliminar")." ".$item->get_name());
+			$xml->set_prop("notify.type","error");
 			$xml->root_do_all_output();
 			return false;	
 		}

@@ -57,6 +57,7 @@ class mwmod_mw_bootstrap_html_specialelem_alert extends mwmod_mw_bootstrap_html_
 		if(isset($this->title)){
 			$js->set_prop("title",$this->title);	
 		}
+		$js->set_prop("multiline",true);	
 		
 		
 	}

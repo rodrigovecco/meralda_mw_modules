@@ -1226,9 +1226,14 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		return $this->get_users_by_tbl_items($items);//
 	}
-	final function get_all_useres(){
+	/** @return array<mwmod_mw_users_user>  */
+	final function get_all_users(){
 		$this->load_all_users();
 		return $this->_all_users;
+	} 
+	//typo
+	final function get_all_useres(){
+		$this->get_all_users();
 	}
 	final function load_all_users(){
 		if(isset($this->_all_users)){

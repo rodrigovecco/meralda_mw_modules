@@ -1,4 +1,8 @@
 <?php
+/**
+ * @property-read string $cod
+ * @property string $name
+*/
 abstract class  mwmod_mw_manager_itemtype extends mw_apsubbaseobj{
 	public $name;
 	private $cod;
@@ -33,6 +37,12 @@ abstract class  mwmod_mw_manager_itemtype extends mw_apsubbaseobj{
 	}
 	function __call($a,$b){
 		return false;	
+	}
+	function get_cod(){
+		return $this->cod;
+	}
+	function get_code(){
+		return $this->cod;
 	}
 
 }

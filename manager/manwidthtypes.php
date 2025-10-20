@@ -2,6 +2,7 @@
 
 abstract class  mwmod_mw_manager_manwidthtypes extends mwmod_mw_manager_man{
 	private $_types;
+	/** @return array|false  */
 	function create_types(){
 		return false;
 		//extender
