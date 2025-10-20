@@ -78,6 +78,11 @@ class mwmod_mw_jsobj_obj extends mw_object_as_array{
 		}
 		return $n;
 	}
+	/**
+	 * @param mixed $cod 
+	 * @param bool $fnc 
+	 * @return mwmod_mw_jsobj_functionext 
+	 */
 	function addFunction($cod,$fnc=false){
 		
 		if(!$fnc){

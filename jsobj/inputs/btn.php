@@ -8,6 +8,21 @@ class mwmod_mw_jsobj_inputs_btn extends mwmod_mw_jsobj_inputs_def{
 		}
 		$this->init_js_input_type_mode($cod,$type);
 	}
+	/**
+	 * @param mixed $fnc 
+	 * @return mwmod_mw_jsobj_functionext 
+	 */
+	function setOnclick($fnc=null){
+		$addarg=false;
+		if(!$fnc){
+			$addarg=true;
+		}
+		$f=$this->addFunction("onclick",$fnc);
+		if($addarg){
+			$f->add_fnc_arg("btn");
+		}
+		return $f;
+	}
 	
 }
 ?>
