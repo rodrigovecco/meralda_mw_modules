@@ -1261,6 +1261,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $cr;
 	}
 	//usuario
+	/** @return mwmod_mw_users_user  */
 	function get_admin_current_user(){
 		return $this->maininterface->get_admin_current_user();	
 	}

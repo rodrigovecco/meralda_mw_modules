@@ -255,6 +255,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 	
 	//creación de objetos
+	/** @return mwmod_mw_users_groups_man | false  */
 	final function get_groups_man(){
 		if(!isset($this->_groups_man)){
 			$this->_groups_man=$this->create_groups_man();	
@@ -548,6 +549,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	final function set_permissions_man($man){
 		$this->_permission_man=$man;	
 	}
+	/** @return mwmod_mw_users_permissions_permissionsman | false  */
 	final function get_permission_man(){
 		if(isset($this->_permission_man)){
 			return 	$this->_permission_man;
@@ -991,7 +993,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if($_REQUEST["logout"]??false){
 			return $this->logout();	
 		}
-		if($_REQUEST["login_userid"]){
+		if($_REQUEST["login_userid"]??null){
 
 			
 			
@@ -1001,7 +1003,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			}
 			
 			if($this->login_session_token_enabled()){
-				if(!$this->login_session_token_check($_REQUEST["login_token"])){
+				if(!$this->login_session_token_check($_REQUEST["login_token"]??null)){
 					$this->session_register_login_fail($this->lng_get_msg_txt("invalid_session_token","Clave de control se sesión no válida"));	
 					return false;
 				}
@@ -1039,11 +1041,11 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			
 			
 
-			if($this->login($_REQUEST["login_userid"],$_REQUEST["login_pass"])){
+			if($this->login($_REQUEST["login_userid"]??null,$_REQUEST["login_pass"]??null)){
 				$this->session_register_login_ok("");
 				if($bruteForceMan=$this->__get_priv_bruteForceMan()){
 					if($bruteForceMan->isEnabled()){
-						$bruteForceMan->registerCurrentIPsuccessfullLogin($_REQUEST["login_userid"]);
+						$bruteForceMan->registerCurrentIPsuccessfullLogin($_REQUEST["login_userid"]??null);
 					}
 				}
 				return true;
@@ -1127,7 +1129,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if($t=$this->create_token_cookie()){
 			$this->set_sv_data($t,"token");	
 		}
-		$this->set_sv_data($_SERVER['REMOTE_ADDR'],"ip");
+		$this->set_sv_data($_SERVER['REMOTE_ADDR']??null,"ip");
 	}
 	function set_current_user_and_session_var($user){
 		//no usada

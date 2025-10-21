@@ -463,6 +463,7 @@ abstract class mwmod_mw_users_userabs extends mw_apsubbaseobj{
 		return $token;
 	}
 	
+	/** @return mwmod_mw_users_def_userdata  */
 	function get_user_data_man(){
 		return $this->man->get_user_data_man();	
 	}

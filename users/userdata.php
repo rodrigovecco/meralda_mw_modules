@@ -1,5 +1,6 @@
 <?php
 //
+/** @package  */
 class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 	private $man;
 	
@@ -434,6 +435,12 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 		return $cr;
 
 	}
+	/**
+	 * @param mixed $input 
+	 * @param mixed $user 
+	 * @param mwmod_mw_html_elem | false $uimsgelem 
+	 * @return bool 
+	 */
 	function savefromfrm_user_changepass($input,$user,$uimsgelem=false){
 		//$input=mwmod_mw_helper_inputvalidator_request
 		if(!$input){
@@ -897,6 +904,13 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 		return $pass_policy->check_new_pass($pass,$msg);
 	}
 	
+	
+	/**
+	 * @param mixed $name 
+	 * @param mwmod_mw_users_user | false $current 
+	 * @param string &$msg 
+	 * @return mixed 
+	 */
 	function user_already_exists($name,$current=false,&$msg=""){
 		if(!$user=$this->man->get_user_by_idname_case_insensitive($name)){
 			return false;
@@ -1019,6 +1033,12 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 			
 	}
 	
+	/**
+	 * @param mixed $input 
+	 * @param mixed $user 
+	 * @param mwmod_mw_html_elem | false $msgcontainer 
+	 * @return bool|void 
+	 */
 	function upload_profile_imgs_from_input_crop($input,$user,$msgcontainer=false){
 		if(!is_array($input)){
 			return false;	
