@@ -23,6 +23,11 @@ class mwmod_mw_db_sql_select extends mwmod_mw_db_sql_querypart{
 	}
 	
 	
+	/**
+	 * @param string $sql 
+	 * @param string $as 
+	 * @return mwmod_mw_db_sql_select_select 
+	 */
 	function add_select($sql,$as=false){
 		$item = new mwmod_mw_db_sql_select_select($sql,$as,$this);
 		return $this->add_item($item);

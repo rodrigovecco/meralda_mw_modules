@@ -51,6 +51,10 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 	
 	}
 	
+	/**
+	 * @param mwmod_mw_db_sql_where $queryWhere 
+	 * @return mixed|mixed 
+	 */
 	function aplay2QueryWhereAsChild($queryWhere){
 		if(!$field=$this->getField()){
 			return false;	
