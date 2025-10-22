@@ -13,6 +13,10 @@
  * @property-read string $code Interface code.
  * @property-read mwmod_mw_ui_sub_uiabs|null $parent_subinterface Direct parent subinterface.
  * @property-read mwmod_mw_ui_sub_uiabs|null $current_sub_interface Currently active child subinterface.
+ * @property-read mwmod_mw_ui_sub_uiabs|null $current_parent_subinterface Currently active parent subinterface.
+ * @property-read string $code_for_parent Code used to identify this subinterface in the parent.
+ * @property mwmod_mw_jsobj_obj $js_output JavaScript output object.
+ * @property mwmod_mw_data_xml_root $xml_output XML output object.
  */
 abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	/**
@@ -50,6 +54,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	private $code;
 	public $sucods;
 	public $xml_output;
+	public $js_output;
 	//var $order_on_main_mnu=99999999;
 	//var $mnu_icon;
 	public $mnuIconClass;
