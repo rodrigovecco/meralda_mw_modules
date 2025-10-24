@@ -108,6 +108,9 @@ class mwmod_mw_geo_geohash{
      * @return  mixed   Array of Latitude and Longitude
      */
     public function decode($hash, $error = false)    {
+		if(!$hash || !is_string($hash)){
+			return null;
+		}
         $hash = strtolower(trim($hash));
         if(!$this->isValidGeohash($hash)){
             return array(0,0);
@@ -326,7 +329,9 @@ class mwmod_mw_geo_geohash{
      * @return array An associative array with keys 'NW', 'NE', 'SW', 'SE'
      */
     public function getCorners($hash,$indexed=false) {
-        $decoded = $this->decode($hash);
+        if(!$decoded = $this->decode($hash)){
+			return null;
+		}
         $lat = $decoded[0];
         $lon = $decoded[1];
 

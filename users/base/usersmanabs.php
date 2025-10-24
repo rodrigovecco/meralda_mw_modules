@@ -1283,6 +1283,10 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		
 
 	}
+	/**
+	 * @param int $id 
+	 * @return mwmod_mw_users_user 
+	 */
 	final function get_user($id){
 
 		if(!$id=mw_get_number($id)){
