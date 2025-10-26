@@ -437,7 +437,7 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	 * Retrieves a child input by its code.
 	 *
 	 * @param string $cod The code of the child.
-	 * @return object|null
+	 * @return mwmod_mw_jsobj_inputs_input|null
 	 */
 	final function get_child($cod){
 		if(!$cod){
