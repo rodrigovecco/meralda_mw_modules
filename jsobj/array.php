@@ -3,10 +3,20 @@
 class mwmod_mw_jsobj_array extends mwmod_mw_jsobj_obj{
 	var $array_data=array();
 	var $array_data_assoc=array();
+
+	public $pairKey="id";
+	public $pairVal="name";
 	function __construct($data=false){
 		if(is_array($data)){
 			$this->array_data=$data;	
 		}
+	}
+	function addIDNamePair($id,$name){
+		$obj=new mwmod_mw_jsobj_obj();
+		$obj->set_prop($this->pairKey,$id);
+		$obj->set_prop($this->pairVal,$name);
+		$this->add_data($obj);
+		return $obj;
 	}
 	
 	function clearData(){
