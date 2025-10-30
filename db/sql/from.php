@@ -25,6 +25,13 @@ class mwmod_mw_db_sql_from extends mwmod_mw_db_sql_querypart{
 			return $this->add_item($item);
 		}
 	}
+	/**
+	 * @param mixed $subquery 
+	 * @param mixed $cod 
+	 * @param mixed $external_field 
+	 * @param string $inner_join_field 
+	 * @return mwmod_mw_db_sql_from_subquery 
+	 */
 	function add_subquery($subquery,$cod,$external_field,$inner_join_field="id"){
 		$item = new mwmod_mw_db_sql_from_subquery($subquery,$cod,$this);
 		$item->external_join_field=$external_field;

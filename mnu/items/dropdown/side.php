@@ -85,7 +85,7 @@ class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem{
 	
 	
 	function get_alink(){
-		$r.="<a href='#' class='nav-link collapsed' data-toggle='collapse' ";
+		$r="<a href='#' class='nav-link collapsed' data-toggle='collapse' ";
 		/*
 		if($this->tooltip){
 			$r.="data-toggle='tooltip'  data-placement='top'  title='".mw_text_nl_js($this->tooltip)."' ";	
@@ -110,7 +110,7 @@ class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem{
 	}
 	
 	function get_html_as_nav_child_inner(){
-		$r.=$this->get_alink();
+		$r=$this->get_alink();
 		$r.="<ul class='nav ".$this->side_css_sub_class." collapse' aria-expanded='false'>";	
 		$r.=$this->get_html_as_nav_child_inner_children();
 		$r.="</ul>";
@@ -121,7 +121,7 @@ class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem{
 		if(!$items=$this->get_items_allowed()){
 			return false;	
 		}
-		$r.="<ul class='nav ".$this->side_css_sub_class." collapse' aria-expanded='false'>x";	
+		$r="<ul class='nav ".$this->side_css_sub_class." collapse' aria-expanded='false'>x";	
 		foreach ($items as $item){
 			//$r.="<li>";	
 			$r.=$item->get_html_as_list_item();	
@@ -138,7 +138,7 @@ class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem{
 		
 		foreach ($items as $item){
 			
-			$r.=$item->get_html_as_nav_child();	
+			$r=$item->get_html_as_nav_child();	
 				
 		}
 		

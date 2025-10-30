@@ -134,7 +134,12 @@ class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_ele
 		$oplist->add_items_to_js_array($lu,$valueExpr,$displayExpr);
 		
 	}
-	function set_lookup($valueExpr,$displayExpr){
+	/**
+	 * @param string $valueExpr 
+	 * @param string $displayExpr 
+	 * @return mwmod_mw_jsobj_array 
+	 */
+	function set_lookup($valueExpr="id",$displayExpr="name"){
 		$this->lookup=new mwmod_mw_jsobj_obj();
 		$this->lookup->set_prop("valueExpr",$valueExpr);
 		$this->lookup->set_prop("displayExpr",$displayExpr);
@@ -142,6 +147,8 @@ class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_ele
 		$this->lookup_ds=new mwmod_mw_jsobj_array();
 		$this->lookup->set_prop("dataSource",$this->lookup_ds);
 		$this->js_data->set_prop("lookup",$this->lookup);	
+		$this->lookup_ds->pairKey=$valueExpr;
+		$this->lookup_ds->pairVal=$displayExpr;
 		return $this->lookup_ds;
 		
 		
