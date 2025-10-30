@@ -5,6 +5,86 @@ class mwmod_mw_data_tree_subitem extends mw_baseobj{
 	function __construct($cod,$mainitem){
 		$this->init($cod,$mainitem);	
 	}
+	function getNum($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_numeric($v)){
+			return floatval($v);	
+		}
+		return $def;
+	}
+	function getInt($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_numeric($v)){
+			return intval($v);	
+		}
+		return $def;
+	}
+	function getIntUnsigned($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_numeric($v)){
+			$v=intval($v);	
+			if($v<0){
+				return $def;	
+			}
+			return $v;
+		}
+		return $def;
+	}
+	function getArray($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_array($v)){
+			return $v;	
+		}
+		return $def;
+	}
+	function getString($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_string($v)){
+			return $v;	
+		}
+		if(is_numeric($v)){
+			return strval($v);	
+		}
+		return $def;
+	}
+	function getBool($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_bool($v)){
+			return $v;	
+		}
+		if(is_numeric($v)){
+			if(intval($v)){
+				return true;	
+			}else{
+				return false;	
+			}
+		}
+		return $def;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	function isNew(){
 		if($this->is_data_defined()){
 			return false;	

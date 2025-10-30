@@ -32,6 +32,13 @@ abstract class mwmod_mw_helper_inputvalidator_abs extends mw_baseobj{
 		}
 
 	}
+	function getValueArray($cod=false){
+		$v=$this->get_value_by_dot_cod_as_list($cod);
+		if(is_array($v)){
+			return $v;
+		}
+		
+	}
 	function getValueInt($cod=false){
 		$v=$this->get_value_by_dot_cod($cod);
 		if(is_numeric($v)){

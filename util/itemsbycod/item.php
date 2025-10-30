@@ -4,6 +4,7 @@ class  mwmod_mw_util_itemsbycod_item extends mw_apsubbaseobj{
 	public $cod;
 	public $name;
 	private $jsparams;
+	public $data=array();
 	function __construct($cod,$name=false){
 		$this->cod=$cod;
 		if($name){
@@ -28,6 +29,12 @@ class  mwmod_mw_util_itemsbycod_item extends mw_apsubbaseobj{
 		}
 		return $this->jsparams;
 		
+	}
+	function get_data($cod=false){
+		if(!$cod){
+			return $this->data;	
+		}
+		return $this->data[$cod]??null;	
 	}
 	
 	

@@ -80,6 +80,16 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		$this->add_child($input);
 		return $input;
 	}
+	/**
+	 * @param mixed $cod 
+	 * @param string $objclass 
+	 * @return mwmod_mw_jsobj_inputs_number 
+	 */
+	function addNewNumber($cod,$objclass=false){
+		$input = new mwmod_mw_jsobj_inputs_number($cod, $objclass);
+		$this->add_child($input);
+		return $input;
+	}
 	
 	/**
 	 * Adds a new select input.

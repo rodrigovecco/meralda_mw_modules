@@ -28,6 +28,11 @@ abstract class  mwmod_mw_manager_basemanabs extends mw_apsubbaseobj{
 	final function enable_jsondata($val=true){
 		$this->_can_create_jsondata=$val;
 	}
+	/**
+	 * @param string $code 
+	 * @param string $path 
+	 * @return mwmod_mw_data_json_item|void 
+	 */
 	function getJsonDataItem($code="data",$path=false){
 		if($m=$this->__get_priv_jsonDataMan()){
 			return $m->get_datamanager($code,$path);	
