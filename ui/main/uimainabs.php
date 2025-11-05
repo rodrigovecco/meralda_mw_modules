@@ -864,6 +864,10 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	final function get_current_subinterface(){
 		return $this->current_subinterface; 	
 	}
+	/**
+	 * @param mixed $cod 
+	 * @return mwmod_mw_ui_sub_uiabs|void 
+	 */
 	final function get_subinterface($cod){
 		if(!$cod){
 			return false;	

@@ -12,10 +12,22 @@ class mwmod_mw_jsobj_inputs_btgridgr extends mwmod_mw_jsobj_inputs_gr {
     private $_rowCodes = [];
     private $_colCodes = [];
 
+	public $defaultSpan=4;
+
     function __construct($cod, $def_js_class_pref = false) {
         parent::__construct($cod, "group_btGrid", $def_js_class_pref);
         $this->set_js_type("group_btGrid");
     }
+	function setTitleMode($lbl=false,$type="group_btGridWithTitle"){
+		if(!$type){
+			$type="group_btGridWithTitle";	
+		}
+		$this->set_js_type($type);
+		if($lbl){
+			$this->set_prop("lbl",$lbl);	
+		}
+		
+	}
 
     //────────────────────────────────────────────
     // Core grid helpers
@@ -67,7 +79,10 @@ class mwmod_mw_jsobj_inputs_btgridgr extends mwmod_mw_jsobj_inputs_gr {
     /**
      * Retrieve or create a column inside a given row.
      */
-    function getOrCreateCol($rowObj, $colCodOrIndex, $defaultSpan = 4) {
+    function getOrCreateCol($rowObj, $colCodOrIndex, $defaultSpan = null) {
+		if($defaultSpan===null){
+			$defaultSpan=$this->defaultSpan;
+		}
         $cols = $rowObj->get_array_prop("cols");
 
         // If col is referenced by code

@@ -100,6 +100,10 @@ abstract class mwmod_mw_db_sql_querypart extends mwmod_mw_db_sql_abs{
 	final function get_items(){
 		return $this->_items;	
 	}
+	/**
+	 * @param int $index 
+	 * @return mwmod_mw_db_sql_from_tbl 
+	 */
 	function get_item_by_index($index=0){
 		if(array_key_exists($index,$this->_items)){
 			return $this->_items[$index];	

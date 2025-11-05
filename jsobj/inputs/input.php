@@ -143,6 +143,19 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		return $this->add_child($gr);
 	}
 	/**
+	 * @param mixed $cod 
+	 * @param bool $cont 
+	 * @return mwmod_mw_jsobj_inputs_html 
+	 */
+	function addNewHtml($cod,$cont=false){
+		
+		$gr=new mwmod_mw_jsobj_inputs_html($cod);
+		if($cont){
+			$gr->setCont($cont);
+		}
+		return $this->add_child($gr);
+	}
+	/**
 	 * Adds a new group of buttons.
 	 *
 	 * @param string $cod Code for the group.

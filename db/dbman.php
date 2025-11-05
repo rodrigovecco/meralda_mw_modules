@@ -22,6 +22,10 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 			
 	}
 	////////////////views no implemented
+	/**
+	 * @param mixed $cod 
+	 * @return mwmod_mw_db_mysqli_view 
+	 */
 	function get_view_manager($cod){
 		if(!$cod=$this->check_str_key($cod)){
 			return false;	
