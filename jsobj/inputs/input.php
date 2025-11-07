@@ -27,6 +27,7 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	function setLabel($lbl){
 		$this->set_prop("lbl",$lbl);
 	}
+	
 
 	function setNotes($notes){
 		$this->set_prop("notes",$notes);
