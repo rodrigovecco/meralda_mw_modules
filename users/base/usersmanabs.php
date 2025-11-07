@@ -44,6 +44,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $users_by_idname=array();
 	
 	private $_treedataman;
+	private $jsonDataMan;
 	
 	
 	private $_permission_man;
@@ -661,6 +662,26 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		
 		return $p."/data";	
+	}
+	function get_jsondata_item($code="data",$path=false){
+		if($m=$this->__get_priv_jsonDataMan()){
+			return $m->get_datamanager($code,$path);	
+		}
+	}
+	function createJsonDataMan(){
+		if(!$p=$this->get_treedata_path()){
+			return false;	
+		}
+		$m= new mwmod_mw_data_json_man($p);
+		return $m;
+	}
+	final function __get_priv_jsonDataMan(){
+		if(!isset($this->jsonDataMan)){
+			if(!$this->jsonDataMan=	$this->createJsonDataMan()){
+				$this->jsonDataMan=	false;
+			}
+		}
+		return $this->jsonDataMan;
 	}
 
 	//sesión

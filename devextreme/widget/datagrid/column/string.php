@@ -6,6 +6,9 @@ class mwmod_mw_devextreme_widget_datagrid_column_string extends mwmod_mw_devextr
 	function set_dataoptim_field($field){
 		$field->text_mode();	
 	}
+	function setLongTextMode(){
+		$this->mw_js_colum_class="mw_devextreme_datagrid_column_txtLongText";
+	}
 	
 	
 	

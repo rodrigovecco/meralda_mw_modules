@@ -21,9 +21,10 @@ class mwmod_mw_users_usersman extends mwmod_mw_users_usersmanabs{
 		if(!$this->check_str_key($permission)){
 			return false;	
 		}
-		if(!$ado=$this->get_treedata_item("permissionsrequest","logs")){
+		if(!$ado=$this->get_jsondata_item("permissionsrequest","logs")){
 			return false;	
 		}
+		
 		if($ado->get_data("requested_dates.".$permission)){
 			return true;
 		}
