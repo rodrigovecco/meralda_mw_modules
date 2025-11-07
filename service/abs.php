@@ -409,7 +409,7 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		$url=$this->getUrl($params,$sub,$filename);
 		$r="";
 		if(is_null($https)){
-			if($_SERVER['HTTPS']){
+			if($_SERVER['HTTPS']??false){
 				$https=true;
 			}else{
 				$https=false;
@@ -422,7 +422,7 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 			$r="http://";	
 		}
 		if(!$host){
-			$host=$_SERVER['HTTP_HOST'];	
+			$host=$_SERVER['HTTP_HOST']??"";	
 		}
 		$r.=$host;
 		return $r.$url;

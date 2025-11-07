@@ -54,6 +54,27 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		$man=new mwmod_mw_data_json_mancuspath("cfg/json",$this->get_path("instance"));
 		return $man;
 	}
+	function getURLabs($sub=""){
+		$url=$sub;
+		$r="";
+		if($_SERVER['HTTPS']??false){
+			$https=true;
+		}else{
+			$https=false;
+		}
+				
+		
+		if($https){
+			$r="https://";	
+		}else{
+			$r="http://";	
+		}
+		$host=$_SERVER['HTTP_HOST']??"";	
+		
+		$r.=$host;
+		return $r.$url;
+		
+	}
 
 
 	final function __get_priv_jsonCfgMan(){
