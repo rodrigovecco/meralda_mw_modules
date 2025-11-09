@@ -1,31 +1,113 @@
 <?php
 /**
- * Abstract class for DevExtreme-based admin data tables in the UI.
- * Handles data loading, saving, item creation, deletion, user preferences, and JS initialization.
+ * DevExtreme-based admin data table interface with full CRUD operations.
+ *
+ * Provides a complete data grid interface using DevExtreme with support for:
+ * - Remote data loading with pagination, sorting, and filtering
+ * - CRUD operations (Create, Read, Update, Delete)
+ * - User preferences (column visibility, order, filters)
+ * - Excel export functionality
+ * - Toolbar customization
+ * - Permission-based access control
+ *
+ * Child classes must implement:
+ * - getItemsMan(): Return the items manager for data operations
+ * - add_cols($datagrid): Define grid columns
+ *
+ * @property-read mwmod_mw_devextreme_data_queryhelper|null $queryHelper Query helper initialized in getQuery().
  */
 abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
-	public $queryHelper;//mwmod_mw_devextreme_data_queryhelper iniciado en getQuery
+	/**
+	 * Query helper for DevExtreme data operations. Initialized in getQuery().
+	 * @var mwmod_mw_devextreme_data_queryhelper|null
+	 */
+	public $queryHelper;
+	
+	/**
+	 * Default page size for data grid pagination.
+	 * @var int
+	 */
 	public $defPageSize=20;
+	
+	/**
+	 * Editing mode for the data grid: "row", "cell", "batch", or "form".
+	 * @var string
+	 */
 	public $editingMode="row";
+	
+	/**
+	 * Name for Excel export file (without extension).
+	 * @var string|null
+	 */
 	public $excelExportName;
+	
+	/**
+	 * Whether to enable the column chooser feature.
+	 * @var bool
+	 */
 	public $columnsChooserEnabled=false;
+	
+	/**
+	 * Whether to add column codes to Excel export.
+	 * @var bool
+	 */
 	public $addColCodsToExcel=false;
 
-
-	//public $userColsFiltersRememberEnabled=false;
+	/**
+	 * Whether to remember column order in user preferences.
+	 * @var bool
+	 */
 	public $userColsOrderRememberEnabled=false;
 
-
-
+	/**
+	 * Whether to remember column selection (visibility) in user preferences.
+	 * @var bool
+	 */
 	public	$userColsSelectedRememberEnabled=false;
 	
+	/**
+	 * Whether to remember visible index of columns in user preferences.
+	 * @var bool
+	 */
 	public	$userColsSelectedRememberEnabledVisible=false;
+	
+	/**
+	 * Whether to show reset button for column preferences.
+	 * @var bool
+	 */
 	public	$userColsPrefResetBtnEnabled=false;
+	
+	/**
+	 * Whether to show clear filters button in toolbar.
+	 * @var bool
+	 */
 	public	$clearFiltersBtnEnabled=false;
+	
+	/**
+	 * Whether to show remember filters button in toolbar.
+	 * @var bool
+	 */
 	public	$rememberFiltersBtnEnabled=false;
+	
+	/**
+	 * Whether to remember user filters in preferences.
+	 * @var bool
+	 */
 	public $userFiltersRemember=false;
 
+	/**
+	 * Whether export button has been added to toolbar items.
+	 * @var bool
+	 */
 	public $toolbarItemsExportButtonAdded=false;
+	
+	/**
+	 * Enables user filter remembering mode.
+	 *
+	 * Activates clear filters button, filter memory, and remember filters button.
+	 *
+	 * @return void
+	 */
 	function setUserFilterRememberEnabledMode(){
 		
 		$this->clearFiltersBtnEnabled=true;
@@ -33,6 +115,15 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->rememberFiltersBtnEnabled=true;
 
 	}
+	
+	/**
+	 * Enables user column selection remembering mode.
+	 *
+	 * Activates column chooser, column selection memory, visible index memory,
+	 * reset button, and column order memory.
+	 *
+	 * @return void
+	 */
 	function setUserColsSelectedRememberEnabledMode(){
 		
 		$this->columnsChooserEnabled=true;
@@ -43,9 +134,24 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->userColsOrderRememberEnabled=true;
 	}
 	
+	/**
+	 * Returns whether column visible index should be remembered.
+	 *
+	 * @return bool True if visible index remembering is enabled.
+	 */
 	function userColsSelectedRememberEnabledVisibleIndex(){
 		return $this->userColsSelectedRememberEnabledVisible;
 	}
+	
+	/**
+	 * Constructs the DevExtreme table admin interface.
+	 *
+	 * Initializes as main or sub interface, sets default title, JavaScript class,
+	 * and row editing mode.
+	 *
+	 * @param string $cod Interface code identifier.
+	 * @param mwmod_mw_ui_sub_uiabs|null $parent Parent interface or null if main interface.
+	 */
 	function __construct($cod,$parent){
 		$this->init_as_main_or_sub($cod,$parent);
 		$this->set_def_title("Some UI");
@@ -53,17 +159,39 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$this->editingMode="row";
 		
 	}
+	
+	/**
+	 * Checks if user is allowed to save column state preferences.
+	 *
+	 * @return bool|null True if allowed, null if column state remembering is disabled.
+	 */
 	function allowSaveColsState(){
 		if($this->userColsSelectedRememberEnabled){
 			return $this->is_allowed();	
 		}
 	}
+	
+	/**
+	 * Checks if user is allowed to save filter preferences.
+	 *
+	 * @return bool|null True if allowed, null if filter remembering is disabled.
+	 */
 	function allowSaveFilters(){
 		if($this->userFiltersRemember){
 			return $this->is_allowed();	
 		}
 	}
 
+	/**
+	 * AJAX endpoint to save user filter preferences.
+	 *
+	 * Validates and stores column filter values in user UI data storage.
+	 * Returns XML response with success status and notification message.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response, returns false on permission failure.
+	 */
 	function execfrommain_getcmd_sxml_savefilters($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -129,6 +257,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$xml->root_do_all_output();
 
 	}
+	
+	/**
+	 * AJAX endpoint to reset column state preferences to defaults.
+	 *
+	 * Clears all saved column preferences (visibility, order, width) for the current user.
+	 * Returns XML response with success notification and JavaScript reload instruction.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response, returns false on permission failure.
+	 */
 	function execfrommain_getcmd_sxml_resetcolsstate($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -165,6 +304,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$xml->root_do_all_output();
 
 	}
+	
+	/**
+	 * AJAX endpoint to save column state preferences.
+	 *
+	 * Validates and stores column properties (visibility, order, width) excluding filter values.
+	 * Saves column state per column code in user UI data storage.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response, returns false on permission/validation failure.
+	 */
 	function execfrommain_getcmd_sxml_savecolsstate($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -225,6 +375,12 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$xml->root_do_all_output();
 
 	}
+	
+	/**
+	 * Gets the default page size for pagination.
+	 *
+	 * @return int The default page size.
+	 */
 	function getDefPageSize(){
 		return $this->defPageSize;	
 	}
@@ -234,18 +390,54 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function getItemsMan(){
 		return $this->items_man;
 	}
+	
+	/**
+	 * Checks if deletion is allowed.
+	 *
+	 * @return bool True if user has admin permission.
+	 */
 	function allowDelete(){
 		return $this->allow_admin();
 	}
+	
+	/**
+	 * Checks if insertion is allowed.
+	 *
+	 * @return bool True if user has admin permission.
+	 */
 	function allowInsert(){
 		return $this->allow_admin();
 	}
+	
+	/**
+	 * Checks if updates are allowed.
+	 *
+	 * @return bool True if user has admin permission.
+	 */
 	function allowUpdate(){
 		return $this->allow_admin();
 	}
+	
+	/**
+	 * Checks if a specific item can be deleted.
+	 *
+	 * Override in child classes for item-specific delete permissions.
+	 *
+	 * @param mixed $item The item to check.
+	 * @return bool True if deletion is allowed.
+	 */
 	function allowDeleteItem($item){
 		return $this->allowDelete();
 	}
+	
+	/**
+	 * Checks if a specific item can be updated.
+	 *
+	 * Override in child classes for item-specific update permissions.
+	 *
+	 * @param mixed $item The item to check.
+	 * @return bool True if update is allowed.
+	 */
 	function allowUpdateItem($item){
 		return $this->allowUpdate();
 	}
@@ -275,6 +467,14 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function afterGetQuery($query){
 		//extender	
 	}
+	
+	/**
+	 * Gets the query from request parameters.
+	 *
+	 * Convenience method that calls getQuery().
+	 *
+	 * @return mwmod_mw_db_sql_query|false The query object or false on failure.
+	 */
 	function getQueryFromReq(){
 		if(!$query=$this->getQuery()){
 			return false;	
@@ -282,12 +482,30 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		return $query;
 			
 	}
+	
+	/**
+	 * Converts an item object to array data for DevExtreme table.
+	 *
+	 * @param mixed $item The item object.
+	 * @return array The item data formatted for DevExtreme.
+	 */
 	function get_item_data($item){
 		$r=$item->getDataForDXtbl();
 		return $r;
 	}
 	
 
+	/**
+	 * AJAX endpoint to load data for the DevExtreme grid.
+	 *
+	 * Processes DevExtreme load options (skip, take, sort, filter) and returns
+	 * paginated data with total count. Handles permissions, query creation,
+	 * and data transformation.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response with data array and total count.
+	 */
 	function execfrommain_getcmd_sxml_loaddata($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -378,17 +596,52 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 			
 	}
+	
+	/**
+	 * Sets default sort order for the query.
+	 *
+	 * Override in child classes to define default sorting.
+	 *
+	 * @param mwmod_mw_db_sql_query $query The query object to modify.
+	 * @return void
+	 */
 	function setDefaultQuerySort($query){
 		//extender
 	}
+	
+	/**
+	 * Renders HTML content at the bottom of the grid container.
+	 *
+	 * Override in child classes to add bottom content.
+	 *
+	 * @param mixed $container The container element.
+	 * @return void
+	 */
 	function getBotHtml($container){
 		
 	}
+	
+	/**
+	 * Renders HTML content at the top of the grid container.
+	 *
+	 * Override in child classes to add header content.
+	 *
+	 * @param mixed $container The container element.
+	 * @return void
+	 */
 	function getTopHtml($container){
 		
 	}
 	
 	
+	/**
+	 * Renders the main page with the DevExtreme grid container.
+	 *
+	 * Creates the HTML structure including optional main panel, top/bottom content,
+	 * and the grid container element. Outputs the complete HTML.
+	 *
+	 * @return void Outputs HTML directly.
+	 */
 	function do_exec_page_in(){
 		$MainContainer=$this->get_ui_dom_elem_container();
 		$container=$MainContainer;
@@ -438,9 +691,25 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 		
 	}
+	
+	/**
+	 * Sets UI JavaScript initialization parameters.
+	 *
+	 * Calls setDefaultJSinitParams(). Override for custom parameters.
+	 *
+	 * @return void
+	 */
 	function set_ui_js_params(){
 		$this->setDefaultJSinitParams();
 	}
+	
+	/**
+	 * Sets default JavaScript initialization parameters for the grid.
+	 *
+	 * Configures user preferences features and Excel export settings.
+	 *
+	 * @return void
+	 */
 	function setDefaultJSinitParams(){
 		if($this->userColsSelectedRememberEnabled){
 			$this->ui_js_init_params->set_prop("userColsSelectedRememberEnabled",true);
@@ -454,6 +723,15 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		///$this->ui_js_init_params->set_prop("excelExportName",$this->excelExportName);
 
 	}
+	
+	/**
+	 * Prepares resources before interface execution.
+	 *
+	 * Loads DevExtreme utilities, Excel export support, JavaScript libraries,
+	 * and CSS resources required for the grid.
+	 *
+	 * @return void
+	 */
 	function before_exec(){
 		$util=new mwmod_mw_devextreme_util();
 		if($this->excelExportName){
@@ -482,6 +760,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$jsman->add_item_by_item($item);
 
 	}
+	
+	/**
+	 * AJAX endpoint to create a new item.
+	 *
+	 * Validates input data, checks permissions, creates the item via create_new_item(),
+	 * and returns the new item data in XML response.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response with new item data or error.
+	 */
 	function execfrommain_getcmd_sxml_newitem($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -528,16 +817,46 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$xml->root_do_all_output();
 
 	}
+	
+	/**
+	 * Hook to validate data before creating a new item.
+	 *
+	 * Override in child classes to implement validation logic.
+	 *
+	 * @param array $nd The new item data.
+	 * @param mixed $xml The XML response object.
+	 * @return bool True if validation passes, false to prevent creation.
+	 */
 	function check_before_create_item($nd,$xml){
 		//false if data is missing or there is a duplicate key
 		return true;
 	}
+	
+	/**
+	 * Creates a new item in the database.
+	 *
+	 * Delegates to the items manager's create_new_item() method.
+	 *
+	 * @param array $nd The new item data.
+	 * @return mixed|null The created item object or null on failure.
+	 */
 	function create_new_item($nd){
 		if($man=$this->items_man){
 			
 			return $man->create_new_item($nd);	
 		}
 	}
+	
+	/**
+	 * AJAX endpoint to delete an item.
+	 *
+	 * Validates permissions, retrieves item by ID from request, calls delete_item(),
+	 * and returns success/error XML response.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response with deletion result.
+	 */
 	function execfrommain_getcmd_sxml_deleteitem($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		
@@ -575,6 +894,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 
 	}
+	
+	/**
+	 * Deletes an item after checking for related objects.
+	 *
+	 * Validates that no related objects exist, performs deletion, and sets
+	 * appropriate success/error messages in the XML response.
+	 *
+	 * @param mixed $item The item to delete.
+	 * @param mixed $xmlresponse The XML response object for messages.
+	 * @return void|false Returns false if item has related objects, void on success.
+	 */
 	function delete_item($item,$xmlresponse){
 		$xmlresponse->set_prop("itemid",$item->get_id());
 		if($relman=$item->get_related_objects_man()){
@@ -604,6 +934,17 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 			
 	}
+	
+	/**
+	 * AJAX endpoint to save/update an existing item.
+	 *
+	 * Validates permissions, retrieves item by ID, validates input data,
+	 * calls saveItem(), and returns updated item data in XML response.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response with updated item data or error.
+	 */
 	function execfrommain_getcmd_sxml_saveitem($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		
@@ -654,6 +995,16 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		//$item->tem
 
 	}
+	
+	/**
+	 * Saves/updates an item with new data.
+	 *
+	 * Removes ID field, handles empty name field, and delegates to item's do_save_data().
+	 *
+	 * @param mixed $item The item to update.
+	 * @param array $nd The new data array.
+	 * @return void
+	 */
 	function saveItem($item,$nd){
 		unset($nd["id"]);
 		if(isset($nd["name"])and(!$nd["name"])){
@@ -662,6 +1013,13 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$item->do_save_data($nd);
 		
 	}
+	
+	/**
+	 * Retrieves an item by ID if it's allowed for current user.
+	 *
+	 * @param int|string|null $id The item ID.
+	 * @return mixed|false The item object if found and allowed, false otherwise.
+	 */
 	function getOwnItem($id){
 		if($man=$this->__get_priv_items_man()){
 			if($item=$man->get_item($id)){
@@ -675,10 +1033,30 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	
 
 	}
+	
+	/**
+	 * Checks if an item is allowed for the current user.
+	 *
+	 * Override in child classes to implement item-level access control.
+	 * Default implementation allows all items.
+	 *
+	 * @param mixed $item The item to check.
+	 * @return bool|mixed True/item if allowed, false otherwise.
+	 */
 	function isItemAllowed($item){
 		return $item;
 	}
 
+	/**
+	 * AJAX endpoint to load the DevExtreme datagrid configuration.
+	 *
+	 * Creates and configures the datagrid JavaScript object with columns, user preferences,
+	 * toolbar items, and editing options. Returns the grid configuration as JavaScript.
+	 *
+	 * @param array $params Request parameters (unused).
+	 * @param bool|string $filename Filename parameter (unused).
+	 * @return void|false Outputs XML response with datagrid JavaScript configuration.
+	 */
 	function execfrommain_getcmd_sxml_loaddatagrid($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(false);
 		$this->xml_output=$xml;
@@ -1051,11 +1429,24 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		
 			
 	}
+	
+	/**
+	 * Indicates whether this interface is responsible for managing subinterface menus.
+	 *
+	 * @return bool Always returns false for data table interfaces.
+	 */
 	function is_responsable_for_sub_interface_mnu(){
 		return false;	
 	}
 	
 
+	/**
+	 * Executes when no subinterface is active.
+	 *
+	 * Override in child classes to handle non-subinterface execution.
+	 *
+	 * @return void
+	 */
 	function do_exec_no_sub_interface(){
 		
 

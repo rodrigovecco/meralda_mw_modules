@@ -1,9 +1,32 @@
 <?php
+/**
+ * Base subinterface class for admin sections with list-based navigation.
+ *
+ * Extends basesubui to provide automatic rendering of subinterfaces as a list group,
+ * with dropdown menu support and submenu responsibility.
+ */
 abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
+	/**
+	 * Indicates whether child subinterfaces can be created by code.
+	 *
+	 * Override in child classes to control dynamic subinterface creation.
+	 *
+	 * @return bool True to allow creation, false otherwise.
+	 */
 	function allowcreatesubinterfacechildbycode(){
 		
 		return true;	
 	}
+	
+	/**
+	 * Adds this subinterface as a dropdown menu item to the side menu.
+	 *
+	 * Creates a dropdown menu item with the subinterface's code and label,
+	 * prepares it, and adds it to the provided menu.
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu to add the dropdown item to.
+	 * @return void
+	 */
 	function add_mnu_items_side($mnu){
 		
 		
@@ -11,6 +34,15 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 		$this->prepare_mnu_item($mnuitem);
 		$mnu->add_item_by_item($mnuitem);
 	}
+	
+	/**
+	 * Renders the page content with a list of subinterfaces.
+	 *
+	 * Creates a container (optionally with a main panel) and renders all subinterfaces
+	 * from the sucods property as a Bootstrap list group with clickable links.
+	 *
+	 * @return void Outputs HTML directly.
+	 */
 	function do_exec_page_in(){
 		
 		
@@ -43,6 +75,16 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 		//echo "</div></div>";
 		
 	}
+	
+	/**
+	 * Creates a menu for subinterfaces defined in the sucods property.
+	 *
+	 * Retrieves all subinterfaces by their comma-separated codes in sucods
+	 * and asks each to add itself to the menu.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs|false $su Optional subinterface parameter (unused).
+	 * @return mwmod_mw_mnu_mnu The created menu with subinterface items.
+	 */
 	function create_sub_interface_mnu_for_sub_interface($su=false){
 		$mnu = new mwmod_mw_mnu_mnu();
 		
@@ -56,6 +98,15 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 		
 		return $mnu;
 	}
+	
+	/**
+	 * Indicates that this subinterface is responsible for managing its submenu.
+	 *
+	 * When true, this subinterface handles the creation and management of
+	 * subinterface menus rather than delegating to the parent.
+	 *
+	 * @return bool Always returns true.
+	 */
 	function is_responsable_for_sub_interface_mnu(){
 		return true;	
 	}

@@ -22,10 +22,9 @@
  */
 abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	/**
-    * MainUI
-    * @access public
-    * @var mwmod_mw_ui_main_def
-    */
+	 * Main UI interface instance.
+	 * @var mwmod_mw_ui_main_def
+	 */
 	private $maininterface;
 	private $___subinterfaces=array();
 	private $___all_subinterfaces;
@@ -181,6 +180,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function omitUIGeneralContainer(){
 		return $this->omitUIGeneralContainer;	
 	}
+
+	/**
+	 * Internal accessor for UI session data manager.
+	 *
+	 * @internal
+	 * @return mwmod_mw_data_session_man_item|false The session data manager or false.
+	 */
 	final function  __get_priv_uiSessionDataMan(){
 		if(!isset($this->uiSessionDataMan)){
 			if(!$this->uiSessionDataMan= $this->createUISessionDataMan()){
@@ -685,6 +691,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		//return $this->ui_elems_pref.$this->code."_".$cod;	
 	}
 	
+	/**
+	 * Internal accessor for JavaScript initialization parameters.
+	 *
+	 * @internal
+	 * @return mwmod_mw_jsobj_obj The JavaScript initialization parameters object.
+	 */
 	final function  __get_priv_ui_js_init_params(){
 		if(!isset($this->ui_js_init_params)){
 			$this->ui_js_init_params= new mwmod_mw_jsobj_obj();	
@@ -1717,10 +1729,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 * @return string|false The requested subinterface code or the default code.
 	 */
 	function get_sub_insterface_request_code(){
-		//fix here!!!
 		
-
-
 		$key=$this->get_subinterface_request_var();
 		if($key and isset($_REQUEST[$key])){
 			if($code=$_REQUEST[$key]){
@@ -1872,6 +1881,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 *
 	 * Initializes a form with appropriate template and action URL.
 	 *
+	 * @deprecated Use modern form builder patterns instead of mwmod_mw_datafield_frm.
 	 * @param string $name The form's name attribute.
 	 *
 	 * @return mwmod_mw_datafield_frm The new form instance.
@@ -1889,7 +1899,8 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	/**
 	 * Generates HTML form from a data field creator instance.
 	 *
-	 * @param object|false $cr The data field creator instance.
+	 * @deprecated Use modern form builder patterns instead of mwmod_mw_datafield classes.
+	 * @param mwmod_mw_datafield_creator|false $cr The data field creator instance.
 	 *
 	 * @return string|false The HTML form content or false on failure.
 	 */
@@ -1910,6 +1921,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 *
 	 * Used to build forms with dynamic field configurations.
 	 *
+	 * @deprecated Use modern form builder patterns instead of mwmod_mw_datafield_creator.
 	 * @param array $items Reference to array of field items.
 	 *
 	 * @return mwmod_mw_datafield_creator The new data field creator.
