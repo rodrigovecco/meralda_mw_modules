@@ -4,6 +4,8 @@ class mwmod_mw_devextreme_data_filter_filterhelper extends mw_apsubbaseobj{
 	public $expressions=array();
 	public $filterMainItem;
 	private $queryHelper;
+
+
 	
 	function __construct(){
 		
@@ -29,6 +31,7 @@ class mwmod_mw_devextreme_data_filter_filterhelper extends mw_apsubbaseobj{
 	function getFilterMainItem(){
 		if(!$this->filterMainItem){
 			$this->filterMainItem=new mwmod_mw_devextreme_data_filter_filteritem($this);
+			//$this->filterMainItem->forceANDMode=true;
 		}
 		return $this->filterMainItem;
 	}

@@ -4,7 +4,7 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 	var $cod="";
 	var $querypart;
 	var $general_cond="AND";
-	var $not=false;
+	public $not=false;
 	
 	function __construct($cod=false,$querypart=false){
 		$this->set_cod($cod);
@@ -68,6 +68,10 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 	function get_cod(){
 		return $this->cod;	
 	}
+	/**
+	 * @param mwmod_mw_db_sql_querypart $part 
+	 * @return void 
+	 */
 	final function set_query_part($part=false){
 		if($part){
 			$this->querypart=$part;
@@ -76,7 +80,12 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 	}
 	
 	function get_sql_start(){
-		return "(";	
+		$r = "";
+        if ($this->not) {
+            $r .= " not ";
+        }
+        $r .= "(";
+		return $r;	
 	}
 	function get_sql_end(){
 		return ")";	
@@ -146,7 +155,9 @@ class mwmod_mw_db_sql_where_subwhere extends mwmod_mw_db_sql_where{
 		$pq->appendSQL($this->get_sql_end());
 		return true;
 	}
-	
+	function set_not($val = true) {
+        $this->not = $val ? true : false;
+    }
 	function get_sql(){
 		$sql="";
 		if(!$items=	$this->get_items_ok()){

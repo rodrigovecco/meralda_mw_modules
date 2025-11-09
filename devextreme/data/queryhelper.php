@@ -107,6 +107,7 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 	function filterQuery($query){
 		if($this->filter){
 			$this->filter->aplay2Query($query);
+			$query->where->forceANDonDirectChildren();
 		}
 			
 	}

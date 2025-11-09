@@ -5,6 +5,13 @@ class mwmod_mw_db_sql_where extends mwmod_mw_db_sql_querypart{
 			$this->set_query($query);	
 		}
 	}
+	function forceANDonDirectChildren(){
+		if($items=$this->get_items()){
+			foreach($items as $item){
+				$item->set_and();
+			}
+		}
+	}
 	
 	function add_date_ok($field,$cod=false){
 		$item=new mwmod_mw_db_sql_where_dateok($field,$cod,$this);

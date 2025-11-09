@@ -15,11 +15,23 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 	public $parseMode;
 	public $datePropertyMode=false;
 	private $_isOK;
+
+	public $forceANDMode=false;
 	
 	function __construct($parent=false){
 		if($parent){
 			$this->setParent($parent);
 		}
+	}
+	function isORMode(){
+		
+		if($this->forceANDMode){
+			return false;	
+		}
+		if($this->connectiveOperator=="OR"){
+			return true;	
+		}
+		return false;
 	}
 	function isTextCompare(){
 		$clause=$this->clause;
@@ -72,7 +84,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 
 			$w=$queryWhere->add_where_crit_like($field->getSqlExp(),$val);
 			$w->setCompareMode($c);
-			if($this->connectiveOperator=="OR"){
+			if($this->isORMode()){
 				$w->set_or();	
 			}
 			if($this->negative){
@@ -89,7 +101,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 				$w=$queryWhere->add_where_crit($field->getSqlExp(),$val);
 			}
 			$w->set_operator($c);
-			if($this->connectiveOperator=="OR"){
+			if($this->isORMode()){
 				$w->set_or();	
 			}
 			if($this->negative){
@@ -125,9 +137,10 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 			$subwhere->not=true;	
 		}
 		
-		if($this->connectiveOperator=="OR"){
+		if($this->isORMode()){
 			$subwhere->set_or();	
 		}
+		
 		foreach($items as $item){
 			$item->aplay2QueryWhere($subwhere);	
 		}
@@ -190,6 +203,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 				if ($upper === "AND" || $upper === "OR") {
 					$currentOperator = $upper;
 				}
+				//die($currentOperator);
 				continue;
 			}
 
@@ -219,59 +233,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 			return $this->parseExpressionSimpleByArray($expression) ? "single" : "error";
 		}
 	}
-	///a borrar
-	function _______parseExpressionByArrayOLD($expression) {
-		//$result = "(";
-		$prevItemWasArray = false;
-		$childrenmode=false;
-		$arrayItems=array();
-		$connectiveOperator="AND";
-		foreach ($expression as $index => $item) {
-            if (is_string($item)) {
-                if ($index == 0) {
-				    if ($item == "!") {
-                        $this->negative=true;
-						continue;
-                    }
-					if(isset($expression) && is_array($expression)){
-						
-						$this->parseExpressionSimpleByArray($expression);
-						return "single";
-					}else{
-						//	
-					}
-					break;
-                }
-				$strItem = strtoupper(trim($item));
-                if ($strItem == "AND" || $strItem == "OR") {
-					$connectiveOperator=$strItem;
-                }
-                continue;
-            }
-            if (is_array($item)) {
-				$item["_mwcop"]=$connectiveOperator;
-				$arrayItems[]=$item;
-				
-				$connectiveOperator="AND";
-            }
-        }
-		if(sizeof($arrayItems)>1){
-			foreach ($arrayItems as $index => $data) {
-				if($item=$this->addChild($this->newChild())){
-					if($c=$data["_mwcop"]){
-						$item->setConnectiveOperator($c);
-						unset($data["_mwcop"]);
-						$item->parseExpression($data);	
-					}
-				}
-			}
-			return "multiple";
-		}elseif(sizeof($arrayItems)==1){
-			$this->parseExpressionByArray($arrayItems[0]);
-			return "singleByArray";
-		}
-		return "error";
-    }
+	
 	function setFieldName($fieldName){
 		$this->fieldName=trim($fieldName);	
 	}
