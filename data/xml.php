@@ -425,6 +425,17 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 		}
 		
 	}
+	/**
+	 * @param mixed $cod 
+	 * @param mixed $data 
+	 * @return mwmod_mw_data_xml_json|void 
+	 */
+	function addJsonItem($cod,$data){
+		$item=new mwmod_mw_data_xml_json($cod,$data);
+		if($this->add_sub_item($item)){
+			return $item;	
+		}
+	}
 
 
 

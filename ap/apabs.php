@@ -245,10 +245,10 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 	}
 	function debug_exec_submancmd(){
 		$r=array();
-		if(!$url_p=parse_url($_SERVER['REQUEST_URI'])){
+		if(!$url_p=parse_url($_SERVER['REQUEST_URI']??"")){
 			return false;	
 		}
-		if(!$url=$url_p['path']){
+		if(!$url=$url_p['path']??null){
 			return false;	
 		}
 		$r["url"]=$url;

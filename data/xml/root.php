@@ -12,6 +12,10 @@ class mwmod_mw_data_xml_root extends mwmod_mw_data_xml{
 	function is_value_mode(){
 		return false;
 	}
+	/**
+	 * @param string $cod 
+	 * @return mwmod_mw_data_xml_subroot 
+	 */
 	function get_sub_root($cod="data"){
 		return $this->get_item($cod,true);	
 	}
