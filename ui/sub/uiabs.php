@@ -11,6 +11,8 @@
  * @property-read mwmod_mw_data_session_man_item $uiSessionDataMan Session manager for this UI.
  * @property-read mwmod_mw_manager_item $current_item Currently selected item in this UI.
  * @property-read string $code Interface code.
+ * @property-read string $def_title Default title for this subinterface.
+ * @property-read array $cmdparams Command parameters for getcmd operations.
  * @property-read mwmod_mw_ui_sub_uiabs|null $parent_subinterface Direct parent subinterface.
  * @property-read mwmod_mw_ui_sub_uiabs|null $current_sub_interface Currently active child subinterface.
  * @property-read mwmod_mw_ui_sub_uiabs|null $current_parent_subinterface Currently active parent subinterface.
@@ -88,6 +90,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	public $omitUIGeneralContainer=false;
 	public $xmlResponse;
 
+	/**
+	 * Enables the main panel for this UI with optional title and CSS classes.
+	 * 
+	 * @param string|bool $title Panel title. If false, will use the subinterface title.
+	 * @param string $classes Additional CSS classes for the panel container.
+	 * @return void 
+	 */
 	function mainPanelEnable($title=false,$classes=""){
 		//if(!$title){
 			//$title=$this->get_title();	
@@ -98,12 +107,24 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 		
 	}
+	
+	/**
+	 * Retrieves the main panel title, falling back to the subinterface title if not set.
+	 * 
+	 * @return string The panel title.
+	 */
 	function getMainPanelTitle(){
 		if($this->mainPanelTitle){
 			return $this->mainPanelTitle;	
 		}
 		return $this->get_title();
 	}
+	
+	/**
+	 * Creates and returns a Bootstrap panel with configured title and CSS classes.
+	 * 
+	 * @return mwmod_mw_bootstrap_html_template_panel The created panel instance.
+	 */
 	function createMainPanel(){
 		$panel=new mwmod_mw_bootstrap_html_template_panel();
 		if($this->mainPanelClasses){
@@ -113,6 +134,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->mainPanel=$panel;
 		return $panel;
 	}
+	
+	/**
+	 * Retrieves the language messages manager code for this subinterface.
+	 * 
+	 * Tries parent subinterface first, then main application. Defaults to "def".
+	 * 
+	 * @return string The language messages manager code.
+	 */
 	function get_lngmsgsmancod(){
 		if($this->parent_subinterface){
 			if(method_exists($this->parent_subinterface,"get_lngmsgsmancod")){
@@ -129,6 +158,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return "def";
 
 	}
+	
+	/**
+	 * Creates a session data manager for this subinterface.
+	 * 
+	 * @return mwmod_mw_data_session_man_item|false Session manager item or false if unavailable.
+	 */
 	function createUISessionDataMan(){
 		if($m=$this->maininterface->uiSessionDataMan){
 			return $m->getItem("sui",$this->get_full_cod("-"));	
@@ -137,6 +172,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return false;
 		//return new mwmod_mw_data_session_man("mainui");	
 	}
+	
+	/**
+	 * Checks if the general UI container should be omitted.
+	 * 
+	 * @return bool True if container should be omitted.
+	 */
 	function omitUIGeneralContainer(){
 		return $this->omitUIGeneralContainer;	
 	}
@@ -150,6 +191,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->uiSessionDataMan;
 	}
 
+	/**
+	 * Creates a subinterface instance from a registered class name.
+	 * 
+	 * @param string $cod The subinterface code.
+	 * @return mwmod_mw_ui_sub_uiabs|false The created subinterface instance or false on failure.
+	 */
 	function do_create_subinterface_by_cod_from_class_name($cod){
 		if(!$cod=$this->check_str_key_alnum_underscore($cod)){
 			return false;
@@ -168,17 +215,45 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		
 	}
+	
+	/**
+	 * Registers a class name for a subinterface code.
+	 * 
+	 * @param string $cod The subinterface code.
+	 * @param string $className The fully qualified class name.
+	 * @return bool Always returns true.
+	 */
 	final function addSubUIClass($cod,$className){
 		$this->___sub_ui_classes_names[$cod]=$className;
 		return true;
 	}
+	
+	/**
+	 * Retrieves the registered class name for a subinterface code.
+	 * 
+	 * @param string $cod The subinterface code.
+	 * @return string|null The class name or null if not registered.
+	 */
 	final function getSubUIClassName($cod){
 		return $this->___sub_ui_classes_names[$cod]??null;
 	}
 	
+	/**
+	 * Gets the logout URL from the main interface.
+	 * 
+	 * @return string The logout URL.
+	 */
 	function get_logout_url(){
 		return $this->maininterface->get_logout_url();	
 	}
+	
+	/**
+	 * Determines if this interface is allowed for GET command execution without a logged-in user.
+	 * 
+	 * Override this method to allow anonymous access.
+	 * 
+	 * @return bool Always returns false unless overridden.
+	 */
 	function is_allowed_for_get_cmd_no_user(){
 		return false;	
 	}
@@ -253,7 +328,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->get_admin_current_user();
 	}
 	
-	
+	/**
+	 * Generates a URL for a nested subinterface by dot-separated path.
+	 * 
+	 * @param string $dotcod Dot-separated subinterface code path (e.g., "module.submodule").
+	 * @param array|false $args URL query parameters.
+	 * @param string|false $file Optional filename for the URL.
+	 * @param string $sep Separator character, default is ".".
+	 * @return string|false The URL or false on failure.
+	 */
 	function get_url_sub_interface_by_dot_cod($dotcod,$args=false,$file=false,$sep="."){
 		if(!$full_cod=$this->get_full_cod($sep)){
 			return false;
@@ -288,6 +371,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $modal;
 	}
+	
+	/**
+	 * Checks if debug output is enabled for this subinterface.
+	 * 
+	 * Returns true if debug_mode is set or user has debug permission.
+	 * 
+	 * @return bool True if debug output is enabled.
+	 */
 	function debugOutputEnabled(){
 		if($this->debug_mode){
 			return true;	
@@ -297,6 +388,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return false;
 	}
+	
+	/**
+	 * Checks if debug mode is active with proper permissions.
+	 * 
+	 * Returns true only if debug_mode is enabled AND user has debug permission.
+	 * 
+	 * @return bool True if debug mode is active.
+	 */
 	function is_debug_mode(){
 		if(!$this->debug_mode){
 			return false;	
@@ -405,6 +504,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$alert=new mwmod_mw_bootstrap_html_specialelem_alert($msg,"danger");
 		return $alert;	
 	}
+	
+	/**
+	 * Outputs the "operation not allowed" alert HTML directly.
+	 * 
+	 * @return void
+	 */
 	function output_bt_operation_not_allowed_html_elem(){
 		$e=$this->get_bt_operation_not_allowed_html_elem();
 		echo $e->get_as_html();	
@@ -621,7 +726,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 	
 	
-	///
+	/**
+	 * Executes a debug command returning XML with diagnostic information.
+	 *
+	 * Useful for inspecting UI state, parameters, and JS initialization data.
+	 *
+	 * @param array $params Command parameters passed from the request.
+	 * @param string|false $filename Optional filename for download.
+	 * @return void Outputs XML directly.
+	 */
 	function execfrommain_getcmd_sxml_debug($params=array(),$filename=false){
 		$xml=$this->new_getcmd_sxml_answer(true,"Debug");
 		$xml->set_prop("class",get_class($this));
@@ -640,6 +753,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$xml->root_do_all_output();
 			
 	}
+	
+	/**
+	 * Creates a new XML response object for `getcmd` commands.
+	 *
+	 * @param bool $ok True if the command succeeded, false otherwise.
+	 * @param string $msg Optional status message.
+	 * @return mwmod_mw_data_xml_item The XML response item.
+	 */
 	function new_getcmd_sxml_answer($ok=true,$msg=""){
 		$xmlroot=new mwmod_mw_data_xml_root();
 		$xml=$xmlroot->get_sub_root();
@@ -664,6 +785,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		//extender. cargar acá objetos dependientes
 	}
 	
+	/**
+	 * Executes an XML command requested via GET/POST parameters.
+	 *
+	 * Routes the request to the appropriate `execfrommain_getcmd_sxml_{cmdcod}` method.
+	 *
+	 * @param string $cmdcod The command code to execute.
+	 * @param array $params Parameters for the command.
+	 * @param string|false $filename Optional filename for output.
+	 * @return mixed The result of the command method or false on failure.
+	 */
 	function execfrommain_getcmd_sxml($cmdcod,$params=array(),$filename=false){
 		$this->before_exec_get_cmd($params);
 		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
@@ -680,6 +811,17 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->$method($params,$filename);
 	}
+	
+	/**
+	 * Outputs an error message for a failed download command.
+	 *
+	 * In debug mode, displays detailed error information.
+	 *
+	 * @param array $params Command parameters.
+	 * @param string|false $filename Requested filename.
+	 * @param string|false $errmsg Error message to display.
+	 * @return false Always returns false.
+	 */
 	function execfrommain_getcmd_dl_error($params=array(),$filename=false,$errmsg=false){
 		if($this->is_debug_mode()){
 			echo "Error";
@@ -698,6 +840,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return false;
 	}
+	
+	/**
+	 * Test method for download commands, outputs diagnostic information.
+	 *
+	 * @param array $params Command parameters.
+	 * @param string|false $filename Requested filename.
+	 * @return false Always returns false.
+	 */
 	function execfrommain_getcmd_dl_test($params=array(),$filename=false){
 		$data=array(
 			"params"=>$params,
@@ -710,6 +860,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return false;
 	}
 	
+	/**
+	 * Executes a download command requested via GET/POST.
+	 *
+	 * Routes to the appropriate `execfrommain_getcmd_dl_{cmdcod}` method.
+	 *
+	 * @param string $cmdcod The download command code.
+	 * @param array $params Command parameters.
+	 * @param string|false $filename Filename for the download.
+	 * @return mixed The result of the download method or false on error.
+	 */
 	function execfrommain_getcmd_dl($cmdcod,$params=array(),$filename=false){
 		$this->before_exec_get_cmd($params);
 		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
@@ -741,6 +901,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		//extender puede usarse para cargar objetos dependientes especialmente cuando las subinterfases se crean en dependencia a parametros de entrada	
 	}
 	public $requestedCMDParams;
+	
+	/**
+	 * Retrieves a parameter from the request, checking both local and global REQUEST arrays.
+	 *
+	 * @param string $key The parameter key to retrieve.
+	 * @return mixed|null The parameter value if found, null otherwise.
+	 */
 	function getRequestedParam($key){
 		if(is_array($this->requestedCMDParams)){
 			if(isset($this->requestedCMDParams[$key])){
@@ -756,6 +923,18 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		
 	}
+	
+	/**
+	 * Sets the current subinterface during a getcmd request by traversing hyphen-separated codes.
+	 *
+	 * Recursively navigates through nested subinterfaces and validates permissions.
+	 *
+	 * @param string|false $cods     Hyphen-separated subinterface codes (e.g., "users-edit").
+	 * @param array        $params   Command parameters to pass along.
+	 * @param string|false $filename Optional filename for the request.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The target subinterface or false if not found/allowed.
+	 */
 	function set_current_subinterface_for_getcmd($cods=false,$params=array(),$filename=false){
 		$this->setCMDParamsFromRequest($params);
 		$this->before_set_current_subinterface_for_getcmd($cods,$params,$filename);
@@ -784,6 +963,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 
 	}
+	
+	/**
+	 * Stores command parameters from the request into the local requestedCMDParams array.
+	 *
+	 * @param array $params Parameters to store.
+	 * @return false|void Returns false if params is not an array.
+	 */
 	function setCMDParamsFromRequest($params){
 		if(!is_array($params)){
 			return false;	
@@ -800,9 +986,32 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return true;
 		
 	}
+	
+	/**
+	 * Checks if this subinterface is allowed for getcmd execution.
+	 *
+	 * Override this method to implement custom permission logic.
+	 *
+	 * @param string|false $sub_ui_cods Optional sub-UI codes for nested checks.
+	 * @param array        $params      Command parameters.
+	 * @param string|false $filename    Optional filename.
+	 *
+	 * @return bool True if allowed, false otherwise.
+	 */
 	function is_allowed_for_get_cmd($sub_ui_cods=false,$params=array(),$filename=false){
 		return $this->is_allowed();	
 	}
+	
+	/**
+	 * Checks if a specific XML command is enabled for this subinterface.
+	 *
+	 * Verifies that the corresponding method exists.
+	 *
+	 * @param string $cmdcod Command code to check.
+	 * @param array  $params Command parameters (currently unused).
+	 *
+	 * @return bool True if the command method exists, false otherwise.
+	 */
 	function getCmdXmlEnabled($cmdcod,$params=array()){
 		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
 			return false;	
@@ -814,6 +1023,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return false;
 	}
+	
+	/**
+	 * Returns the XML command URL only if the command is enabled.
+	 *
+	 * @param string $xmlcmd Command code to check and generate URL for.
+	 * @param array  $params Additional parameters for the URL.
+	 *
+	 * @return string|false The URL if command is enabled, false otherwise.
+	 */
 	function get_exec_cmd_sxml_url_ifEnabled($xmlcmd="debug",$params=array()){
 		if(!$this->getCmdXmlEnabled($xmlcmd)){
 			return false;	
@@ -821,6 +1039,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->get_exec_cmd_sxml_url($xmlcmd,$params);
 	}
 	//rvh20240214
+	/**
+	 * Generates a URL for executing an XML command on this subinterface.
+	 *
+	 * Delegates to the main interface with enriched parameters.
+	 *
+	 * @param string $xmlcmd Command code to execute (default: "debug").
+	 * @param array  $params Additional query parameters.
+	 *
+	 * @return string|false The generated URL or false if no main interface.
+	 */
 	function get_exec_cmd_sxml_url($xmlcmd="debug",$params=array()){
 		if($this->maininterface){
 			$params=$this->get_cmd_params($params);//new
@@ -829,6 +1057,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		
 	}
+	
+	/**
+	 * Generates a URL for executing a download command on this subinterface.
+	 *
+	 * @param string       $dlcmd        Download command code (default: "test").
+	 * @param array        $params       Additional query parameters.
+	 * @param string|false $realfilename Optional filename for the download.
+	 *
+	 * @return string|false The generated URL or false if no main interface.
+	 */
 	function get_exec_cmd_dl_url($dlcmd="test",$params=array(),$realfilename=false){
 		if($this->maininterface){
 			$params=$this->get_cmd_params($params);//new
@@ -837,6 +1075,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		
 	}
+	
+	/**
+	 * Merges default command parameters with provided arguments.
+	 *
+	 * @param array $args Optional parameters to merge with defaults.
+	 *
+	 * @return array The merged parameter array.
+	 */
 	function get_cmd_params($args=array()){
 		$def=$this->get_cmd_param();
 		if(!is_array($args)){
@@ -845,16 +1091,37 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return  mw_array_bydefault($args,$def);
 	}
 
+	/**
+	 * Resets command parameters to an empty array.
+	 *
+	 * @return void
+	 */
 	final function reset_cmd_params(){
 		$this->cmdparams=array();
 		
 	}
+	
+	/**
+	 * Retrieves a command parameter by key or returns all parameters.
+	 *
+	 * @param string|false $key Parameter key or false to return all parameters.
+	 *
+	 * @return mixed The parameter value, array of all parameters, or null if not found.
+	 */
 	final function get_cmd_param($key=false){
 		if(!$key){
 			return 	$this->cmdparams;
 		}
 		return mw_array_get_sub_key($this->cmdparams,$key);	
 	}
+	
+	/**
+	 * Checks if a specific command parameter exists.
+	 *
+	 * @param string $key The parameter key to check.
+	 *
+	 * @return bool True if the parameter exists, false otherwise.
+	 */
 	final function get_cmd_param_exists($key){
 		if($this->cmdparams){
 			if(isset($this->cmdparams[$key])){
@@ -864,20 +1131,50 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return false;
 		
 	}
+	
+	/**
+	 * Sets a command parameter value, supporting nested keys via dot notation.
+	 *
+	 * @param string $key Parameter key (supports "parent.child" notation).
+	 * @param mixed  $val Value to set.
+	 *
+	 * @return void
+	 */
 	final function set_cmd_param($key,$val){
 
 		mw_array_set_sub_key($key,$val,$this->cmdparams);
 		
 	}
+
+	/**
+	 * Internal accessor for command parameters.
+	 *
+	 * @internal
+	 * @return array The command parameters array.
+	 */
 	final function __get_priv_cmdparams(){
 		return $this->cmdparams;	
 	}
 	////////
 
-	
+	/**
+	 * Sets a message to display at the bottom of the UI.
+	 *
+	 * @param string|mwmod_mw_html_elem|false $msg Message string or HTML element object.
+	 *
+	 * @return void
+	 */
 	function set_bottom_alert_msg($msg=false){
 		$this->bottom_alert_msg=$msg;	
 	}
+	
+	/**
+	 * Outputs the bottom alert message if set.
+	 *
+	 * Handles both string messages and HTML element objects.
+	 *
+	 * @return false|void Returns false if no message is set.
+	 */
 	function output_bottom_alert_msg(){
 		if(!$this->bottom_alert_msg){
 			return false;
@@ -895,18 +1192,51 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 	//subinterface mnu
 	//un menu que crea un padre con is_responsable_for_sub_interface_mnu true para sí y sus hijos
+	/**
+	 * Adds this subinterface to a submenu structure.
+	 *
+	 * Override this to customize menu item appearance.
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu object to add to.
+	 *
+	 * @return void
+	 */
 	function add_2_sub_interface_mnu($mnu){
 		//ver mwmod_mw_ui_debug_htmltemplate
 		$this->add_2_mnu($mnu);
 	}
+	
+	/**
+	 * Creates a submenu for this subinterface.
+	 *
+	 * Should be implemented by parent subinterfaces that are responsible for menu creation.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs|false $su The subinterface requesting the menu.
+	 *
+	 * @return mwmod_mw_mnu_mnu|false The created menu or false.
+	 */
 	function create_sub_interface_mnu_for_sub_interface($su=false){
 		//ver mwmod_mw_ui_debug_uidebug
 	}
+	
+	/**
+	 * Retrieves the submenu from the parent responsible for menu creation.
+	 *
+	 * @return mwmod_mw_mnu_mnu|false The menu object or false if not found.
+	 */
 	function get_sub_interface_mnu_from_parent_responsable(){
 		if($p=$this->get_parent_responsable_for_sub_interface_mnu()){
 			return $p->create_sub_interface_mnu_for_sub_interface($this);
 		}
 	}
+	
+	/**
+	 * Finds the parent subinterface responsible for creating submenus.
+	 *
+	 * Recursively walks up the parent chain until finding a responsible parent.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The responsible parent or false if none found.
+	 */
 	function get_parent_responsable_for_sub_interface_mnu(){
 		if($this->is_responsable_for_sub_interface_mnu()){
 			return $this;	
@@ -915,24 +1245,65 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			return $this->parent_subinterface->get_parent_responsable_for_sub_interface_mnu();
 		}
 	}
+	
+	/**
+	 * Indicates whether this subinterface is responsible for creating submenus.
+	 *
+	 * Override and return true in subinterfaces that manage menu creation.
+	 *
+	 * @return bool Always returns false unless overridden.
+	 */
 	function is_responsable_for_sub_interface_mnu(){
 		return false;	
 	}
 	//bootstrap
+	/**
+	 * Executes the subinterface body using a Bootstrap-based template.
+	 *
+	 * @param mwmod_mw_bootstrap_ui_template_main $main_ui_template The Bootstrap template.
+	 *
+	 * @return mixed The result of template execution.
+	 */
 	function exec_page_body_sub_interface_on_main_template_bootstrap($main_ui_template){
 		return $main_ui_template->exec_page_body_sub_interface_bootstrap($this);
 	}
+	
+	/**
+	 * Checks if this subinterface can be rendered on a Bootstrap template.
+	 *
+	 * @return bool Always returns true unless overridden.
+	 */
 	function can_page_body_sub_interface_on_main_template_bootstrap(){
 		return true;
 	}
 	
+	/**
+	 * Initializes the subinterface with code and main interface reference.
+	 *
+	 * @param string                     $cod            The subinterface code.
+	 * @param mwmod_mw_ui_main_uimainabs $maininterface Main interface parent.
+	 *
+	 * @return void
+	 */
 	function init($cod,$maininterface){
 		$this->set_main_interface($maininterface);	
 		$this->set_code($cod);
 	}
+	
+	/**
+	 * Checks if this subinterface is currently active.
+	 *
+	 * @return bool True if currently active.
+	 */
 	function is_current(){
 		return $this->is_current;	
 	}
+	
+	/**
+	 * Checks if this subinterface is in the execution chain.
+	 *
+	 * @return bool True if in execution chain or is current.
+	 */
 	function is_in_exec_chain(){
 		if($this->in_exec_chain){
 			return true;	
@@ -940,6 +1311,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->is_current();	
 	}
 	
+	/**
+	 * Initializes as either main or sub, depending on parent type.
+	 *
+	 * @param string                                             $cod    Subinterface code.
+	 * @param mwmod_mw_ui_main_uimainabs|mwmod_mw_ui_sub_uiabs $parent Parent interface.
+	 *
+	 * @return void
+	 */
 	function init_as_main_or_sub($cod,$parent){
 		if(is_a($parent,"mwmod_mw_ui_main_uimainabs")){
 			$this->init($cod,$parent);
@@ -947,6 +1326,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			$this->init_as_subinterface($cod,$parent);	
 		}
 	}
+	
+	/**
+	 * Initializes this as a child subinterface of another subinterface.
+	 *
+	 * @param string                    $cod    Subinterface code.
+	 * @param mwmod_mw_ui_sub_uiabs    $parent Parent subinterface.
+	 *
+	 * @return void
+	 */
 	function init_as_subinterface($cod,$parent){
 		$maininterface=$parent->maininterface;
 		$this->init($cod,$maininterface);
@@ -955,6 +1343,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->added_as_child($cod,$parent);
 	}
 	//items man
+	/**
+	 * Loads the items manager for this subinterface.
+	 *
+	 * Override `get_items_man_cod()` to specify which manager to load 
+	 * or Override this method for custom loading logic.
+	 * 
+	 *
+	 * @return mwmod_mw_manager_man|false The items manager or false if not available.
+	 */
 	function load_items_man(){
 		if(!$cod=$this->get_items_man_cod()){
 			return false;	
@@ -962,6 +1359,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->mainap->get_submanager($cod);
 	}
 	
+	/**
+	 * Retrieves the items manager for this subinterface, loading it if necessary.
+	 *
+	 * @return mwmod_mw_manager_man|false The items manager or false if not available.
+	 */
 	final function get_items_man(){
 		if(isset($this->items_man)){
 			return $this->items_man;
@@ -972,25 +1374,70 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->items_man;
 	}
+	
+	/**
+	 * Sets the items manager for this subinterface.
+	 *
+	 * @param mwmod_mw_manager_man $man The items manager to set.
+	 * @return void
+	 */
 	final function set_items_man($man){
 		$this->items_man=$man;
 		$this->after_set_items_man($man);
 	}
+	
+	/**
+	 * Hook called after setting the items manager.
+	 *
+	 * Override to perform additional setup based on the manager.
+	 *
+	 * @param mwmod_mw_manager_man $man The items manager that was set.
+	 * @return void
+	 */
 	function after_set_items_man($man){
 		$this->set_lngmsgsmancod($man->lngmsgsmancod);	
 	}
+	
+	/**
+	 * Sets the items manager code.
+	 *
+	 * @param string|false $cod The manager code.
+	 * @return string|false The code that was set.
+	 */
 	final function set_items_man_cod($cod=false){
 		return $this->_items_man_cod=$cod;
 	}
+	
+	/**
+	 * Gets the items manager code.
+	 *
+	 * @return string|false The manager code or false if not set.
+	 */
 	final function get_items_man_cod(){
 		return $this->_items_man_cod;
 	}
+
+	/**
+	 * Internal accessor for items manager.
+	 *
+	 * @internal
+	 * @return mwmod_mw_manager_man The items manager instance.
+	 */
 	final function __get_priv_items_man(){
 		return $this->get_items_man(); 	
 	}
 	
 	//url
-		
+	
+	/**
+	 * Generates a URL for a child subinterface.
+	 *
+	 * @param string|false $code Subinterface code to navigate to.
+	 * @param array|false  $args Additional URL parameters.
+	 * @param string|false $file Optional filename.
+	 *
+	 * @return string The generated URL.
+	 */
 	function get_url_subinterface($code=false,$args=false,$file=false){
 		if($code){
 			if(!is_array($args)){
@@ -1000,6 +1447,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->get_url($args,$file);
 	}
+	
+	/**
+	 * Generates a URL for this subinterface with optional parameters.
+	 *
+	 * @param array|false  $args Additional URL query parameters.
+	 * @param string|false $file Optional filename.
+	 *
+	 * @return string The generated URL with query string.
+	 */
 	function get_url($args=false,$file=false){
 		$url=$this->get_url_base($file);
 		if($args1=$this->get_url_params($args)){
@@ -1009,6 +1465,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $url;
 	}
+	
+	/**
+	 * Merges provided URL parameters with defaults.
+	 *
+	 * @param array|false $args Optional parameters to merge.
+	 *
+	 * @return array Merged URL parameters.
+	 */
 	function get_url_params($args=false){
 		$def=$this->get_url_param();
 		if(!is_array($args)){
@@ -1016,6 +1480,17 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return  mw_array_bydefault($args,$def);
 	}
+	
+	/**
+	 * Initializes URL parameters for a child subinterface.
+	 *
+	 * Passes current URL parameters down to the child along with its specific code.
+	 *
+	 * @param string                 $child_cod The child's code.
+	 * @param mwmod_mw_ui_sub_uiabs $child     The child subinterface instance.
+	 *
+	 * @return false|void Returns false if parameters couldn't be retrieved.
+	 */
 	function init_child_url_params($child_cod,$child){
 		$args=array();
 		$args[$this->get_subinterface_request_var()]=$child_cod;
@@ -1028,6 +1503,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 	}
 
+	/**
+	 * Initializes URL parameters for this subinterface.
+	 *
+	 * If has a current parent, inherits its parameters. Otherwise, sets base parameter from main interface.
+	 *
+	 * @return void
+	 */
 	function init_url_params(){
 		if($this->current_parent_subinterface){
 			$this->current_parent_subinterface->init_child_url_params($this->code_for_parent,$this);
@@ -1037,6 +1519,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 		//$this->set_url_param("interface",$this->code);
 	}
+	
+	/**
+	 * Initializes command parameters, optionally inheriting from parent.
+	 *
+	 * If `inheritCMDParams` is true, parameters from parent subinterface are inherited.
+	 *
+	 * @return void
+	 */
 	function init_cmd_params(){
 		if($this->current_parent_subinterface){
 			if($this->inheritCMDParams){
@@ -1055,6 +1545,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 		//$this->set_url_param("interface",$this->code);
 	}
+	
+	/**
+	 * Resets and reinitializes URL parameters.
+	 *
+	 * @return void
+	 */
 	final function reset_url_params(){
 		$this->urlparams=array();
 		$this->init_url_params();	
@@ -1069,18 +1565,51 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->set_cmd_param($key,$val);
 
 	}
+	
+	/**
+	 * Sets a URL parameter value, supporting nested keys.
+	 *
+	 * @param string $key Parameter key (supports dot notation).
+	 * @param mixed  $val Value to set.
+	 *
+	 * @return void
+	 */
 	final function set_url_param($key,$val){
 		mw_array_set_sub_key($key,$val,$this->urlparams);	
 	}
+	
+	/**
+	 * Retrieves a URL parameter by key or returns all parameters.
+	 *
+	 * @param string|false $key Parameter key or false to return all.
+	 *
+	 * @return mixed Parameter value, array of all parameters, or null if not found.
+	 */
 	final function get_url_param($key=false){
 		if(!$key){
 			return 	$this->urlparams;
 		}
 		return mw_array_get_sub_key($this->urlparams,$key);	
 	}
+	
+	/**
+	 * Gets the default filename for URL generation.
+	 *
+	 * @return string|false The default file or false if not set.
+	 */
 	function get_url_def_file(){
 		return $this->url_def_file;	
 	}
+	
+	/**
+	 * Generates the base URL for this subinterface.
+	 *
+	 * Delegates to the main interface with optional filename.
+	 *
+	 * @param string|false $file Optional filename to append.
+	 *
+	 * @return string The base URL.
+	 */
 	function get_url_base($file=false){
 		if(!$file){
 			$file=$this->get_url_def_file();	
@@ -1091,11 +1620,21 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 	//subinerfaces
 	
-
+	/**
+	 * Clears the current subinterface selection.
+	 *
+	 * @return void
+	 */
 	final function set_no_subinterface(){
 		$this->current_sub_interface=false;
 			
 	}
+	
+	/**
+	 * Navigates back to the parent subinterface by clearing parent's current child.
+	 *
+	 * @return void
+	 */
 	function go_to_parent(){
 		if($this->parent_subinterface){
 	
@@ -1103,6 +1642,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 	}
 	
+	/**
+	 * Handler called when a subinterface is not allowed.
+	 *
+	 * Override to customize behavior when access is denied.
+	 *
+	 * @return void
+	 */
 	function on_subinterface_not_allowed(){
 		$this->set_no_subinterface();
 			
@@ -1135,6 +1681,18 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->current_sub_interface;
 	}
 
+	/**
+	 * Sets the current subinterface by its code identifier.
+	 *
+	 * Looks up the subinterface by code, optionally checks if it's allowed, 
+	 * and sets it as current. Calls on_subinterface_not_allowed() if code is 
+	 * invalid or access is denied.
+	 *
+	 * @param string|false $code The subinterface code to activate.
+	 * @param bool $check_allowed Whether to verify if the subinterface is allowed.
+	 * 
+	 * @return mwmod_mw_ui_sub_uiabs|false The subinterface if successfully set, or false on failure.
+	 */
 	function set_current_subinterface_by_code($code=false,$check_allowed=true){
 		if(!$code){
 			return $this->on_subinterface_not_allowed();
@@ -1149,6 +1707,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->set_current_subinterface($si,false);
 	}
+
+	/**
+	 * Gets the subinterface code from the request.
+	 *
+	 * Looks for the subinterface request variable in $_REQUEST and returns 
+	 * the code if present, otherwise returns the default subinterface code.
+	 *
+	 * @return string|false The requested subinterface code or the default code.
+	 */
 	function get_sub_insterface_request_code(){
 		//fix here!!!
 		
@@ -1187,6 +1754,18 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return false;
 		
 	}
+
+	/**
+	 * Adds a subinterface to this interface's collection.
+	 *
+	 * Validates the code and registers the subinterface. Notifies the subinterface 
+	 * that it has been added as a child.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $item The subinterface instance to add.
+	 * @param string|false $cod Optional code to use. If not provided, uses the item's code.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The added subinterface or false on failure.
+	 */
 	final function add_subinterface($item,$cod=false){
 		if(!$cod){
 			$cod=$item->code;	
@@ -1200,22 +1779,52 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $item;
 		
 	}
+
+	/**
+	 * Adds a new subinterface to this interface.
+	 *
+	 * Convenience method that uses the subinterface's own code property.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface The subinterface to add.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The added subinterface or false on failure.
+	 */
 	function add_new_subinterface($subinterface){
 		
 		return $this->add_subinterface($subinterface,$subinterface->code);
 		
 	}
 
+	/**
+	 * Hook for loading all subinterfaces.
+	 *
+	 * Override in child classes to programmatically create and add subinterfaces.
+	 *
+	 * @return void
+	 */
 	function load_all_subinterfases(){
 		//for children
 	}
 	
+	/**
+	 * Ensures all subinterfaces are initialized, but only once.
+	 *
+	 * @return void
+	 */
 	final function init_all_subinterfaces_once(){
 		if(!$this->___all_subinterfaces_loaded){
 			$this->get_all_subinterfaces();
 		}
 		
 	}
+
+	/**
+	 * Gets all subinterfaces, triggering initialization if needed.
+	 *
+	 * Calls load_all_subinterfases() to allow child classes to register their subinterfaces.
+	 *
+	 * @return array<string,mwmod_mw_ui_sub_uiabs> Array of subinterfaces keyed by code.
+	 */
 	final function get_all_subinterfaces(){
 		if($this->___all_subinterfaces_loaded){
 			return $this->___all_subinterfaces;
@@ -1231,15 +1840,42 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->___all_subinterfaces;
 	}
+
+	/**
+	 * Gets the collection of registered subinterfaces.
+	 *
+	 * @return array<string,mwmod_mw_ui_sub_uiabs> Array of subinterfaces keyed by code.
+	 */
 	final function get_subinterfaces(){
 		return $this->___subinterfaces;
 	}
 
 	//formulario e inputs
+
+	/**
+	 * Gets the form action URL for this subinterface.
+	 *
+	 * Returns a URL pointing to the current subinterface with optional parameters.
+	 *
+	 * @param array|false $args Optional URL parameters to include.
+	 * @param string|false $file Optional filename to use in the URL.
+	 *
+	 * @return string The form action URL.
+	 */
 	function get_frm_action($args=false,$file=false){
 		$code=$this->get_subinterface_code();
 		return $this->get_url_subinterface($code,$args,$file);	
 	}
+
+	/**
+	 * Creates a new form instance for this subinterface.
+	 *
+	 * Initializes a form with appropriate template and action URL.
+	 *
+	 * @param string $name The form's name attribute.
+	 *
+	 * @return mwmod_mw_datafield_frm The new form instance.
+	 */
 	function new_frm($name="frm"){
 		$frm= new mwmod_mw_datafield_frm($name);
 		if(!$t=$this->get_template()){
@@ -1249,6 +1885,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$frm->action=$this->get_frm_action();
 		return $frm;
 	}
+
+	/**
+	 * Generates HTML form from a data field creator instance.
+	 *
+	 * @param object|false $cr The data field creator instance.
+	 *
+	 * @return string|false The HTML form content or false on failure.
+	 */
 	function get_html_frm_from_datafieldcreator($cr){
 		if(!$cr){
 			return false;
@@ -1260,21 +1904,51 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $frm->get_html();
 	
 	}
+
+	/**
+	 * Creates a new data field creator instance.
+	 *
+	 * Used to build forms with dynamic field configurations.
+	 *
+	 * @param array $items Reference to array of field items.
+	 *
+	 * @return mwmod_mw_datafield_creator The new data field creator.
+	 */
 	function new_datafield_creator(&$items=array()){
 		$cr=new mwmod_mw_datafield_creator($items);
 		//$cr->set_sub_interface($this);
 		return $cr;
 	}
+
 	//usuario
 	/** @return mwmod_mw_users_user  */
 	function get_admin_current_user(){
 		return $this->maininterface->get_admin_current_user();	
 	}
+
 	//menu superior
+
+	/**
+	 * Checks if this subinterface is allowed to appear in the menu.
+	 *
+	 * By default, delegates to is_allowed().
+	 *
+	 * @return bool True if allowed in menu, false otherwise.
+	 */
 	function is_allowed_on_mnu(){
 		return $this->is_allowed();	
 	}
 	
+	/**
+	 * Adds this subinterface as a menu item under a parent menu item.
+	 *
+	 * Creates a menu item with this interface's code, label, and URL. 
+	 * Marks it active if this is the current subinterface.
+	 *
+	 * @param mwmod_mw_mnu_mnuitem $parent_mnu_item The parent menu item.
+	 *
+	 * @return mwmod_mw_mnu_mnuitem The newly added menu item.
+	 */
 	function add_as_sub_mnu_item($parent_mnu_item){
 		$item=new mwmod_mw_mnu_mnuitem($this->get_cod_for_mnu(),$this->get_mnu_lbl(),$parent_mnu_item,$this->get_url());
 		if($this->is_current()){
@@ -1287,9 +1961,33 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $parent_mnu_item->add_item_by_item($item);
 			
 	}
+
+	/**
+	 * Adds this subinterface to a side menu.
+	 *
+	 * Convenience method that delegates to add_2_mnu().
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu instance.
+	 * @param bool $checkallowed Whether to check if the interface is allowed.
+	 *
+	 * @return mwmod_mw_mnu_mnuitem|false The added menu item or false.
+	 */
 	function add_2_side_mnu($mnu,$checkallowed=true){
 		return $this->add_2_mnu($mnu,$checkallowed);	
 	}
+
+	/**
+	 * Adds this subinterface as a menu item to a menu.
+	 *
+	 * Creates a menu item with this interface's code, label, and URL. 
+	 * Optionally checks permissions. Marks active if current. Recursively 
+	 * adds child submenus if the menu supports sub-menus.
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu instance.
+	 * @param bool $checkallowed Whether to check if the interface is allowed.
+	 *
+	 * @return mwmod_mw_mnu_mnuitem|false The added menu item or false on failure.
+	 */
 	function add_2_mnu($mnu,$checkallowed=true){
 		if(!$mnu){
 			return false;	
@@ -1315,24 +2013,65 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		return $item;
 	}
+
+	/**
+	 * Adds child submenus under a parent menu item.
+	 *
+	 * Override in child classes to add subinterface menu items.
+	 *
+	 * @param mwmod_mw_mnu_mnuitem $mnuitem The parent menu item.
+	 * @param bool $checkallowed Whether to check if subinterfaces are allowed.
+	 *
+	 * @return void
+	 */
 	function add_sub_mnus($mnuitem,$checkallowed=true){
 		//agregar aca
 	}
+
+	/**
+	 * Prepares and customizes a menu item.
+	 *
+	 * Applies icon classes and other customizations to the menu item.
+	 *
+	 * @param mwmod_mw_mnu_mnuitem $item The menu item to prepare.
+	 *
+	 * @return void
+	 */
 	function prepare_mnu_item($item){
 		if($this->mnuIconClass){
 			$item->addInnerHTML_icon($this->mnuIconClass);
 		}
 		//aca puede colocarse icono	
 	}
+
+	/**
+	 * Gets the code to use for menu identification.
+	 *
+	 * @return string The code for this interface in menus.
+	 */
 	function get_cod_for_mnu(){
 		return $this->get_code_for_parent();	
 	}
+
+	/**
+	 * Gets the label to display in menus.
+	 *
+	 * @return string The menu label for this interface.
+	 */
 	function get_mnu_lbl(){
 		return $this->get_name();	
 	}
+
 	//menú interno
 	private $mnu_man;
 	
+	/**
+	 * Gets the internal menu manager, creating it if necessary.
+	 *
+	 * The menu manager handles the subinterface's internal navigation menu.
+	 *
+	 * @return mwmod_mw_mnu_man The menu manager instance.
+	 */
 	final function get_mnu_man(){
 		if(!isset($this->mnu_man)){
 			$this->mnu_man=$this->create_mnu_man();
@@ -1340,19 +2079,48 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->mnu_man;
 	}
+
+	/**
+	 * Creates the menu manager instance.
+	 *
+	 * @return mwmod_mw_mnu_man A new menu manager.
+	 */
 	function create_mnu_man(){
 		$m=new mwmod_mw_mnu_man();
 		$m->set_sub_interface($this);
 		return $m;
 	}
+
+	/**
+	 * Hook called after menu manager creation.
+	 *
+	 * Override to populate the menu with items. Default implementation 
+	 * adds items to the "sumnu" menu.
+	 *
+	 * @param mwmod_mw_mnu_man $mnu_man The menu manager instance.
+	 *
+	 * @return void
+	 */
 	function mnu_man_on_create($mnu_man){
 		$mnu=$mnu_man->get_item("sumnu");
 		$this->add_mnu_items($mnu);	
 	}
+
+	/**
+	 * Internal accessor for menu manager.
+	 *
+	 * @internal
+	 * @return mwmod_mw_mnu_man The menu manager instance.
+	 */
 	final function __get_priv_mnu_man(){
 		return $this->get_mnu_man(); 	
 	}
 	
+	/**
+	 * Creates the main menu instance for this subinterface.
+	 *
+	 * @return mwmod_mw_mnu_mnu The menu instance.
+	 */
 	function create_mnu(){
 		$m=$this->get_mnu_man();
 		return $m->get_item("sumnu");
@@ -1360,6 +2128,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		//return new mwmod_mw_mnu_ui($this);	
 	}
+
+	/**
+	 * Gets the menu instance, creating it if necessary.
+	 *
+	 * @return mwmod_mw_mnu_mnu|false The menu instance or false on failure.
+	 */
 	function get_mnu(){
 		if(!isset($this->mnu)){
 			if($this->mnu=$this->create_mnu()){
@@ -1406,6 +2180,18 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 			
 	}
+
+	/**
+	 * Adds subinterfaces to a menu by code list.
+	 *
+	 * Accepts a comma-separated string or array of subinterface codes 
+	 * and adds each to the given menu.
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu instance.
+	 * @param string|array $code Comma-separated string or array of subinterface codes.
+	 *
+	 * @return string|false The last processed code or false.
+	 */
 	function add_sub_interface_to_mnu_by_code($mnu,$code){
 		if(!$code){
 			return false;
@@ -1421,6 +2207,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		return $cc;
 	}
+
+	/**
+	 * Adds a single subinterface to a menu by code.
+	 *
+	 * @param mwmod_mw_mnu_mnu $mnu The menu instance.
+	 * @param string $code The subinterface code.
+	 *
+	 * @return mwmod_mw_mnu_mnuitem|false The added menu item or false on failure.
+	 */
 	function add_sub_interface_to_mnu_by_code_item($mnu,$code){
 		if(!$si=$this->get_subinterface($code)){
 			return false;	
@@ -1430,29 +2225,86 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 
 	//exec
+
+	/**
+	 * Executes when no subinterface is active.
+	 *
+	 * Override to provide custom execution logic when no child subinterface handles the request.
+	 *
+	 * @return void
+	 */
 	function do_exec_no_sub_interface(){
 		//extender!!!;
 	}
+
+	/**
+	 * Hook called before execution begins.
+	 *
+	 * Adds required JavaScript and CSS resources.
+	 *
+	 * @return void
+	 */
 	function before_exec(){
 		$this->add_req_js_scripts();	
 		$this->add_req_css();
 	}
+
+	/**
+	 * Adds required JavaScript scripts for this subinterface.
+	 *
+	 * Override to add custom scripts. Alternative: use prepare_before_exec_no_sub_interface().
+	 *
+	 * @return void
+	 */
 	function add_req_js_scripts(){
 		//ver mwmod_mw_ui_debug_frm	
 		//altarnativa a esto es prepare_before_exec_no_sub_interface
 	}
+
+	/**
+	 * Adds required CSS stylesheets for this subinterface.
+	 *
+	 * Override to add custom styles. Alternative: use prepare_before_exec_no_sub_interface().
+	 *
+	 * @return void
+	 */
 	function add_req_css(){
 		//ver mwmod_mw_ui_debug_frm	
 		//altarnativa a esto es prepare_before_exec_no_sub_interface
 	}
+
+	/**
+	 * Prepares the UI before executing when no subinterface is active.
+	 *
+	 * Override to customize UI preparation logic.
+	 *
+	 * @return void
+	 */
 	function prepare_before_exec_no_sub_interface(){
 		//$p=new mwmod_mw_html_manager_uipreparers_default($this);
 		//$p->preapare_ui();
 	}
+
+	/**
+	 * Prepares and executes when no subinterface is active.
+	 *
+	 * Combines preparation and execution steps.
+	 *
+	 * @return void
+	 */
 	function prepare_and_do_exec_no_sub_interface(){
 		$this->prepare_before_exec_no_sub_interface();
 		$this->do_exec_no_sub_interface();
 	}
+
+	/**
+	 * Main execution method for the subinterface.
+	 *
+	 * Checks permissions, sets up the execution chain, and either delegates 
+	 * to a child subinterface or executes directly if none is active.
+	 *
+	 * @return false|void False if not allowed, void otherwise.
+	 */
 	function do_exec(){
 		
 		if(!$this->is_allowed()){
@@ -1475,6 +2327,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 	
 	//exec output
+
+	/**
+	 * Executes page output as a subinterface.
+	 *
+	 * Delegates to the template to render the subinterface within a parent layout.
+	 *
+	 * @return void
+	 */
 	function do_exec_page_in_as_sub(){
 		if(!$template=$this->get_template()){
 			$this->do_exec_page_in();
@@ -1483,6 +2343,15 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$template->exec_page_full_body_sub_interface();
 		
 	}
+
+	/**
+	 * Gets the deepest active subinterface in the hierarchy.
+	 *
+	 * Traverses the current subinterface chain to find the final active one.
+	 * Marks this interface as current if it's the final one.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs The final current subinterface.
+	 */
 	function get_this_or_final_current_subinterface(){
 		if($this->current_sub_interface){
 			if($this->current_sub_interface->is_allowed()){
@@ -1494,9 +2363,28 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->is_current=true;
 		return $this;
 	}
+
+	/**
+	 * Executes page in single mode.
+	 *
+	 * Delegates to do_exec_page().
+	 *
+	 * @return void
+	 */
 	function do_exec_page_single_mode(){
 		$this->do_exec_page();	
 	}
+
+	/**
+	 * Executes on the template, delegating to child if present.
+	 *
+	 * If a current subinterface exists and is allowed, delegates rendering to it. 
+	 * Otherwise, executes this interface's page content.
+	 *
+	 * @param object $template The template instance.
+	 *
+	 * @return void
+	 */
 	function do_exec_on_template($template){
 		if($this->current_sub_interface){
 			if($this->current_sub_interface->is_allowed()){
@@ -1507,30 +2395,89 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->do_exec_page_in();
 			
 	}
+
+	/**
+	 * Checks if the header should be omitted.
+	 *
+	 * Override to return true for pages that don't need headers.
+	 *
+	 * @return bool False by default.
+	 */
 	function omit_header(){
 		return false;	
 	}
+
+	/**
+	 * Executes page content within the main template.
+	 *
+	 * @param object $maintemplate The main template instance.
+	 *
+	 * @return void
+	 */
 	function do_exec_on_page_in_on_maintemplate($maintemplate){
 		$this->do_exec_page_in();
 			
 	}
+
+	/**
+	 * Executes page rendering.
+	 *
+	 * Delegates to do_exec_page_in().
+	 *
+	 * @return void
+	 */
 	function do_exec_page(){
 		$this->do_exec_page_in();
 	}
+
+	/**
+	 * Renders the page content.
+	 *
+	 * Override in child classes to provide actual page output.
+	 *
+	 * @return void
+	 */
 	function do_exec_page_in(){
 		//extender
 	}
 	
 	//permisos
 
+	/**
+	 * Checks if the current user is allowed to access this subinterface.
+	 *
+	 * Override in child classes to implement permission logic.
+	 *
+	 * @return bool False by default. Override to implement actual permission checks.
+	 */
 	function is_allowed(){
 		return false;
 		//return $this->allow("admin");	
 	}
+
+	/**
+	 * Checks if an action is allowed for the current user.
+	 *
+	 * Delegates to the main interface's permission system.
+	 *
+	 * @param string $action The action to check.
+	 * @param mixed $params Optional parameters for the permission check.
+	 *
+	 * @return bool True if allowed, false otherwise.
+	 */
 	function allow($action,$params=false){
 		return $this->maininterface->allow($action,$params);	
 	}
+
 	//template
+
+	/**
+	 * Creates the template instance for this subinterface.
+	 *
+	 * @param object|false $main_interface_template Optional parent template. If not provided, uses main interface's template.
+	 *
+	 * @return object The new template instance.
+	 */
 	function create_template($main_interface_template=false){
 		if(!$main_interface_template){
 			$main_interface_template=$this->maininterface->get_template();	
@@ -1538,6 +2485,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$t=$main_interface_template->new_sub_interface_template($this);
 		return $t;
 	}
+
+	/**
+	 * Gets the template instance, creating it if necessary.
+	 *
+	 * @param object|false $main_interface_template Optional parent template.
+	 *
+	 * @return mwmod_mw_ui_sub_uitemplate The template instance.
+	 */
 	final function get_template($main_interface_template=false){
 		if(!isset($this->template)){
 			$this->template=$this->create_template($main_interface_template);
@@ -1545,23 +2500,58 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->template;
 	}
 	
+	/**
+	 * Internal accessor for template.
+	 *
+	 * @internal
+	 * @return mwmod_mw_ui_sub_uitemplate The template instance.
+	 */
 	final function __get_priv_template(){
 		return $this->get_template(); 	
 	}
+
 	//info
+
+	/**
+	 * Gets the display name of the subinterface.
+	 *
+	 * Returns the title if available, otherwise returns the code.
+	 *
+	 * @return string The subinterface name.
+	 */
 	function get_name(){
 		if($r=$this->get_title()){
 			return $r;	
 		}
 		return $this->code;
 	}
+
+	/**
+	 * String representation of the subinterface.
+	 *
+	 * @return string The subinterface name.
+	 */
 	function __toString(){
 		return $this->get_name()."";	
 	}
 	
+	/**
+	 * Gets the title of the subinterface.
+	 *
+	 * @return string The title.
+	 */
 	function get_title(){
 		return $this->__get_priv_def_title();	
 	}
+
+	/**
+	 * Internal method to get the default title.
+	 *
+	 * Returns the class name if no title is set.
+	 *
+	 * @internal
+	 * @return string The title or class name.
+	 */
 	final function __get_priv_def_title(){
 		if(!$this->def_title){
 			return get_class($this);	
@@ -1569,6 +2559,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 		return $this->def_title; 	
 	}
+
+	/**
+	 * Sets the default title for this subinterface.
+	 *
+	 * @param string $tit The title to set.
+	 *
+	 * @return void
+	 */
 	final function set_def_title($tit){
 		$this->def_title=$tit;
 	}
@@ -1583,10 +2581,26 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->do_exec_page_in();	
 	}
 	*/
+
+	/**
+	 * Gets HTML for this subinterface in a parent chain breadcrumb.
+	 *
+	 * Returns a linked title for use in breadcrumb navigation.
+	 *
+	 * @return string HTML anchor tag with URL and title.
+	 */
 	function get_html_for_parent_chain_on_child_title(){
 		$url=$this->get_url();
 		return "<a href='$url'>".$this->get_title_for_box()."</a>";
 	}
+
+	/**
+	 * Gets HTML for the full parent chain breadcrumb.
+	 *
+	 * Builds a breadcrumb trail showing all parent subinterfaces.
+	 *
+	 * @return string HTML breadcrumb string with " - " separators.
+	 */
 	function get_html_parents_chain(){
 		$l=array();
 		if($list=$this->get_parents_chain()){
@@ -1598,6 +2612,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return implode(" - ",$l);
 		
 	}
+
+	/**
+	 * Gets HTML for the parent route with custom separator.
+	 *
+	 * @param string $sep The separator to use between route elements.
+	 *
+	 * @return string HTML route string.
+	 */
 	function get_html_parents_route($sep=" - "){
 		$l=array();
 		if($list=$this->get_parents_chain()){
@@ -1616,22 +2638,60 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 	}
 	
+	/**
+	 * Gets the title for display in a box or container.
+	 *
+	 * Returns the full parent chain as HTML.
+	 *
+	 * @return string HTML breadcrumb chain.
+	 */
 	function get_title_for_box_html(){
 		return $this->get_html_parents_chain();
 			
 	}
+
+	/**
+	 * Gets a formatted title with subtitle for the selected UI header.
+	 *
+	 * @param string $title The main title.
+	 * @param string|false $subtitle Optional subtitle. If not provided, uses this interface's title.
+	 *
+	 * @return string HTML formatted title with subtitle in h5 tag.
+	 */
 	function get_selected_ui_header_title_and_sub_title($title,$subtitle=false){
 		if(!$subtitle){
 			$subtitle=$this->get_title();	
 		}
 		return $title."<h5>$subtitle</h5>";
 	}
+
+	/**
+	 * Checks if this interface is responsible for sub-interface header titles.
+	 *
+	 * Override to return true if this interface should control titles for child interfaces.
+	 *
+	 * @return bool False by default.
+	 */
 	function isResponsableForSubInterfacesHeaderTitle(){
 		return false;
 	}
+
+	/**
+	 * Gets the header title for this subinterface when it's responsible for sub-UIs.
+	 *
+	 * @return string The title for the header.
+	 */
 	function getHeaderTitleForSubUIWhenResponsable(){
 		return $this->get_title();
 	}
+
+	/**
+	 * Gets the UI responsible for sub-interface header titles.
+	 *
+	 * Traverses up the parent chain to find the responsible UI.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The responsible UI or false if none found.
+	 */
 	function getUIResponsableForSubInterfacesHeaderTitle(){
 		if($this->isResponsableForSubInterfacesHeaderTitle()){
 			return $this;
@@ -1642,12 +2702,26 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return false;
 
 	}
+
+	/**
+	 * Gets the parent UI responsible for sub-interface header titles.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The parent responsible UI or false if none found.
+	 */
 	function getParentUIResponsableForSubInterfacesHeaderTitle(){
 		if($this->parent_subinterface){
 			return $this->parent_subinterface->getUIResponsableForSubInterfacesHeaderTitle();
 		}
 		return false;
 	}
+
+	/**
+	 * Gets the selected UI header title.
+	 *
+	 * If a parent is responsible for titles, uses that. Otherwise uses this interface's title.
+	 *
+	 * @return string The header title.
+	 */
 	function get_selected_ui_header_title(){
 		if($parent=$this->getParentUIResponsableForSubInterfacesHeaderTitle()){
 			if($t=$parent->getHeaderTitleForSubUIWhenResponsable()){
@@ -1656,6 +2730,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->get_title();	
 	}
+
+	/**
+	 * Gets the selected UI header subtitle.
+	 *
+	 * Returns this interface's title if a parent is responsible, otherwise returns false.
+	 *
+	 * @return string|false The subtitle or false.
+	 */
 	function get_selected_ui_header_subtitle(){
 		if($parent=$this->getParentUIResponsableForSubInterfacesHeaderTitle()){
 			return $this->get_title();	
@@ -1665,14 +2747,37 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		
 	}
 
+	/**
+	 * Gets the title for display in a box.
+	 *
+	 * @return string The title.
+	 */
 	function get_title_for_box(){
 		//return $this->get_html_parents_chain();
 		
 		return $this->get_title();	
 	}
+
+	/**
+	 * Determines if children inherit this interface's permissions.
+	 *
+	 * Override to return true for permission inheritance.
+	 *
+	 * @return bool False by default.
+	 */
 	function childrenInheritPermissions(){
 		return false;
 	}
+
+	/**
+	 * Gets the full code path with separators.
+	 *
+	 * Builds a hierarchical code string from all parents and this interface.
+	 *
+	 * @param string $sep The separator to use between codes.
+	 *
+	 * @return string|false The full code path or false if no parents.
+	 */
 	function get_full_cod($sep="-"){
 		if(!$sub_uis=$this->get_parents_chain(true,true)){
 			return false;
@@ -1688,6 +2793,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 
 	}
 
+	/**
+	 * Gets the parent chain of subinterfaces.
+	 *
+	 * Builds an array of parent subinterfaces in the hierarchy.
+	 *
+	 * @param bool $top2bot If true, orders from top to bottom. If false, bottom to top.
+	 * @param bool $addthis If true, includes this interface in the chain.
+	 *
+	 * @return array<mwmod_mw_ui_sub_uiabs> Array of parent subinterfaces.
+	 */
 	function get_parents_chain($top2bot=true,$addthis=false){
 		$r=array();
 		if($addthis){
@@ -1701,6 +2816,17 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $r;
 	}
+
+	
+	/**
+	 * Adds this interface and its parents to a chain list.
+	 *
+	 * Recursively builds the parent chain by reference.
+	 *
+	 * @param array $list Reference to the list being built.
+	 *
+	 * @return void
+	 */
 	function add2parents_chain(&$list){
 		if(!$list){
 			$list=array();	
@@ -1712,31 +2838,80 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $list;
 	}
 
-	/////
-	//function get_
+
+	/**
+	 * Sets the parent subinterface for this interface.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $parent The parent subinterface.
+	 *
+	 * @return void
+	 */
 	final function set_parent_sub_interface($parent){
 		$this->parent_subinterface=$parent;
 		$this->current_parent_subinterface=$parent;	
 	}
+
+	/**
+	 * Sets the current parent subinterface with a specific code.
+	 *
+	 * @param string $cod The code to use for this interface within the parent.
+	 * @param mwmod_mw_ui_sub_uiabs $parent The parent subinterface.
+	 *
+	 * @return void
+	 */
 	final function set_current_parent_sub_interface($cod,$parent){
 		$this->code_for_parent=$cod;
 		$this->current_parent_subinterface=$parent;	
 	}
+
+	/**
+	 * Gets the code used for parent identification.
+	 *
+	 * @internal
+	 * @return string The code for parent or default code.
+	 */
 	final function __get_priv_code_for_parent(){
 		if(!$this->code_for_parent){
 			return $this->code; 	
 		}
 		return $this->code_for_parent; 	
 	}
+
+	/**
+	 * Gets the current parent subinterface.
+	 *
+	 * Falls back to parent_subinterface if current is not set.
+	 *
+	 * @internal
+	 * @return mwmod_mw_ui_sub_uiabs|false The parent subinterface or false.
+	 */
 	final function __get_priv_current_parent_subinterface(){
 		if(!$this->current_parent_subinterface){
 			return $this->parent_subinterface; 	
 		}
 		return $this->current_parent_subinterface; 	
 	}
+
+	/**
+	 * Gets the parent subinterface.
+	 *
+	 * @internal
+	 * @return mwmod_mw_ui_sub_uiabs|false The parent subinterface or false.
+	 */
 	final function __get_priv_parent_subinterface(){
 		return $this->parent_subinterface; 	
 	}
+
+	/**
+	 * Called when this interface is added as a child to a parent.
+	 *
+	 * Sets up parent relationship and resets URL parameters.
+	 *
+	 * @param string $cod The code to use in the parent.
+	 * @param mwmod_mw_ui_sub_uiabs $parent The parent subinterface.
+	 *
+	 * @return bool True on success.
+	 */
 	function added_as_child($cod,$parent){
 		$this->set_current_parent_sub_interface($cod,$parent);
 		$this->reset_url_params();
@@ -1744,6 +2919,11 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return true;	
 	}
 	
+	/**
+	 * Gets the code to use when referenced by parent.
+	 *
+	 * @return string The code for parent or default code.
+	 */
 	function get_code_for_parent(){
 		if($this->code_for_parent){
 			return $this->code_for_parent;	
@@ -1751,25 +2931,68 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		return $this->code;
 	}
 
+	/**
+	 * Gets the current child subinterface.
+	 *
+	 * @internal
+	 * @return mwmod_mw_ui_sub_uiabs|false The current subinterface or false.
+	 */
 	final function __get_priv_current_sub_interface(){
 		return $this->current_sub_interface; 	
 	}
 	
 
 	
+	/**
+	 * Creates a subinterface by code.
+	 *
+	 * Delegates to do_create_subinterface().
+	 *
+	 * @param string $cod The subinterface code.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The created subinterface or false.
+	 */
 	function create_subinterface($cod){
 		return $this->do_create_subinterface($cod);
 		
 	}
+
+	/**
+	 * Checks if dynamic subinterface creation by code is allowed.
+	 *
+	 * Override to return true to enable dynamic subinterface creation.
+	 *
+	 * @return bool False by default.
+	 */
 	function allowcreatesubinterfacechildbycode(){
 		return false;	
 	}
 	
+	/**
+	 * Called after a subinterface child is created.
+	 *
+	 * Registers the newly created subinterface.
+	 *
+	 * @param string $cod The subinterface code.
+	 * @param mwmod_mw_ui_sub_uiabs $item The created subinterface.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs The registered subinterface.
+	 */
 	function subinterface_child_created($cod,$item){
 		$this->add_subinterface($item,$cod);
 		
 		return $item;	
 	}
+
+	/**
+	 * Internal method to create a subinterface by code.
+	 *
+	 * Checks permissions and validates the code before attempting creation.
+	 *
+	 * @param string $cod The subinterface code.
+	 *
+	 * @return mwmod_mw_ui_sub_uiabs|false The created subinterface or false.
+	 */
 	function do_create_subinterface($cod){
 		if(!$this->allowcreatesubinterfacechildbycode()){
 			return false;	
@@ -1794,6 +3017,13 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	
 	
 	
+	/**
+	 * Gets the request variable name for this subinterface level.
+	 *
+	 * Delegates to main interface to get the appropriate variable name based on depth.
+	 *
+	 * @return string The request variable name (e.g., "subinterface", "subinterface1", etc.).
+	 */
 	function get_subinterface_request_var(){
 		return $this->maininterface->get_subinterface_request_var_by_deep($this->get_deep()+1);
 		/*
@@ -1804,6 +3034,14 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		*/
 	}
+
+	/**
+	 * Gets the depth level of this subinterface in the hierarchy.
+	 *
+	 * Recursively calculates depth from root.
+	 *
+	 * @return int The depth level (0 for root).
+	 */
 	function get_deep(){
 		if(!$this->parent_subinterface){
 			return 0;	
@@ -1812,29 +3050,71 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 	
 	
+	/**
+	 * Generates an HTML link to a subinterface.
+	 *
+	 * @param string $lbl The link label text.
+	 * @param string|false $subinterface The target subinterface code.
+	 * @param array|false $args Optional URL parameters.
+	 * @param string|false $file Optional filename.
+	 *
+	 * @return string HTML anchor tag.
+	 */
 	function get_html_link($lbl,$subinterface=false,$args=false,$file=false){
 		$url=$this->get_url_subinterface($subinterface,$args,$file);
 		return "<a href='$url'>$lbl</a>";	
 	}
 	
 	
-	function get_input_template(){
+	function XXXXget_input_template(){
+		//DEPRECATED: use maininterface directly
 		return $this->maininterface->get_input_template(); 	
 	}
+
+	/**
+	 * Creates a new table template.
+	 *
+	 * @return object The table template instance.
+	 */
 	function new_tbl_template(){
 		$tm=$this->get_template();
 		return $tm->new_tbl_template();	
 	}
 
 	
+	/**
+	 * Called after code validation succeeds.
+	 *
+	 * Resets URL parameters and initializes the interface.
+	 *
+	 * @return void
+	 */
 	final function after_code_ok(){
 		
 		$this->reset_url_params();
 		
 	}
+
+	/**
+	 * Hook for extending after code validation.
+	 *
+	 * Override to add custom logic after code is validated. Called after after_code_ok().
+	 *
+	 * @return void
+	 */
 	function after_code_ok_sub(){
 		//para extender, se ejecuta después de 	after_code_ok
 	}
+
+	/**
+	 * Sets the code for this subinterface.
+	 *
+	 * Can only be set once. Validates the code format and calls after_code_ok().
+	 *
+	 * @param string $cod The code to set.
+	 *
+	 * @return false|void False on failure, void on success.
+	 */
 	final function set_code($cod){
 		if(isset($this->code)){
 			return false;	
@@ -1855,6 +3135,16 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		$this->after_code_ok();
 		
 	}
+
+	/**
+	 * Sets the main interface reference for this subinterface.
+	 *
+	 * Also sets the main application reference.
+	 *
+	 * @param mwmod_mw_ui_main_def $maininterface The main interface instance.
+	 *
+	 * @return void
+	 */
 	final function set_main_interface($maininterface){
 		$ap=$maininterface->mainap;
 		$this->set_mainap($ap);	
@@ -1862,19 +3152,44 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 	
 	
+	/**
+	 * Gets the menu icon for this subinterface.
+	 *
+	 * @return string|false The menu icon identifier or false.
+	 */
 	function get_mnu_icon(){
 		return $this->mnu_icon;	
 	}
+
+	/**
+	 * Internal accessor for the code.
+	 *
+	 * @internal
+	 * @return string The subinterface code.
+	 */
 	final function __get_priv_code(){
 		return $this->code; 	
 	}
+
 	/**
-	* @return mwmod_mw_ui_main_def MainUI
+	* Gets the main interface reference.
+	*
+	* @internal
+	* @return mwmod_mw_ui_main_def MainUI instance.
 	*/
 	final function __get_priv_maininterface(){
 		return $this->maininterface; 	
 	}
+
 	//current item
+
+	/**
+	 * Sets the current item for this subinterface.
+	 *
+	 * @param mixed $item The item to set as current.
+	 *
+	 * @return void
+	 */
 	final function set_current_item($item){
 		$this->current_item=$item;	
 	
@@ -1889,10 +3204,27 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	final function get_current_item(){
 		return $this->current_item; 	
 	}
+
+	/**
+	 * Internal accessor for the current item.
+	 *
+	 * @internal
+	 * @return mixed The current item or null.
+	 */
 	final function __get_priv_current_item(){
 		return $this->current_item; 	
 	}
 
+	/**
+	 * Magic method for handling undefined method calls.
+	 *
+	 * Returns false for any undefined method.
+	 *
+	 * @param string $a Method name.
+	 * @param array $b Method arguments.
+	 *
+	 * @return false Always returns false.
+	 */
 	function __call($a,$b){
 		return false;	
 	}
