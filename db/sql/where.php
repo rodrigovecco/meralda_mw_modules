@@ -53,6 +53,12 @@ class mwmod_mw_db_sql_where extends mwmod_mw_db_sql_querypart{
 		
 	}
 	
+	/**
+	 * @param mixed $field 
+	 * @param mixed $list 
+	 * @param bool $cod 
+	 * @return mwmod_mw_db_sql_where_whereinnumlist 
+	 */
 	function add_where_num_list($field,$list,$cod=false){
 		$item=new mwmod_mw_db_sql_where_whereinnumlist($field,$list,$cod);
 		return $this->add_item($item);

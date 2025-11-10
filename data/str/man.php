@@ -39,6 +39,11 @@ class mwmod_mw_data_str_man extends mw_apsubbaseobj{
 		
 			
 	}
+	/**
+	 * @param string $code 
+	 * @param bool $path 
+	 * @return mwmod_mw_data_str_item 
+	 */
 	final function get_datamanager($code="data",$path=false){
 		
 		if(!$fullcode=$this->get_datamanager_fullcode($code,$path)){
