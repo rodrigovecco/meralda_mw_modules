@@ -14,7 +14,20 @@
  * - getItemsMan(): Return the items manager for data operations
  * - add_cols($datagrid): Define grid columns
  *
- * @property-read mwmod_mw_devextreme_data_queryhelper|null $queryHelper Query helper initialized in getQuery().
+ * @property mwmod_mw_devextreme_data_queryhelper|null $queryHelper Query helper initialized in getQuery().
+ * @property int $defPageSize Default page size for data grid pagination.
+ * @property string $editingMode Editing mode for the data grid: "row", "cell", "batch", or "form".
+ * @property string|null $excelExportName Name for Excel export file (without extension).
+ * @property bool $columnsChooserEnabled Whether to enable the column chooser feature.
+ * @property bool $addColCodsToExcel Whether to add column codes to Excel export.
+ * @property bool $userColsOrderRememberEnabled Whether to remember column order in user preferences.
+ * @property bool $userColsSelectedRememberEnabled Whether to remember column selection (visibility) in user preferences.
+ * @property bool $userColsSelectedRememberEnabledVisible Whether to remember visible index of columns in user preferences.
+ * @property bool $userColsPrefResetBtnEnabled Whether to show reset button for column preferences.
+ * @property bool $clearFiltersBtnEnabled Whether to show clear filters button in toolbar.
+ * @property bool $rememberFiltersBtnEnabled Whether to show remember filters button in toolbar.
+ * @property bool $userFiltersRemember Whether to remember user filters in preferences.
+ * @property bool $toolbarItemsExportButtonAdded Whether export button has been added to toolbar items.
  */
 abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	/**
