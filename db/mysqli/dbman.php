@@ -104,45 +104,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 
 		return false;
 	}
-	/*
-	function query($sql){
-		if(!is_string($sql)){
-			return false;
-		}
-		if(!$l=$this->get_link()){
-			return false;	
-		}
-		
-		try {
-        	$result = $l->query($sql);
-
-			if ($result === false) {
-				return false;
-			}
-			return $result;
-    	} catch (Exception $e) {
-    		$this->lastException=$e;
-        	
-        	return false;
-    	}
-	}
-		*/
-
 	
-	/*
-		function insert($sql){
-		if(!is_string($sql)){
-			return false;
-		}
-		if(!$l=$this->get_link()){
-			return false;	
-		}
-		if($l->real_query($sql)){
-			return $l->insert_id;
-		}
-		
-	}
-		*/
 	function insert($sql) {
 		if (!$l = $this->get_link()) {
 			return false;
