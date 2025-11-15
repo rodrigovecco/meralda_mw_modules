@@ -21,6 +21,11 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 	public $elemsIDpref="MNU";
 	public $url;
 	public $etq;
+	public $target;
+
+	public $collapsed=true;
+
+	public $expandOnActive=true;
 
 	public $isEnd;//last item available
 
@@ -60,6 +65,9 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 	}
 	function addToHtmlSideNav($navDIV,$level=0){
 		$subItems=$this->get_items_allowed();
+		if($this->active and $this->expandOnActive){
+			$this->collapsed=false;
+		}
 
 		$a=new mwmod_mw_html_elem("a");
 		$navDIV->add_cont($a);
@@ -75,19 +83,20 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 		}
 		$e=$a->add_cont_elem("","span");
 		$e->add_cont($this->get_a_inner_html());
-		if($this->active){
-			//$e->add_cont("AAA");
+		
+		$areaExpand="false";
+		if(!$this->collapsed){
+			$areaExpand="true";
+
 		}
 
 		if($subItems){
 			$a->set_att("data-bs-toggle","collapse");
 			$a->set_att("data-bs-target","#$id");
-			$a->set_att("aria-expanded","true");
+			$a->set_att("aria-expanded",$areaExpand);
 			$a->set_att("aria-controls","$id");
-			//$a->addClass("collapsed");
-			if(!$this->active){
-				$a->addClass("collapsed");
-			}
+			
+			
 			$arrow=$a->add_cont_elem();
 			$arrow->addClass("sb-sidenav-collapse-arrow");
 			$arrow->add_cont('<i class="fas fa-angle-down"></i>');
@@ -95,8 +104,12 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 
 			
 			$subItemsDiv=new mwmod_mw_html_elem("div");
-			if(!$this->active){
+			
+			if($this->collapsed){
 				$subItemsDiv->addClass("collapse");
+			}else{
+				$subItemsDiv->addClass("show");
+				
 			}
 			$subItemsDiv->set_att("id","$id");
 			$navDIV->add_cont($subItemsDiv);
@@ -156,8 +169,8 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 		if($e=$this->get_navlist_link_elem()){
 			return $e->get_as_html();	
 		}
-		$r.=$this->get_alink();
-		//$r.=$this->get_html_children();
+		$r=$this->get_alink();
+		
 		return $r;
 			
 	}
@@ -214,7 +227,8 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 		}
 	}
 	function set_active_by_url(){
-		if($_SERVER[REQUEST_URI]==$this->get_url()){
+		$ruri=$_SERVER["REQUEST_URI"]??"";
+		if($ruri==$this->get_url()){
 			$this->set_active(true);	
 		}
 	}

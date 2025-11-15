@@ -3,6 +3,7 @@
  * Class representing a DevExtreme DataGrid widget wrapper.
  * Provides methods to configure columns, data, and interaction
  * with Meralda UI and backend.
+ * @property-read mwmod_mw_devextreme_elemslist $columns List of columns in the DataGrid
  */
 class mwmod_mw_devextreme_widget_datagrid extends mwmod_mw_devextreme_widget_widget{
 	private $columns;

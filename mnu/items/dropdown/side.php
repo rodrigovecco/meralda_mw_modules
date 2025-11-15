@@ -1,150 +1,160 @@
 <?php
-class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem{
-	var $side_css_sub_class="nav-second-level";
-	function __construct($cod,$etq,$parent,$url=false){
-		$this->init($cod,$etq,$parent,$url);
-	}
+class mwmod_mw_mnu_items_dropdown_side extends mwmod_mw_mnu_mnuitem {
+	var $side_css_sub_class = "nav-second-level";
 	
-	function get_li_class_name(){
-		if($this->is_active()){
-			return "active";	
+	function __construct($cod, $etq, $parent, $url = false, $collapsed = true) {
+		$this->init($cod, $etq, $parent, $url);
+		$this->collapsed = $collapsed;
+	}
+
+	function get_li_class_name() {
+		if ($this->is_active()) {
+			return "active";
 		}
 		return "";
 	}
-	function get_html_children_nav(){
-		if(!$items=$this->get_items_allowed()){
-			return false;	
+
+	function get_html_children_nav() {
+		if (!$items = $this->get_items_allowed()) {
+			return false;
 		}
-		$container=new mwmod_mw_html_elem("div");
-		$container->set_att("id",$this->getElemID("ch"));
+		$container = new mwmod_mw_html_elem("div");
+		$container->set_att("id", $this->getElemID("ch"));
 		$container->addClass("collapse");
-		
-		$subcont=$container->add_cont_elem();
+		if (!$this->collapsed) {
+			$container->addClass("show");
+		}
+		$subcont = $container->add_cont_elem();
 		$subcont->addClass("bg-white py-2 collapse-inner rounded");
-		foreach ($items as $item){
-			$subcont->add_cont($item->get_html_as_collapse_item());	
+		foreach ($items as $item) {
+			$subcont->add_cont($item->get_html_as_collapse_item());
 		}
 		return $container->get_as_html();
-	
 	}
-	
-	function get_navlist_link_elem(){
-		$c=new mwmod_mw_html_elem("a");
-		if($str=$this->get_url()){
-			$c->set_att("href",$str);
-		}else{
-			$c->set_att("href","#");
+
+	function get_navlist_link_elem() {
+		$c = new mwmod_mw_html_elem("a");
+		if ($str = $this->get_url()) {
+			$c->set_att("href", $str);
+		} else {
+			$c->set_att("href", "#");
 		}
 		$c->addClass("nav-link");
-		if($str=$this->get_param("aid")){
-			$c->set_att("id",$str);
-		}elseif($this->is_dropdown()){
-			$c->set_att("id",$this->getElemID("ddctr"));
+		if ($str = $this->get_param("aid")) {
+			$c->set_att("id", $str);
+		} elseif ($this->is_dropdown()) {
+			$c->set_att("id", $this->getElemID("ddctr"));
 		}
-		$c->addClass("collapsed");
-		$c->set_att("data-toggle","collapse");
-		$c->set_att("data-target","#".$this->getElemID("ch")."");
-		$c->set_att("aria-controls",$this->getElemID("ch"));
-		$c->set_att("aria-expanded","false");
-		
+		if ($this->collapsed) {
+			$c->addClass("collapsed");
+			$c->set_att("aria-expanded", "false");
+		} else {
+			$c->set_att("aria-expanded", "true");
+		}
+		$c->set_att("data-toggle", "collapse");
+		$c->set_att("data-target", "#" . $this->getElemID("ch"));
+		$c->set_att("aria-controls", $this->getElemID("ch"));
 		/*
-		if($this->is_dropdown()){
+		if ($this->is_dropdown()) {
 			//$c->addClass("dropdown");
 			$c->addClass("dropdown-toggle");
-			$c->set_att("data-toggle","dropdown");
-			$c->set_att("aria-expanded","false");
+			$c->set_att("data-toggle", "dropdown");
+			$c->set_att("aria-expanded", "false");
 		}
 		*/
-		
-		if($str=$this->get_target()){
-			$c->set_att("target",$str);
+		if ($str = $this->get_target()) {
+			$c->set_att("target", $str);
 		}
-		$e=$c->add_cont_elem("","span");
+		$e = $c->add_cont_elem("", "span");
 		$e->add_cont($this->get_a_inner_html());
 		return $c;
+	}
 
-	}
-	
-	function is_active(){
-		if($this->active){
-			return true;	
+	function is_active() {
+		if ($this->active) {
+			return true;
 		}
-		if(!$items=$this->get_items_allowed()){
-			return false;	
+		if (!$items = $this->get_items_allowed()) {
+			return false;
 		}
-		
-		foreach ($items as $item){
-			
-			if($item->is_active()){
-				return true;	
+		foreach ($items as $item) {
+			if ($item->is_active()) {
+				return true;
 			}
-				
 		}
-		
 	}
-	
-	
-	function get_alink(){
-		$r="<a href='#' class='nav-link collapsed' data-toggle='collapse' ";
-		/*
-		if($this->tooltip){
-			$r.="data-toggle='tooltip'  data-placement='top'  title='".mw_text_nl_js($this->tooltip)."' ";	
+
+	function get_alink() {
+		$classes = "nav-link";
+		if ($this->collapsed) {
+			$classes .= " collapsed";
 		}
-		*/
-		$r.=">";
-		$r.=$this->get_a_inner_html();
-		//$r.=" <span class='fa arrow'></span>";
-		$r.="</a>";
-		return 	$r;
-	}
-	function get_a_inner_html(){
-		$r="";
-		$r=$this->innerHTMLbefore;
-		if($c=$this->get_param("icon_class")){
-			$r.="<i class='$c'></i>";		
-		}else{
-			$r.=$this->get_etq();
-		}
-		$r.=$this->innerHTMLafter;
-		return $r;	
-	}
-	
-	function get_html_as_nav_child_inner(){
-		$r=$this->get_alink();
-		$r.="<ul class='nav ".$this->side_css_sub_class." collapse' aria-expanded='false'>";	
-		$r.=$this->get_html_as_nav_child_inner_children();
-		$r.="</ul>";
-		return $r;
-			
-	}
-	function get_html_children(){
-		if(!$items=$this->get_items_allowed()){
-			return false;	
-		}
-		$r="<ul class='nav ".$this->side_css_sub_class." collapse' aria-expanded='false'>x";	
-		foreach ($items as $item){
-			//$r.="<li>";	
-			$r.=$item->get_html_as_list_item();	
-			//$r.="</li>";	
-		}
-		$r.="</ul>";
+		$aria_expanded = $this->collapsed ? "false" : "true";
+		$r = "<a href='#' class='" . $classes . "' data-toggle='collapse' aria-expanded='" . $aria_expanded . "' ";
+		$r .= ">";
+		$r .= $this->get_a_inner_html();
+		//$r .= " <span class='fa arrow'></span>";
+		$r .= "</a>";
 		return $r;
 	}
-	
-	function get_html_as_nav_child_inner_children(){
-		if(!$items=$this->get_items_allowed()){
-			return false;	
+
+	function get_a_inner_html() {
+		$r = "";
+		$r = $this->innerHTMLbefore;
+		if ($c = $this->get_param("icon_class")) {
+			$r .= "<i class='$c'></i>";
+		} else {
+			$r .= $this->get_etq();
 		}
-		
-		foreach ($items as $item){
-			
-			$r=$item->get_html_as_nav_child();	
-				
-		}
-		
+		$r .= $this->innerHTMLafter;
 		return $r;
 	}
-	
+
+	function get_html_as_nav_child_inner() {
+		$r = $this->get_alink();
+		$ul_classes = "nav " . $this->side_css_sub_class;
+		if ($this->collapsed) {
+			$ul_classes .= " collapse";
+			$aria_expanded = "false";
+		} else {
+			$aria_expanded = "true";
+		}
+		$r .= "<ul class='" . $ul_classes . "' aria-expanded='" . $aria_expanded . "'>";
+		$r .= $this->get_html_as_nav_child_inner_children();
+		$r .= "</ul>";
+		return $r;
+	}
+
+	function get_html_children() {
+		if (!$items = $this->get_items_allowed()) {
+			return false;
+		}
+		$ul_classes = "nav " . $this->side_css_sub_class . " collapse";
+		$aria_expanded = "false";
+		if (!$this->collapsed) {
+			$ul_classes .= " show";
+			$aria_expanded = "true";
+		}
+		$r = "<ul class='" . $ul_classes . "' aria-expanded='" . $aria_expanded . "'>";
+		foreach ($items as $item) {
+			//$r .= "<li>";
+			$r .= $item->get_html_as_list_item();
+			//$r .= "</li>";
+		}
+		$r .= "</ul>";
+		return $r;
+	}
+
+	function get_html_as_nav_child_inner_children() {
+		if (!$items = $this->get_items_allowed()) {
+			return false;
+		}
+		foreach ($items as $item) {
+			$r = $item->get_html_as_nav_child();
+		}
+		return $r;
+	}
+
 }
 
 ?>

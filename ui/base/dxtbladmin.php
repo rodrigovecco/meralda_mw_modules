@@ -46,7 +46,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	 * Editing mode for the data grid: "row", "cell", "batch", or "form".
 	 * @var string
 	 */
-	public $editingMode="row";
+	public $editingMode="cell";
 	
 	/**
 	 * Name for Excel export file (without extension).
