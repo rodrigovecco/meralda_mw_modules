@@ -72,6 +72,26 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		
 	}
 	/**
+	 * @param mixed $cod 
+	 * @param bool $objclass 
+	 * @return mwmod_mw_jsobj_inputs_dropdowntreeview 
+	 */
+	function addNewDropDownTreeView($cod,$objclass=false){
+		$input = new mwmod_mw_jsobj_inputs_dropdowntreeview($cod, $objclass);
+		$this->add_child($input);
+		return $input;
+	}
+	/**
+	 * @param mixed $cod 
+	 * @param bool $objclass 
+	 * @return mwmod_mw_jsobj_inputs_tagbox 
+	 */
+	function addNewTagBox($cod,$objclass=false){
+		$input = new mwmod_mw_jsobj_inputs_tagbox($cod, $objclass);
+		$this->add_child($input);
+		return $input;
+	}
+	/**
 	 * @param string $cod 
 	 * @param string $objclass 
 	 * @return mwmod_mw_jsobj_inputs_date 
