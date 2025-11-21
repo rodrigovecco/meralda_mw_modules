@@ -22,6 +22,15 @@ class mwmod_mw_ui_debug_db_tests extends mwmod_mw_ui_sub_uiabs{
 	}
 	function do_exec_page_in(){
 		$dbman=$this->mainap->get_submanager("db");
+		$dbman=$this->mainap->getDBManager();
+		$mysqli=$dbman->get_link();
+		if ($res = $mysqli->query("SELECT @@SESSION.sql_mode AS mode")) {
+			$row = $res->fetch_assoc();
+			echo "<pre>SQL_MODE actual: " . ($row["mode"] ?: "(vacío)") . "</pre>";
+			$res->free();
+		} else {
+			echo "<pre>No se pudo obtener SQL_MODE</pre>";
+		}
 		mw_array2list_echo($dbman->get_tbl_managers());
 		
 		$tblman=$dbman->get_tbl_manager("datatest");

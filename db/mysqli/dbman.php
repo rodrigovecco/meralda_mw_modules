@@ -144,10 +144,15 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 		if($v=$cfg["charset"]??null){
 			$mysqli->set_charset($cfg["charset"]);
 		}
+		/*
 		if(!$v=$cfg["servermode"]??null){
 			$mysqli->query("SET sql_mode=''");
 		}
-		
+		*/
+		if (!isset($cfg["servermode"]) || !$cfg["servermode"]) {
+			//$mysqli->query("SET GLOBAL sql_mode=''");
+			$mysqli->query("SET SESSION sql_mode=''");
+		}
 		return $mysqli;
 		
 		
