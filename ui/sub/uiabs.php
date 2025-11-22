@@ -31,6 +31,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	private $___all_subinterfaces_loaded;
 
 	public $mainPanelEnabled=false;
+	public $jsonPrettyPrint=true;
 	public $mainPanelClasses="";
 	public $mainPanel;
 	public $mainPanelTitle;
@@ -3239,6 +3240,61 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 */
 	function __call($a,$b){
 		return false;	
+	}
+
+
+	function execfrommain_getcmd_json($cmdcod,$params=array(),$filename=false){
+		// Iniciar buffer para evitar basura
+		ob_end_clean();
+		ob_start();
+
+		$this->before_exec_get_cmd($params);
+
+		// validar comando
+		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
+			return $this->json_output_error("Invalid command");
+		}
+
+		$method="execfrommain_getcmd_json_$cmdcod";
+
+		if(!method_exists($this,$method)){
+			return $this->json_output_error("Method $method does not exist on ".get_class($this));
+		}
+
+		return $this->$method($params,$filename);
+	}
+	function json_output_error($msg){
+		
+		ob_end_clean();
+		
+
+		header("Content-Type: application/json; charset=UTF-8");
+		header("HTTP/1.1 403 Forbidden");
+		echo json_encode(array(
+			"ok" => false,
+			"msg" => $msg
+		));
+		return false;
+	}
+	function json_output_data($data=array()){
+		ob_end_clean();
+		
+
+		header("Content-Type: application/json; charset=UTF-8");
+		if($this->jsonPrettyPrint){
+			echo json_encode($data,JSON_PRETTY_PRINT);
+			return true;
+		}
+		echo json_encode($data);
+		return true;
+	}
+	function get_exec_cmd_json_url($jsoncmd="debug", $params=array()){
+		if($this->maininterface){
+			// hereda parámetros igual que el SXML
+			$params = $this->get_cmd_params($params);
+			$ui_full_cod = $this->get_full_cod("-");
+			return $this->maininterface->get_exec_cmd_json_url_from_ui_full_cod($jsoncmd, $ui_full_cod, $params);
+		}
 	}
 	
 }

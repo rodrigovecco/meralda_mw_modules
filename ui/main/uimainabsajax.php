@@ -205,6 +205,56 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 	function __accepts_exec_cmd_by_url(){
 		return true;	
 	}
+
+	function exec_getcmd_json($params=array(), $filename=false){
+		if(!$this->admin_user_ok()){
+			return $this->exec_getcmd_json_not_allowed($params,$filename);
+		}
+		if(!is_array($params)){
+			return $this->exec_getcmd_json_not_allowed($params,$filename);
+		}
+		if(!$sub_ui=$this->set_current_subinterface_for_getcmd($params["ui"],$params,$filename)){
+			return $this->exec_getcmd_json_not_allowed($params,$filename);
+		}
+		if(!$filename){
+			return $this->exec_getcmd_json_not_allowed($params,$filename);
+		}
+
+		// extraer comando sin extensión
+		$cmd = explode(".", $filename."")[0];
+
+		return $sub_ui->execfrommain_getcmd_json($cmd, $params, $filename);
+	}
+	function exec_getcmd_json_not_allowed($params=array(),$filename=false){
+		$out = array(
+			"ok" => false,
+			"msg" => $this->lng_common_get_msg_txt("not_allowed", "No permitido")
+		);
+		header("Content-Type: application/json; charset=utf-8");
+		echo json_encode($out);
+	}
+	function get_exec_cmd_json_url_from_ui_full_cod($jsoncmd, $ui_full_cod, $params=array()){
+		$p = array();
+		$p["ui"] = "";
+
+		if($ui_full_cod && is_string($ui_full_cod)){
+			$p["ui"] = $ui_full_cod;
+		}
+
+		if(is_array($params)){
+			foreach($params as $cod=>$pp){
+				$p[$cod] = $pp;
+			}
+		}
+
+		if(!$jsoncmd){
+			return $this->get_exec_cmd_url("json", $p, false);
+		}
+
+		$filename = $jsoncmd.".json";
+
+		return $this->get_exec_cmd_url("json", $p, $filename);
+	}
 	
 }
 ?>

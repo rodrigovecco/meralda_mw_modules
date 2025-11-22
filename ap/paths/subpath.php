@@ -1,5 +1,6 @@
 <?php
 //rvh 2023-02-26 v 2
+/** @property-read mwmod_mw_ap_paths $pathman  */
 class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 	private $pathman;//mwmod_mw_ap_paths
 	private $dir;//sub dir de $pathman
@@ -125,6 +126,7 @@ class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 		}
 		return false;
 	}
+	/** @return mwmod_mw_helper_fileman  */
 	function get_file_man(){
 		return $this->pathman->get_file_man();	
 	}

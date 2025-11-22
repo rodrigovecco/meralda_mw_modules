@@ -1,5 +1,6 @@
 <?php
 //rvh 2015-01-12 v 1
+/** @property-read string $mode  */
 class  mwmod_mw_ap_paths extends mw_apsubbaseobj{
 	private $mode;
 	

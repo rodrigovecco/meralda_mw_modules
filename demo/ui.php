@@ -4,7 +4,7 @@ class mwmod_mw_demo_ui extends mwmod_mw_ui_base_basesubuia{
 		$this->init_as_main_or_sub($cod,$parent);
 		$this->set_lngmsgsmancod("demo");
 		$this->set_def_title($this->lng_get_msg_txt("demo","Demo"));
-		$this->sucods="inputs,icons,extmods";
+		$this->sucods="inputs,icons,ui,extmods";
 		$this->mnuIconClass="meralda-icon-color meralda-icon-cat2";
 
 		
@@ -14,7 +14,10 @@ class mwmod_mw_demo_ui extends mwmod_mw_ui_base_basesubuia{
 		return true;	
 	}
 
-	
+	function _do_create_subinterface_child_ui($cod){
+		$ui=new mwmod_mw_demo_ui_ui($cod,$this);
+		return $ui;	
+	}
 	function _do_create_subinterface_child_extmods($cod){
 		$ui=new mwmod_mw_demo_ui_extmods($cod,$this);
 		return $ui;	
