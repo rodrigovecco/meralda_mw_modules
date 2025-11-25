@@ -18,12 +18,20 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
     public $allowUpload = false;
     public $allowDownload = false;
 
+	public $autoCreateThumbnails = false;//not implemented yet
+
     // Recursive delete must be explicit
     public $allowRecursiveDelete = false;
+	public $downloadURL;
+
+	public $imageOnlyMode=false;
 
     function __construct($pathman) {
         $this->setPathMan($pathman);
     }
+	function setImagesOnlyMode(){
+		$this->imageOnlyMode=true;
+	}
 
     // ============================================================
     // ROUTER
@@ -35,35 +43,35 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
                 return $this->cmd_list();
 
             case "mkdir":
-                return $this->allowCreate ? $this->cmd_mkdir() : $this->err("Create not allowed");
+                return $this->allowCreate ? $this->cmd_mkdir() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.create_not_allowed','No está permitido crear'));
 
             case "delete":
-                return $this->allowDelete ? $this->cmd_delete() : $this->err("Delete not allowed");
+                return $this->allowDelete ? $this->cmd_delete() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.delete_not_allowed','No está permitido eliminar'));
 
             case "rename":
-                return $this->allowRename ? $this->cmd_rename() : $this->err("Rename not allowed");
+                return $this->allowRename ? $this->cmd_rename() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.rename_not_allowed','No está permitido renombrar'));
 
             case "move":
-                return $this->allowMove ? $this->cmd_move() : $this->err("Move not allowed");
+                return $this->allowMove ? $this->cmd_move() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.move_not_allowed','No está permitido mover'));
 
             case "copy":
-                return $this->allowCopy ? $this->cmd_copy() : $this->err("Copy not allowed");
+                return $this->allowCopy ? $this->cmd_copy() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.copy_not_allowed','No está permitido copiar'));
 
             case "upload":
-                return $this->allowUpload ? $this->cmd_upload() : $this->err("Upload not allowed");
+                return $this->allowUpload ? $this->cmd_upload() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.upload_not_allowed','No está permitido subir archivos'));
 
             // DevExtreme chunked upload
             case "uploadchunk":
-                return $this->allowUpload ? $this->cmd_upload_chunk() : $this->err("Upload not allowed");
+                return $this->allowUpload ? $this->cmd_upload_chunk() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.upload_not_allowed','No está permitido subir archivos'));
 
             case "cancelUpload":
                 return $this->cmd_cancel_upload();
 
             case "download":
-                return $this->allowDownload ? $this->cmd_download() : $this->err("Download not allowed");
+                return $this->allowDownload ? $this->cmd_download() : $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.download_not_allowed','No está permitido descargar'));
         }
 
-        return $this->err("Unknown action '$action'");
+        return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.unknown_action',"Acción desconocida '$action'"));
     }
 
     // ============================================================
@@ -81,7 +89,7 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         }
 
         if (!$dirAbs || !is_dir($dirAbs)) {
-            return $this->err("Invalid directory");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_directory','Directorio inválido'));
         }
 
         $items = [];
@@ -90,14 +98,38 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
 
             $full = $dirAbs . "/" . $f;
             $isDir = is_dir($full);
+			$ok=false;
+			if($isDir){
+				if($this->is_dirname_allowed($f)){
+					$ok=true;
+				}
+			}else{
+				if($this->is_filename_allowed($f)){
+					$ok=true;
+				}
+			}
+			if($ok){
+				$item = [
+					"name" => $f,
+					"isDirectory" => $isDir,
+					"size" => $isDir ? 0 : filesize($full),
+					"dateModified" => date("c", filemtime($full)),
+					"path" => trim(($relRaw ? trim($relRaw, "/") . "/" : "") . $f, "/")
+				];
+				if($info=$this->pathMan->getPathInfoByRelative($item["path"])){
+					//$item["_info"]=$info;
+					if($info["is_image"]){
+						if($this->downloadURL){
+							$item["thumbnail"]=$this->downloadURL.$item["path"];
+						}
+					}
 
-            $items[] = [
-                "name" => $f,
-                "isDirectory" => $isDir,
-                "size" => $isDir ? 0 : filesize($full),
-                "dateModified" => date("c", filemtime($full)),
-                "path" => trim(($relRaw ? trim($relRaw, "/") . "/" : "") . $f, "/")
-            ];
+				}
+				
+				$items[] = $item;
+			}
+
+           
         }
 
         return ["success" => true, "items" => $items];
@@ -113,14 +145,17 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $name = $_REQUEST["name"] ?? "";
         $safe = $this->sanitize_name($name);
         if (!$safe) {
-            return $this->err("Invalid folder name");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_folder_name','Nombre de carpeta inválido'));
         }
+		if(!$this->is_dirname_allowed($safe)){
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.folder_name_not_allowed','Nombre de carpeta no permitido'));
+		}
 
         $fullRel = trim($relClean . "/" . $safe, "/");
 
         // Your API handles creation and security
         if (!$this->pathMan->check_and_create_path($fullRel)) {
-            return $this->err("Cannot create folder");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.cannot_create_folder','No se pudo crear la carpeta'));
         }
 
         return $this->ok();
@@ -130,45 +165,87 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
     // DELETE
     // ============================================================
     function cmd_delete() {
-        $relRaw = $_REQUEST["path"] ?? "";
-        $rel = $this->norm_rel($relRaw);
-        if ($rel === false) {
-            return $this->err("Missing path");
-        }
+		$relRaw = $_REQUEST["path"] ?? "";
+		$rel = $this->norm_rel($relRaw);
 
-        $sub = $this->pathMan->get_sub_path_man($rel);
-        if (!$sub) {
-            return $this->err("Invalid path");
-        }
+		// Prevent deleting root
+		if ($rel === false) {
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.cannot_delete_root','No se puede eliminar el directorio raíz'));
+		}
 
-        $abs = $sub->get_path();
-        if (!$abs || !file_exists($abs)) {
-            return $this->err("Not found");
-        }
+		// Clean and validate directory path
+		if(!$relChecked = $this->pathMan->check_sub_path($rel)) {
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_path','Ruta inválida'));
+		}
 
-        // File
-        if (is_file($abs)) {
-            if (!unlink($abs)) {
-                return $this->err("Failed to delete file");
-            }
-            return $this->ok();
-        }
+		// Absolute path resolved to Meralda FS root
+		$abs = $this->pathMan->get_sub_path($relChecked);
+		if (!$abs || !file_exists($abs)) {
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.not_found',"No encontrado: $abs - check_sub_path devolvió $relChecked"));
+		}
 
-        // Directory
-        if (!$this->allowRecursiveDelete) {
-            foreach (scandir($abs) as $f) {
-                if ($f !== "." && $f !== "..") {
-                    return $this->err("Directory not empty");
-                }
-            }
-        }
+		// --------------------------------------------------
+		// DELETE FILE
+		// --------------------------------------------------
+		if (is_file($abs)) {
+			$fileName = basename($abs);
 
-        if (!$sub->delete()) {
-            return $this->err("Delete failed");
-        }
+			if(!$this->is_filename_allowed($fileName)) {
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.file_name_not_allowed','Nombre de archivo no permitido'));
+			}
 
-        return $this->ok();
-    }
+			if(!unlink($abs)) {
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.failed_delete_file','No se pudo eliminar el archivo'));
+			}
+
+			return $this->ok();
+		}
+
+		// --------------------------------------------------
+		// DELETE DIRECTORY
+		// --------------------------------------------------
+		if (is_dir($abs)) {
+			$dirName = basename($abs);
+
+			if(!$this->is_dirname_allowed($dirName)) {
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.directory_name_not_allowed','Nombre de directorio no permitido'));
+			}
+
+			// Empty directory → delete
+			$isEmpty = true;
+			$dh = opendir($abs);
+			if ($dh) {
+				while (($f = readdir($dh)) !== false) {
+					if ($f !== "." && $f !== "..") {
+						$isEmpty = false;
+						break;
+					}
+				}
+				closedir($dh);
+			}
+
+			if ($isEmpty) {
+				if(!rmdir($abs)) {
+                    return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.failed_delete_directory','No se pudo eliminar el directorio'));
+				}
+				return $this->ok();
+			}
+
+			// Recursive delete allowed
+			if ($this->allowRecursiveDelete) {
+				$spm = $this->pathMan->get_sub_path_man($relChecked);
+				if ($spm && $spm->delete()) {
+					return $this->ok();
+				}
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.recursive_delete_failed','Fallo en eliminación recursiva'));
+			}
+
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.directory_not_empty','Directorio no vacío'));
+		}
+
+        return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.delete_failed','Fallo al eliminar'));
+	}
+
 
     // ============================================================
     // RENAME (extension validated by FileMan)
@@ -181,12 +258,16 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $safe = $this->sanitize_name($newName);
 
         if ($rel === false || !$safe) {
-            return $this->err("Invalid name or path");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_name_or_path','Nombre o ruta inválida'));
         }
+
+		if(!$this->pathMan->check_sub_path($rel)){
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_path','Ruta inválida'));
+		}
 
         $oldAbs = $this->pathMan->get_sub_path($rel);
         if (!$oldAbs || !file_exists($oldAbs)) {
-            return $this->err("Path not found");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.path_not_found','Ruta no encontrada'));
         }
 
         $parentRelRaw = dirname(trim($relRaw, "/"));
@@ -198,25 +279,25 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $parentAbs = $this->pathMan->get_sub_path($parentRel);
 
         if (!$parentAbs || !is_dir($parentAbs)) {
-            return $this->err("Invalid parent directory");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_parent_directory','Directorio padre inválido'));
         }
 
         $newAbs = $parentAbs . "/" . $safe;
 
         if (file_exists($newAbs)) {
-            return $this->err("A file or folder with that name already exists");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.already_exists','Ya existe un archivo o carpeta con ese nombre'));
         }
 
         // If file rename => validate ext using your fileman
         if (is_file($oldAbs)) {
             $fm = $this->get_fileman_for_rel($parentRel);
             if (!$fm || !$fm->check_ext_from_filename($safe)) {
-                return $this->err("Invalid extension");
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_extension','Extensión inválida'));
             }
         }
 
         if (!rename($oldAbs, $newAbs)) {
-            return $this->err("Rename failed");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.rename_failed','Error al renombrar'));
         }
 
         return $this->ok();
@@ -233,26 +314,26 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $toRel   = $this->norm_rel($toRaw);
 
         if ($fromRel === false || $toRel === false) {
-            return $this->err("Missing parameters");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_parameters','Faltan parámetros'));
         }
 
         $srcAbs = $this->pathMan->get_sub_path($fromRel);
         if (!$srcAbs || !file_exists($srcAbs)) {
-            return $this->err("Source not found");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.source_not_found','Origen no encontrado'));
         }
 
         $dstAbs = $this->pathMan->get_sub_path($toRel);
         if (!$dstAbs || !is_dir($dstAbs)) {
-            return $this->err("Destination must be a directory");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.destination_must_be_directory','El destino debe ser un directorio'));
         }
 
         $newAbs = $dstAbs . "/" . basename($srcAbs);
         if (file_exists($newAbs)) {
-            return $this->err("Target already exists");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.target_already_exists','El destino ya existe'));
         }
 
         if (!rename($srcAbs, $newAbs)) {
-            return $this->err("Move failed");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.move_failed','Error al mover'));
         }
 
         return $this->ok();
@@ -269,42 +350,42 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $toRel   = $this->norm_rel($toRaw);
 
         if ($fromRel === false || $toRel === false) {
-            return $this->err("Missing parameters");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_parameters','Faltan parámetros'));
         }
 
         $srcAbs = $this->pathMan->get_sub_path($fromRel);
         $dstAbs = $this->pathMan->get_sub_path($toRel);
 
         if (!$srcAbs || !file_exists($srcAbs)) {
-            return $this->err("Source not found");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.source_not_found','Origen no encontrado'));
         }
         if (!$dstAbs || !is_dir($dstAbs)) {
-            return $this->err("Invalid destination");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_destination','Destino inválido'));
         }
 
         $targetAbs = $dstAbs . "/" . basename($srcAbs);
         if (file_exists($targetAbs)) {
-            return $this->err("Target already exists");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.target_already_exists','El destino ya existe'));
         }
 
         $fm = $this->get_fileman_for_rel($toRel);
         if (!$fm) {
-            return $this->err("Fileman not available");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.fileman_not_available','FileMan no disponible'));
         }
 
         if (is_file($srcAbs)) {
             $fname = basename($srcAbs);
             if (!$fm->check_ext_from_filename($fname)) {
-                return $this->err("Copy rejected (invalid extension)");
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.copy_rejected_invalid_ext','Copia rechazada (extensión inválida)'));
             }
             if (!copy($srcAbs, $targetAbs)) {
-                return $this->err("Copy failed");
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.copy_failed','Error al copiar'));
             }
             return $this->ok();
         }
 
         if (!$this->copy_recursive_dir_checked($srcAbs, $targetAbs, $fm)) {
-            return $this->err("Recursive copy failed (or invalid extension)");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.recursive_copy_failed','Fallo en copia recursiva (o extensión inválida)'));
         }
 
         return $this->ok();
@@ -341,27 +422,27 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
 
         $dstAbs = $this->pathMan->get_sub_path($rel);
         if (!$dstAbs || !is_dir($dstAbs)) {
-            return $this->err("Invalid upload path");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_upload_path','Ruta de subida inválida'));
         }
 
         if (!isset($_FILES["file"])) {
-            return $this->err("No file received");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.no_file_received','No se recibió el archivo'));
         }
 
         $sub = $this->pathMan->get_sub_path_man($rel);
         if (!$sub) {
-            return $this->err("Invalid base directory");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_base_directory','Directorio base inválido'));
         }
 
         $fm = $sub->get_file_man();
         if (!$fm) {
-            return $this->err("Fileman not available");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.fileman_not_available','FileMan no disponible'));
         }
 
         $originalName = $_FILES["file"]["name"] ?? "";
         $safeOrig = $this->sanitize_name($originalName);
         if (!$safeOrig) {
-            return $this->err("Invalid file name");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_file_name','Nombre de archivo inválido'));
         }
 
         // IMPORTANT: upload_file returns STRING filename or false
@@ -377,7 +458,7 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         );
 
         if (!$newNameFull || !is_string($newNameFull)) {
-            return $this->err("Upload rejected");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.upload_rejected','Subida rechazada'));
         }
 
         $finalRelPath = trim((trim($relRaw, "/") ? trim($relRaw, "/") . "/" : "") . $newNameFull, "/");
@@ -402,18 +483,18 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $chunkCount = intval($_REQUEST["chunkCount"] ?? -1);
 
         if (!$uploadId || !$fileName) {
-            return $this->err("Missing parameters");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_parameters','Faltan parámetros'));
         }
 
         $safe = $this->sanitize_name($fileName);
         if (!$safe) {
-            return $this->err("Invalid file name");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_file_name','Nombre de archivo inválido'));
         }
 
         $destRel = $this->norm_rel($destRelRaw);
         $destAbs = $this->pathMan->get_sub_path($destRel);
         if (!$destAbs || !is_dir($destAbs)) {
-            return $this->err("Invalid upload destination");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_upload_destination','Destino de subida inválido'));
         }
 
         $tmpDir = $destAbs . "/.__chunk_tmp_" . $uploadId;
@@ -422,12 +503,12 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         }
 
         if (!isset($_FILES["chunk"])) {
-            return $this->err("Missing chunk file");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_chunk_file','Falta el fragmento (chunk)'));
         }
 
         $chunkPath = $tmpDir . "/chunk_" . $chunkIndex;
         if (!move_uploaded_file($_FILES["chunk"]["tmp_name"], $chunkPath)) {
-            return $this->err("Failed to store chunk");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.failed_store_chunk','Fallo al guardar el fragmento'));
         }
 
         // Not last chunk
@@ -443,7 +524,7 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
             $part = $tmpDir . "/chunk_" . $i;
             if (!file_exists($part)) {
                 fclose($out);
-                return $this->err("Missing chunk $i");
+                return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_chunk',"Falta el fragmento $i"));
             }
             fwrite($out, file_get_contents($part));
         }
@@ -461,18 +542,18 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
 		}
        
         if (!$sub) {
-            return $this->err("Invalid destination");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_destination','Destino inválido'));
         }
 
         $fm = $sub->get_file_man();
         if (!$fm) {
-            return $this->err("Fileman unavailable");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.fileman_unavailable','FileMan no disponible'));
         }
 
         // Validate extension
         if (!$fm->check_ext_from_filename($safe)) {
-            $this->cleanup_chunk_dir($tmpDir);
-            return $this->err("Upload rejected (invalid extension)");
+            $this->cleanup_chunk_reldir($destRel . "/.__chunk_tmp_" . $uploadId);
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.upload_rejected_invalid_ext','Subida rechazada (extensión inválida)'));
         }
 
         $finalNameNoExt = $fm->get_url_secure_filename_noext($safe);
@@ -482,12 +563,12 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $finalAbs = $destAbs . "/" . $finalNameFull;
 
         if (!rename($finalTmpPath, $finalAbs)) {
-            $this->cleanup_chunk_dir($tmpDir);
-            return $this->err("Failed to finalize upload");
+            
+			$this->cleanup_chunk_reldir($destRel . "/.__chunk_tmp_" . $uploadId);
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.failed_finalize_upload','Fallo al finalizar la subida'));
         }
 
-        $this->cleanup_chunk_dir($tmpDir);
-
+        $this->cleanup_chunk_reldir($destRel . "/.__chunk_tmp_" . $uploadId);
         $finalRelPath = trim((trim($destRelRaw, "/") ? trim($destRelRaw, "/") . "/" : "") . $finalNameFull, "/");
 
         return [
@@ -505,29 +586,33 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
         $destRelRaw = $_REQUEST["destinationDirectory"] ?? "";
 
         if (!$uploadId) {
-            return $this->err("Missing uploadId");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.missing_uploadid','Falta uploadId'));
         }
 
         $destRel = $this->norm_rel($destRelRaw);
         $destAbs = $this->pathMan->get_sub_path($destRel);
         if (!$destAbs || !is_dir($destAbs)) {
-            return $this->err("Invalid directory");
+            return $this->err($this->pathMan->lng_get_msg_txt('devext.filemanager.invalid_directory','Directorio inválido'));
         }
 
-        $tmpDir = $destAbs . "/.__chunk_tmp_" . $uploadId;
-        $this->cleanup_chunk_dir($tmpDir);
+        $this->cleanup_chunk_reldir($destRel . "/.__chunk_tmp_" . $uploadId);
 
         return $this->ok();
     }
 
-    private function cleanup_chunk_dir($tmpDir) {
-        if (!is_dir($tmpDir)) return;
-        foreach (glob($tmpDir . "/chunk_*") as $c) {
-            @unlink($c);
-        }
-        @unlink($tmpDir . "/final_tmp_upload");
-        @rmdir($tmpDir);
-    }
+    
+	private function cleanup_chunk_reldir($tmpRel) {
+
+		// tmpRel = validated relative path such as "folder/.__chunk_tmp_xxxx"
+		$spm = $this->pathMan->get_sub_path_man($tmpRel);
+		if ($spm) {
+			// Meralda-managed recursive delete
+			$spm->delete();
+			return;
+		}
+
+		// No fallback, no unsafe operations.
+	}
 
     // ============================================================
     // DOWNLOAD (UI handles real download)
@@ -599,6 +684,9 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
 
         if ($fm = $this->pathMan->get_file_man()) {
             $exts = $fm->get_allowed_exts();
+			if($this->imageOnlyMode){
+				$exts=$fm->get_allowed_img_exts();
+            }
             $arr = $filemanagerParams->get_array_prop("allowedFileExtensions");
             foreach ($exts as $ext) {
                 $arr->add_data("." . $ext);
@@ -630,6 +718,114 @@ class mwmod_mw_devextreme_filemanager_provider extends mw_baseobj {
     function setAllowRecursiveDelete($val = true) {
         $this->allowRecursiveDelete = $val ? true : false;
     }
+	/**
+	 * Verifica si un NOMBRE DE ARCHIVO (NO directorio) es permitido.
+	 * Reglas:
+	 * - Debe tener extensión
+	 * - No puede empezar con "."
+	 * - No puede contener ".."
+	 * - No puede contener caracteres ilegales
+	 * - Extensión debe ser permitida por FileMan
+	 */
+	private function is_filename_allowed($name) {
+
+		if (!is_string($name) || trim($name) === "") {
+			return false;
+		}
+
+		$name = trim($name);
+
+		// 1) No puede empezar con punto
+		if ($name[0] === ".") {
+			return false;
+		}
+
+		// 2) Path traversal
+		if (strpos($name, "..") !== false) {
+			return false;
+		}
+
+		// 3) Caracteres ilegales (bloqueo, NO saneo)
+		if (strpbrk($name, "/\\:*?\"<>|")) {
+			return false;
+		}
+
+		// 4) Debe tener extensión
+		if (strpos($name, ".") === false) {
+			return false; // directorio o archivo sin extensión
+		}
+
+		// 5) Extensión permitida
+		$fm = $this->pathMan->get_file_man();
+		if (!$fm) {
+			return false; // seguridad adicional
+		}
+
+		if (!$fm->check_ext_from_filename($name)) {
+			return false;
+		}
+		if($this->imageOnlyMode){
+			if(!$fm->is_image_ext_from_filename($name)){
+				return false;
+			}
+		}
+
+		// 6) Nombre razonable
+		if (strlen($name) > 255) {
+			return false;
+		}
+
+		return true;
+	}
+	/**
+	 * Valida si un nombre de DIRECTORIO es permitido.
+	 * NO sanea ni corrige, solo bloquea.
+	 *
+	 * Reglas:
+	 * - No puede empezar con "."
+	 * - No puede contener ".."
+	 * - No puede contener caracteres ilegales
+	 * - No puede tener extensión (directorios no llevan punto final)
+	 */
+	private function is_dirname_allowed($name) {
+
+		if (!is_string($name) || trim($name) === "") {
+			return false;
+		}
+
+		$name = trim($name);
+
+		// 1) No puede comenzar con punto
+		if ($name[0] === ".") {
+			return false;
+		}
+
+		// 2) Path traversal
+		if (strpos($name, "..") !== false) {
+			return false;
+		}
+
+		// 3) Caracteres ilegales (bloqueo, no saneo)
+		if (strpbrk($name, "/\\:*?\"<>|")) {
+			return false;
+		}
+
+		// 4) Directorios no deben tener extensión
+		//    Si el nombre tiene un punto en medio, se permite ("carpeta.v1")
+		//    pero si termina en punto → no permitido
+		if (substr($name, -1) === ".") {
+			return false;
+		}
+
+		// 5) nombre máximo razonable
+		if (strlen($name) > 255) {
+			return false;
+		}
+
+		return true;
+	}
+
+
 }
 
 ?>

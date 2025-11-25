@@ -6,6 +6,11 @@ class mwmod_mw_demo_man_man  extends mwmod_mw_manager_baseman{
 		$this->enable_strdata();
 			
 	}
+	/**
+	 * @param bool $subpath 
+	 * @param bool $public 
+	 * @return false|mwmod_mw_ap_paths_subpath 
+	 */
 	function get_sub_path_man($subpath=false,$public=false){
 		//nueva
 		if($public){

@@ -3296,6 +3296,42 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			return $this->maininterface->get_exec_cmd_json_url_from_ui_full_cod($jsoncmd, $ui_full_cod, $params);
 		}
 	}
+
+	function execfrommain_getcmd_file($cmdcod,$params=array(),$filename=false){
+		
+		// Iniciar buffer para evitar basura
+		ob_end_clean();
+		ob_start();
+
+		$this->before_exec_get_cmd($params);
+
+		// validar comando
+		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
+			return $this->file_output_error("Invalid command");
+		}
+
+		$method="execfrommain_getcmd_file_$cmdcod";
+
+		if(!method_exists($this,$method)){
+			return $this->file_output_error("Method $method does not exist on ".get_class($this));
+		}
+
+		return $this->$method($params,$filename);
+	}
+	function file_output_error($msg){
+		ob_end_clean();
+		header("HTTP/1.1 403 Forbidden");
+		echo $msg;
+		return false;
+	}
+	function get_exec_cmd_file_url($cmd="download",$filepath="", $params=array()){
+		if($this->maininterface){
+			// hereda parámetros igual que el SXML
+			$params = $this->get_cmd_params($params);
+			$ui_full_cod = $this->get_full_cod("-");
+			return $this->maininterface->get_exec_cmd_file_url_from_ui_full_cod($ui_full_cod, $cmd, $params, $filepath);
+		}
+	}
 	
 }
 ?>

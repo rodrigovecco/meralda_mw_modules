@@ -330,72 +330,7 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 	function exec_submancmd(){
 		return $this->exec_submancmd_with_options(false);
 		
-		/*
-		ob_start();
-		if(!$this->allow_submancmd()){
-			return false;	
-		}
-		if(!$url_p=parse_url($_SERVER['REQUEST_URI'])){
-			return false;	
-		}
-		if(!$url=$url_p['path']){
-			return false;	
-		}
 		
-		
-		if(!$base=$this->get_submanagerexeccmdurl()){
-			return false;	
-		}
-		$pos=strpos($url,$base);
-		if($pos===false){
-			return false;	
-		}
-		$len=strlen($base);
-		if(!$rest=substr($url,($pos+$len+1))){
-			return false;		
-		}
-		
-		$a=explode("/",$rest);
-		if(sizeof($a)<2){
-			return false;	
-		}
-		$mancod=array_shift($a);
-		$cmdcod=array_shift($a);
-		if(!$mancod=$this->check_str_key_alnum_underscore($mancod)){
-			return false;	
-		}
-		if(!$cmdcod=$this->check_str_key_alnum_underscore($cmdcod)){
-			return false;	
-		}
-		$filename=false;
-		$params=array();
-		
-		if(!$man=$this->get_submanager($mancod)){
-			return false;
-		}
-		if(!$man->__accepts_exec_cmd_by_url()){
-			return false;
-		}
-		$method="exec_getcmd_".$cmdcod;
-		if(!method_exists($man,$method)){
-			return false;	
-		}
-		if($s=sizeof($a)){
-			if(round($s/2)!=($s/2)){
-				$filename=array_pop($a);	
-			}
-		}
-		if($s=sizeof($a)){
-			for($x=0;$x<$s;$x++){
-				$pcod=$a[$x];
-				$x++;
-				$pval=$a[$x];
-				$params[$pcod]=$pval;
-			}
-		}
-		ob_end_clean();
-		return $man->$method($params,$filename);
-		*/
 		
 	}
 	
@@ -453,20 +388,46 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		if(!method_exists($man,$method)){
 			return false;	
 		}
+		$paramsBreak=false;
+		if(method_exists($man,"getExecCmdParamsBreakCode")){
+			$paramsBreak=$man->getExecCmdParamsBreakCode($cmdcod);
+			
+		}
+
 		
-		if($s=sizeof($a)){
-			if(round($s/2)!=($s/2)){
-				$filename=array_pop($a);	
+		if(!$paramsBreak){
+			if($s=sizeof($a)){
+				if(round($s/2)!=($s/2)){
+					$filename=array_pop($a);	
+				}
 			}
 		}
+		
 		if($s=sizeof($a)){
 			for($x=0;$x<$s;$x++){
 				$pcod=$a[$x];
 				$x++;
+				if($paramsBreak&&$pcod==$paramsBreak){
+					
+					break;	
+				}
 				$pval=$a[$x];
 				$params[$pcod]=$pval;
 			}
 		}
+		
+		if($paramsBreak){
+			//die("params break found: ".$paramsBreak);
+			if($x<=$s){
+				$filename=implode("/",array_slice($a,$x));
+			}
+			/*
+			var_dump($params);
+			echo "filename: ".$filename."<br/>";
+			die("s");
+			*/
+		}
+
 		if($validateUser){
 			//$methodvalidateuser="checkGetCmdOmitValidateUser";
 			if(method_exists($man,"checkGetCmdOmitValidateUser")){
@@ -784,6 +745,7 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		return $p."/".$filename;
 			
 	}
+	/*
 	function get_sub_path($subpath,$mode="userfiles"){
 		if(!is_string($subpath)){
 			return false;	
@@ -805,6 +767,92 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		return $p."/".$subpath;
 		
 	}
+	*/
+	function get_sub_path($subpath, $mode="userfiles"){
+		if(!is_string($subpath)){
+			return false;
+		}
+
+		$subpath = trim($subpath);
+		$subpath = trim($subpath, "/");
+		$subpath = trim($subpath);
+
+		if($subpath === ""){
+			return false;
+		}
+
+		// 1) Bloquear null bytes / control chars
+		if(preg_match('/[\x00-\x1F\x7F]/', $subpath)){
+			return false;
+		}
+
+		// 2) Normalizar slashes unicode a "/"
+		//    (FULLWIDTH SOLIDUS, FRACTION SLASH, DIVISION SLASH)
+		$subpath = str_replace(
+			["\u{FF0F}", "\u{2044}", "\u{2215}"],
+			"/",
+			$subpath
+		);
+
+		// 3) Rechazar backslash (Windows path separator)
+		if(strpos($subpath, "\\") !== false){
+			return false;
+		}
+
+		// 4) Colapsar dobles //
+		while(strpos($subpath, "//") !== false){
+			$subpath = str_replace("//", "/", $subpath);
+		}
+
+		// 5) Validar segmentos
+		$parts = explode("/", $subpath);
+		$safeParts = [];
+
+		foreach($parts as $part){
+			$part = trim($part);
+
+			if($part === "" || $part === "."){
+				continue;
+			}
+
+			// 5.1) Prohibir traversal real
+			if($part === ".."){
+				return false;
+			}
+
+			// 5.2) Prohibir caracteres ilegales / ADS Windows
+			if(strpbrk($part, ":*?\"<>|") !== false){
+				return false;
+			}
+
+			// 5.3) Prohibir segmento que termina en punto (Windows weirdness)
+			if(substr($part, -1) === "."){
+				return false;
+			}
+
+			// 5.4) Largo razonable por segmento
+			if(strlen($part) > 255){
+				return false;
+			}
+
+			$safeParts[] = $part;
+		}
+
+		if(!$safeParts){
+			return false;
+		}
+
+		// 6) Armar subpath ya limpio
+		$cleanRel = implode("/", $safeParts);
+
+		// 7) Resolver base del modo
+		if(!$p = $this->get_path($mode)){
+			return false;
+		}
+
+		return $p . "/" . $cleanRel;
+	}
+
 	function get_abs_url($url=""){
 		$r="";
 		if($_SERVER['HTTPS']??null){

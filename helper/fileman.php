@@ -515,6 +515,28 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		return $valid_exts;
 		
 	}
+	function is_image_ext_from_filename($file){
+		if(!$ext=$this->get_ext($file)){
+			return false;	
+		}
+		return $this->is_image_ext($ext);
+			
+	}
+	function is_image_ext($ext){
+		if(!$ext){
+			return false;	
+		}
+		if(!is_string($ext)){
+			return false;
+		}
+		
+		$valid_exts=$this->get_allowed_img_exts();
+		
+		
+		if(in_array($ext,$valid_exts)){
+			return $ext;	
+		}
+	}
 	function check_ext_from_filename($file,$valid_exts=false,$check_not_allowed=true){
 		if(!$ext=$this->get_ext($file)){
 			return false;	

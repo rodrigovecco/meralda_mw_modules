@@ -255,6 +255,63 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 
 		return $this->get_exec_cmd_url("json", $p, $filename);
 	}
+	function getExecCmdParamsBreakCode($cmdcod){
+		if($cmdcod == "file"){
+			return "f";
+		}
+		return false;
+	}
+	function get_exec_cmd_file_url_from_ui_full_cod($ui_full_cod,$filecmd="file", $params=array(),$filepath=""){
+		
+		$p = array();
+		$p["ui"] = "";
+
+		if($ui_full_cod && is_string($ui_full_cod)){
+			$p["ui"] = $ui_full_cod;
+		}
+		$p["uic"] = $filecmd;
+
+		if(is_array($params)){
+			foreach($params as $cod=>$pp){
+				if(!isset($p[$cod])){
+					$p[$cod] = $pp;	
+				}
+			}
+		}
+		$filepath = trim($filepath, "/");
+		return $this->get_exec_cmd_url("file", $p, false)."/f/".$filepath;
+		
+
+	}
+	function exec_getcmd_file($params=array(), $filepath=false){
+		
+		if(!$this->admin_user_ok()){
+			return $this->exec_getcmd_file_not_allowed($params,$filepath);
+		}
+		if(!is_array($params)){
+			return $this->exec_getcmd_file_not_allowed($params,$filepath);
+		}
+		if(!$sub_ui=$this->set_current_subinterface_for_getcmd($params["ui"],$params,$filepath)){
+			return $this->exec_getcmd_file_not_allowed($params,$filepath);
+		}
+		
+		// extraer comando sin extensión
+		$cmd = $params["uic"] ?? false;
+		if(!$cmd){
+			return $this->exec_getcmd_file_not_allowed($params,$filepath);
+		}
+		
+
+		return $sub_ui->execfrommain_getcmd_file($cmd, $params, $filepath);
+	}
+	function exec_getcmd_file_not_allowed($params=array(),$filepath=false){
+		header("HTTP/1.1 403 Forbidden");
+		echo $this->lng_common_get_msg_txt("not_allowed", "No permitido");
+	}
+	function outputMsgNotAllowed($msg){
+		header("HTTP/1.1 403 Forbidden");
+		echo $msg;
+	}
 	
 }
 ?>

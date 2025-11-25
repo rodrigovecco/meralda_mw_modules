@@ -133,7 +133,10 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 		//$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs","/res/devextreme/js/dx.webappjs.debug.js");
 		$jsman->add_item_by_item($item);
 		if($lng=$jsman->mainap->get_current_lng_man()){
-			if($r=$lng->get_ini_cfg_value("dxwebappjs_locale_src")){
+			if($r=$lng->get_ini_cfg_value("dxwebappjs_locale_src_full")){
+				$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs_local","$r");
+				$jsman->add_item_by_item($item);
+			}elseif($r=$lng->get_ini_cfg_value("dxwebappjs_locale_src")){
 				$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs_local","/res/dx/js/localization/$r");
 				$jsman->add_item_by_item($item);
 					
