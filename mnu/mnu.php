@@ -205,6 +205,12 @@ class mwmod_mw_mnu_mnu extends mw_apsubbaseobj{
 		}
 		return $r;
 	}
+	/**
+	 * @param mixed $cod 
+	 * @param mixed $etq 
+	 * @param bool $url 
+	 * @return mwmod_mw_mnu_mnuitem|null
+	 */
 	function add_new_item($cod,$etq,$url=false){
 		if($i=$this->create_item($cod,$etq,$url)){
 			return $this->add_item($cod,$i);	
