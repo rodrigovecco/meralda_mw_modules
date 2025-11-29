@@ -19,6 +19,7 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 	public $JsonPostKey="json_data";
 
 	private $JsonRequestBodyData;
+	public $errorResponseData;
 
 	final function __get_priv_JsonRequestBody(){
 		if(!isset($this->JsonRequestBody)){

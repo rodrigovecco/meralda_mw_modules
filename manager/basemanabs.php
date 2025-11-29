@@ -1,5 +1,6 @@
 <?php
 
+/** @property-read mwmod_mw_data_json_man $jsonDataMan  */
 abstract class  mwmod_mw_manager_basemanabs extends mw_apsubbaseobj{
 	private $code;
 	private $_treedataman;

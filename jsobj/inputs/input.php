@@ -61,6 +61,22 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		return $this->add_child($gr);
 			
 	}
+	/**
+	 * Adds a new default child input.
+	 *
+	 * @param string $cod Input code.
+	 * @param string|false $label Label for the checkbox (optional).
+	 * @return mwmod_mw_jsobj_inputs_def
+	 */
+	function addNewCheckbox($cod,$label=null){
+		$objclass="checkbox";
+		$input = new mwmod_mw_jsobj_inputs_def($cod, $objclass);
+		$this->add_child($input);
+		if($label!==null){
+			$input->setLabel($label);
+		}
+		return $input;
+	}
 	function setFileMode($filetypesStr=false){
 		$this->set_js_type("file");
 		$this->set_prop("inputAttsCfgEnabled",true);	
