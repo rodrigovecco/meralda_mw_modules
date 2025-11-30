@@ -4,6 +4,19 @@ class mwmod_mw_data_var_man extends mwmod_mw_data_session_man{
 	function __construct(){
 		
 	}
+	function getInt($cod,$def=null){
+		$v=$this->get_data($cod);
+		if(is_numeric($v)){
+			return intval($v);	
+		}
+		return $def;
+	}
+	function getString($key=false){
+		$v=$this->get_data($key);
+		if(is_string($v) or is_numeric($v)){
+			return $v;
+		}
+	}
 	function get_data($key=false){
 		return $this->_get_data($key);
 	}

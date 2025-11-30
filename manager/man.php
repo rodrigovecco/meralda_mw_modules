@@ -3,6 +3,20 @@
 //Rodrigo Vecco - 2024-03-13
 /**
  * @property-read mwmod_mw_db_tbl $tblman
+ * @template T of mwmod_mw_manager_item
+ *
+ * @property-read array<int, T> $items
+ *
+ * @method T|null get_item(int $id)
+ * @method array<int, T>|false get_all_items()
+ * @method array<int, T>|false get_all_active_items()
+ * @method array<int, T>|false get_items_by_query(mwmod_mw_db_query $query)
+ * @method array<int, T>|false get_items_from_array_id_list(array $list)
+ * @method array<int, T>|false get_items_from_str_id_list(string|int $list)
+ * @method T|null get_or_create_item(mwmod_mw_db_tbl_item $tblitem)
+ * @method array<int, T>|false get_items_by_simple_crit(array $crit)
+ * @method T|null get_available_item(int $id)
+ * @method array<int, T>|false get_available_items_from_list(array $items)
  */
 abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	private $tblman;
@@ -258,13 +272,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 		return $r;
 
-		//reescrito para habilitar query params
-		/*
-		if(!$sql=$query->get_sql()){
-			return false;
-		}
-		return $this->get_items_by_sql($sql);
-		*/
+		
 		
 	}
 	function get_items_by_simple_crit($crit){
@@ -389,7 +397,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 
 	/**
 	 * @param array $data 
-	 * @return mwmod_mw_manager_item 
+	 * @return T|false
 	 */
 	function insert_item($data){
 		//no debe validar

@@ -157,6 +157,7 @@ abstract class mwmod_mw_jwt_man extends mw_apsubbaseobj{
 		if(!$payload=$this->validateToken($tokenStr)){
 			return false;
 		}
+	
 		if($obj=$this->createTokenObject($payload)){
 			$obj->validated=true;
 			return $obj;

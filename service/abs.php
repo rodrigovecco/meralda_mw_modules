@@ -76,8 +76,11 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		$b=$this->baseurl."";
 		$sub=false;
 		$req="";
-		if($url_p=parse_url($_SERVER['REQUEST_URI'])){
-			$req=trim($url_p['path'],"/");
+		$REQUEST_URI=$_SERVER['REQUEST_URI']?:"";
+		$REQUEST_URI=str_replace("//","/",$REQUEST_URI);
+
+		if($url_p=parse_url($REQUEST_URI)){
+			$req=trim($url_p['path']??"","/");
 		}
 		$l=strlen($b);
 		if(substr($req,0,$l)!=$b){

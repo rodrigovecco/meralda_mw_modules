@@ -1,5 +1,11 @@
 <?php
 
+/** 
+ * @template T of mwmod_mw_manager_itemwithtype
+ * @template U of mwmod_mw_manager_itemtype
+ *
+ * @extends mwmod_mw_manager_man<T>
+ */
 abstract class  mwmod_mw_manager_manwidthtypes extends mwmod_mw_manager_man{
 	private $_types;
 	/** @return array|false  */
@@ -34,6 +40,10 @@ abstract class  mwmod_mw_manager_manwidthtypes extends mwmod_mw_manager_man{
 	}
 
 	
+	/**
+	 * @param mixed $cod 
+	 * @return  U|false|null
+	 */
 	final function get_type($cod){
 		if(!$cod){
 			return false;	
@@ -41,6 +51,7 @@ abstract class  mwmod_mw_manager_manwidthtypes extends mwmod_mw_manager_man{
 		$this->init_types();
 		return $this->_types[$cod]??null;	
 	}
+	/** @return array<string, U>  */
 	final function get_types(){
 		$this->init_types();
 		return $this->_types;	

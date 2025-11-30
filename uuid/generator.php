@@ -3,7 +3,7 @@ class mwmod_mw_uuid_generator{
     /**
      * Generate a version 4 UUID.
      *
-     * @return string The generated UUID.
+     * @return string The generated UUID (36 characters, including hyphens).
      */
     public static function generateV4()    {
         // Generate 16 bytes (128 bits) of random data
@@ -16,6 +16,7 @@ class mwmod_mw_uuid_generator{
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
 
         // Convert the binary data into a hexadecimal string with hyphens
+        // The resulting string is always 36 characters long (8-4-4-4-12)
         return sprintf(
             '%08x-%04x-%04x-%04x-%012x',
             // 32 bits for "time_low"
@@ -28,13 +29,13 @@ class mwmod_mw_uuid_generator{
             bin2hex(substr($data, 8, 2)),
             // 48 bits for "node"
             bin2hex(substr($data, 10, 6))
-        );
+        ); // 36 characters
     }
 
     /**
      * Generate a UUID using the current time to minimize duplication.
      *
-     * @return string The generated time-based UUID.
+     * @return string The generated time-based UUID (36 characters, including hyphens).
      */
     public static function generateTimeBased(){
         // Get the current timestamp in microseconds
@@ -45,6 +46,7 @@ class mwmod_mw_uuid_generator{
         $microseconds = (int) (($time - $seconds) * 1000000);
 
         // Create a unique identifier using the time and a random component
+        // The resulting string is always 36 characters long (8-4-4-4-12)
         return sprintf(
             '%08x-%04x-%04x-%04x-%012x',
             $seconds & 0xffffffff, // 32 bits for time_low
@@ -52,7 +54,7 @@ class mwmod_mw_uuid_generator{
             ($microseconds & 0xffff) | 0x1000, // 16 bits for time_hi_and_version with version 1
             mt_rand(0x8000, 0xbfff), // 16 bits for clk_seq_hi_res and clk_seq_low
             mt_rand(0, 0xffffffffffff) // 48 bits for node
-        );
+        ); // 36 characters
     }
 }
 ?>

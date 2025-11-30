@@ -19,11 +19,13 @@ class mwmod_mw_jwt_token extends mw_apsubbaseobj{
 			return true;
 		}
 		if($cod!="all"){
+			
 			if($this->_permissionCheck("all")){
+				
 				return true;
 			}
 		}
-		return true;
+		return false;
 
 	}
 	private function _permissionCheck($cod){
