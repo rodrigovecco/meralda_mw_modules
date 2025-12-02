@@ -101,12 +101,46 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		$all=apache_request_headers();
 		return $all[$cod]??null;
 	}
-	function getRequestTokenBearer(){
-		if($t=$this->getRequestedHeader("Authorization")){
-			if(preg_match('/Bearer\s(\S+)/',$t,$matches)){
-				return $matches[1];
+	function getHeaderInsensitive($name) {
+
+		// 1. apache_request_headers (keys are case-sensitive)
+		if (function_exists('apache_request_headers')) {
+			$all = apache_request_headers();
+			foreach ($all as $k => $v) {
+				if (strcasecmp($k, $name) === 0) {
+					return $v;
+				}
 			}
 		}
+
+		// 2. $_SERVER superglobal
+		$key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+		if (!empty($_SERVER[$key])) {
+			return $_SERVER[$key];
+		}
+
+		// 3. REDIRECT_ prefix (common on Apache/FPM)
+		$key2 = 'REDIRECT_' . $key;
+		if (!empty($_SERVER[$key2])) {
+			return $_SERVER[$key2];
+		}
+
+		return null;
+	}
+	function getRequestTokenBearer() {
+
+		// 1. Header estándar RFC: Authorization
+		if ($t = $this->getHeaderInsensitive('Authorization')) {
+			// Limpia el prefijo Bearer si lo hubiera
+			return trim(preg_replace('/^Bearer\s+/i', '', $t));
+		}
+
+		// 2. Header alterno recomendado por nosotros
+		if ($t = $this->getHeaderInsensitive('X-Authorization')) {
+			return trim(preg_replace('/^Bearer\s+/i', '', $t));
+		}
+
+		return null;
 	}
 	function isAllowedByParent(){
 		if($p=$this->getParent()){
