@@ -115,7 +115,86 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 	}
 	function aplay2Query($query){
 		$w=$query->where;
-		return $this->aplay2QueryWhere($w);
+		$r=$this->aplay2QueryWhere($w);
+		$h=$query->having;
+		$this->aplay2QueryHaving($h);
+		return $r;
+		
+	}
+
+	function aplay2QueryHaving($queryWhere){
+		if(!$this->isOk()){
+			return false;	
+		}
+		if($this->isSingle()){
+			return $this->aplay2QueryHavingAsChild($queryWhere);	
+		}else{
+			return 	$this->aplay2QueryHavingAsParent($queryWhere);	
+		}
+	}
+	function aplay2QueryHavingAsParent($queryWhere){
+		if(!$items=$this->getChildren()){
+			return false;	
+		}
+		$subwhere=$queryWhere->add_sub_where();
+		if($this->negative){
+			$subwhere->not=true;	
+		}
+		
+		if($this->isORMode()){
+			$subwhere->set_or();	
+		}
+		
+		foreach($items as $item){
+			$item->aplay2QueryHaving($subwhere);	
+		}
+		return $subwhere;
+		
+		
+		
+	}
+	function aplay2QueryHavingAsChild($queryWhere){
+		if(!$field=$this->getField()){
+			return false;	
+		}
+		if(!$field->allowFilterHaving()){
+			return false;	
+		}
+		
+		
+		$val=$this->getValue();
+		if($c=$this->isTextCompare()){
+
+
+			$w=$queryWhere->add_where_crit_like($field->getHavingExp(),$val);
+			$w->setCompareMode($c);
+			if($this->isORMode()){
+				$w->set_or();	
+			}
+			if($this->negative){
+				$w->not=true;	
+			}
+				
+		}elseif($c=$this->isNormalClause()){
+			if($field->isDateMode()){
+				$w=$queryWhere->add_date_cond($field->getHavingExp(),$val);
+				if(!$field->isDateOnly()){
+					$w->include_hour=true;
+				}
+			}else{
+				$w=$queryWhere->add_where_crit($field->getHavingExp(),$val);
+			}
+			$w->set_operator($c);
+			if($this->isORMode()){
+				$w->set_or();	
+			}
+			if($this->negative){
+				$w->not=true;	
+			}
+			
+		}
+		return $w;
+		
 		
 	}
 	function aplay2QueryWhere($queryWhere){
@@ -128,6 +207,7 @@ class mwmod_mw_devextreme_data_filter_filteritem extends mw_apsubbaseobj{
 			return 	$this->aplay2QueryWhereAsParent($queryWhere);	
 		}
 	}
+
 	function aplay2QueryWhereAsParent($queryWhere){
 		if(!$items=$this->getChildren()){
 			return false;	

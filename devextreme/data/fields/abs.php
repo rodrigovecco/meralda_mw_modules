@@ -9,6 +9,10 @@ abstract class mwmod_mw_devextreme_data_fields_abs extends mw_apsubbaseobj{
 	public $allowSort=true;
 	public $name;
 	public $dxCol;
+
+	public $forceHaving = false;
+
+	public $isAggregatedField=false;
 	function jsFormatValue($val){
 		if($this->isDateMode()){
 			if(!$val){
@@ -52,6 +56,23 @@ abstract class mwmod_mw_devextreme_data_fields_abs extends mw_apsubbaseobj{
 	function add2QuerySelect($query){
 		$s=$query->select->add_select($this->getSqlExp(),$this->cod);
 		return $s;
+	}
+	function getOrderExp() {
+		// Si es un campo agregado, o marcado especial → usar alias
+		//20251202
+		if ($this->isAggregatedField) {
+			return $this->cod;
+		}
+
+		// Sino, usar la expresión SQL real
+		return $this->getSqlExp();
+	}
+	function getHavingExp() {
+		//20251202
+		if ($this->isAggregatedField) {
+			return $this->cod;   // alias obligatorio
+		}
+		return $this->getSqlExp();
 	}
 	function isNum(){
 		if($this->isBool()){
@@ -117,8 +138,27 @@ abstract class mwmod_mw_devextreme_data_fields_abs extends mw_apsubbaseobj{
 		if(!$this->isOK()){
 			return false;	
 		}
+		if($this->mustUseHaving()){
+			return false;	
+		}
 		return $this->allowFilter;
 	}
+	function allowFilterHaving() {
+		if(!$this->isOK()){
+			return false;	
+		}
+		if(!$this->allowFilter){
+			return false;
+		}
+		return $this->mustUseHaving();
+		
+   		//return $this->allowFilterHaving;
+	}
+	function mustUseHaving() {
+    	return $this->isAggregatedField || $this->forceHaving;
+	}
+
+
 	function allowSort(){
 		if(!$this->isOK()){
 			return false;	

@@ -2,6 +2,7 @@
 class mwmod_mw_db_sql_select_select extends mwmod_mw_db_sql_querysubpart{
 	public $dataType;
 	public $isMultiple=false;
+	public $DX_isAggregatedField=false;
 	function __construct($sql,$cod=false,$querypart=false){
 		$this->sql=$sql;
 		$this->set_cod($cod);

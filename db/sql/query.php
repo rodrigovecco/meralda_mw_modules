@@ -32,6 +32,8 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 
 	public $totalsSelectsSQL=false;
 
+	public $autoSetCountFullQuery=true;
+
 	
 	function __construct($from=false){
 		if($from){
@@ -176,6 +178,7 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 	}
 	
 	function get_count_parameterized_sql(){
+		$this->beforeTotalRegsNumGet();
 		if($this->useFullQueryCount){
 			return $this->get_count_sql_parameterized_full_query_mode();	
 		}
@@ -205,6 +208,7 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 	}
 
 	function get_count_sql(){
+		$this->beforeTotalRegsNumGet();
 		if($this->useFullQueryCount){
 			return $this->get_count_sql_full_query_mode();	
 		}
@@ -241,7 +245,7 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 	}
 
 	function get_total_regs_num(){
-		
+		$this->beforeTotalRegsNumGet();
 		$sql=$this->get_count_sql_or_parameterized_query();
 		//$sql=$this->get_count_sql();
 		if(!$d=$this->dbman->get_array_from_sql($sql)){
@@ -255,7 +259,7 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		return intval($d[$this->sql_count_name]);
 	}
 	function get_total_data(){
-		
+		$this->beforeTotalRegsNumGet();
 		$sql=$this->get_count_sql_or_parameterized_query();
 		//$sql=$this->get_count_sql();
 		if(!$d=$this->dbman->get_array_from_sql($sql)){
@@ -263,6 +267,21 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		}
 		
 		return $d;
+	}
+	function beforeTotalRegsNumGet(){
+		if($this->useFullQueryCount){
+			return;	
+		}
+		if($this->autoSetCountFullQuery){
+			if($this->__get_priv_having()){
+				if($this->__get_priv_having()->get_items_ok()){
+					
+					$this->useFullQueryCount=true;	
+				}
+			}
+			
+			
+		}
 	}
 
 	function execute(){

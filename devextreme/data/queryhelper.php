@@ -1,5 +1,6 @@
 <?php
 //20240014
+/** @property mwmod_mw_devextreme_data_filter_filterhelper $filter  */
 class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 	public $filter;
 	public $loadOptions;
@@ -141,14 +142,15 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		if(!is_array($input)){
 			return false;	
 		}
-		if(!$field=$this->getField($input["selector"])){
+		///
+		if(!$field=$this->getField($input["selector"]??false)){//ver esto todo!!! ??
 			return false;		
 		}
 		if(!$field->allowSort()){
 			return false;	
 		}
-		$s=$query->order->add_order($field->getSqlExp());
-		if($input["desc"]){
+		$s=$query->order->add_order($field->getOrderExp());//nueva 20251202
+		if($d=$input["desc"]??false){
 			$s->set_desc();	
 		}
 		$this->sorted=true;
@@ -198,6 +200,9 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 
 		if(!$field=$this->addFieldBySqlExp($cod,$selectItem->get_sql_in())){
 			return false;
+		}
+		if($selectItem->DX_isAggregatedField){
+			$field->isAggregatedField=true;
 		}
 		if($selectItem->dataType){
 			$field->dataType=$selectItem->dataType;
