@@ -62,6 +62,20 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 			
 	}
 	/**
+	 * @param string $cod 
+	 * @param string $label 
+	 * @return mwmod_mw_jsobj_inputs_color 
+	 */
+	function addNewColorPicker($cod,$label=false){
+		$input = new mwmod_mw_jsobj_inputs_color($cod);
+		$this->add_child($input);
+		if($label){
+			$input->setLabel($label);
+		}
+		return $input;
+	}
+	
+	/**
 	 * Adds a new default child input.
 	 *
 	 * @param string $cod Input code.
@@ -125,6 +139,20 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	function addNewNumber($cod,$objclass=false){
 		$input = new mwmod_mw_jsobj_inputs_number($cod, $objclass);
 		$this->add_child($input);
+		return $input;
+	}
+
+	/**
+	 * @param string $cod 
+	 * @param string $label 
+	 * @return mwmod_mw_jsobj_inputs_iconselect 
+	 */
+	function addNewIconSelect($cod,$label=false){
+		$input = new mwmod_mw_jsobj_inputs_iconselect($cod);
+		$this->add_child($input);
+		if($label){
+			$input->setLabel($label);
+		}
 		return $input;
 	}
 	
@@ -263,6 +291,25 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	 */
 	function setDisabled($val=true){
 		$this->set_prop("state.disabled",$val);
+	}
+
+	function setSharedOptionIcons(){
+		$doption=$this->new_doptim_prop("shared.iconsList");
+		$doption->set_key("id");
+		$man=new mwmod_mw_bootstrap_man();
+		if($icons=$man->getIcons()){
+			foreach($icons as $cod=>$icon){
+				$d=[
+					"id"=>$icon->get_iconClass(),
+					"name"=>$icon->get_full_name(),
+					
+				];
+				$doption->add_data($d);	
+			}
+		}
+
+
+		//$this->set_prop("shared.iconsList",mwmod_mw_jsobj_inputs_icons::getIconsListDataForInput());
 	}
 	
 	/**

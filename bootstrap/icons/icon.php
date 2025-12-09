@@ -68,5 +68,13 @@ class mwmod_mw_bootstrap_icons_icon extends mw_apsubbaseobj{
 	function get_iconClass(){
 		return $this->iconClass;	
 	}
+	function get_full_name(){
+		if($c=$this->cusName){
+			return $c." ".$this->get_iconClass();	
+		}
+		return $this->get_iconClass();
+
+
+	}
 }
 ?>

@@ -8,6 +8,9 @@ class mwmod_mw_jsobj_inputs_gr extends mwmod_mw_jsobj_inputs_def{
 		}
 		$this->init_js_input_type_mode($cod,$type);
 	}
+	function setCollapsed($collapsed=true){
+		$this->set_prop("collapsed",$collapsed);
+	}
 	function setTitleMode($lbl=false,$type="groupwithtitle"){
 		if(!$type){
 			$type="groupwithtitle";	
