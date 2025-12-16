@@ -67,6 +67,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		return $this->allow_admin();
 	}
 	
+	/**
+	 * @param mwmod_mw_db_row $tblitem 
+	 * @return T 
+	 */
 	function create_item($tblitem){
 		
 		$item=new mwmod_mw_manager_item($tblitem,$this);
@@ -86,7 +90,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	}
 	/*
 	 * @param mwmod_mw_datafield_group $gr
-	 * @param mwmod_mw_manager_item $item
+	 * @param T $item
 	 */
 	function set_new_item_inputs_data($gr,$item=false){
 		$input=$gr->add_sub_item_by_dot_cod(new mwmod_mw_datafield_input("name",$this->lng_common_get_msg_txt("name","Nombre")));
