@@ -19,6 +19,7 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	private $_fieldManagers;
 	
 	var $only_update_if_different=false;
+	public $last_insert_error=null;
 	function __construct($dbman,$tbl){
 		$this->init($dbman,$tbl);	
 	}
@@ -164,6 +165,11 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 		$sql=$this->get_sql_load_all_start();
 		return $sql;
 	}
+	/**
+	 * @param mixed $data 
+	 * @param mwmod_mw_db_paramstatement_paramquery $paramQuery 
+	 * @return false|string 
+	 */
 	function generate_insert_sql($data,$paramQuery=false){
 		//ignore was added to prevent fatal error rvh 20230923
 		$sql="insert IGNORE  into ".$this->tbl." ";
@@ -306,7 +312,7 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 						
 		}
 		if(!$insertResponse=$this->dbman->insert($sql)){
-
+			$this->last_insert_error=$this->dbman->get_error();
 			return false;
 		}
 		if(is_array($insertResponse)){

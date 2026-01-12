@@ -30,6 +30,7 @@ class mwmod_mw_jsobj_inputs_date extends mwmod_mw_jsobj_inputs_input {
 	function setTimeOnly($v = true){
 		// Solo hora (sin selector de fecha)
 		$this->set_prop("timeonly", $v);
+		$this->set_prop("inputTimeOnlyMode", $v);
 		return $this;
 	}
 
