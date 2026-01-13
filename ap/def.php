@@ -1,4 +1,5 @@
 <?php
+/** @property-read mwmod_mw_ap_util_submanagers_def $man */
 class mwmod_mw_ap_def  extends mwmod_mw_ap_apbase{
 	function allow_submancmd(){
 		return true;	

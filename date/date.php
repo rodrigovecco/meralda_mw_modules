@@ -1,6 +1,8 @@
 <?php
 
 class mwmod_mw_date_date extends mwmod_mw_date_dateabs{
+	private $_weekdays;
+	private $_months;
 	function __construct($str_date=false,$man=false){
 		$this->init($man);
 		if($str_date){
@@ -291,6 +293,7 @@ class mwmod_mw_date_date extends mwmod_mw_date_dateabs{
 		}
 		$this->_weekdays=$this->load_weekdays();
 	}
+	
 	final function get_weekday($n){
 		if(!$n=$n+0){
 			return false;	
