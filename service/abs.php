@@ -21,6 +21,12 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 	private $JsonRequestBodyData;
 	public $errorResponseData;
 
+		
+	function getRequestIP(){
+		$ip=$_SERVER['REMOTE_ADDR']??"";
+		
+		return $ip;
+	}
 	final function __get_priv_JsonRequestBody(){
 		if(!isset($this->JsonRequestBody)){
 			$this->JsonRequestBody=$this->loadJsonRequestBody();
