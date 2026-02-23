@@ -111,7 +111,7 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 		
 		foreach($structure as $cod=>$structureData){
 			if(is_string($structureData)){
-				if($subs=$this->get_subinterfaces_by_code($structureData)){
+				if($subs=$this->get_subinterfaces_by_code($structureData,true)){
 					foreach($subs as $su){
 						$su->add_2_sub_interface_mnu($mnu);	
 					}
