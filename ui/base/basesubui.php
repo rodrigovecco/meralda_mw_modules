@@ -11,6 +11,7 @@ abstract class mwmod_mw_ui_base_basesubui extends mwmod_mw_ui_sub_uiabs{
 	 * @var string|null
 	 */
 	public $sucods;
+	public $mnuStructure;
 	
 	
 	/**

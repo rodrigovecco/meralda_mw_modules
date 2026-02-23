@@ -87,6 +87,11 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 	 */
 	function create_sub_interface_mnu_for_sub_interface($su=false){
 		$mnu = new mwmod_mw_mnu_mnu();
+
+		if($this->mnuStructure){
+			
+			$this->add_mnu_items_by_structure($mnu,$this->mnuStructure);
+		}
 		
 		if($subs=$this->get_subinterfaces_by_code($this->sucods,true)){
 			
@@ -97,6 +102,45 @@ abstract class mwmod_mw_ui_base_basesubuia extends mwmod_mw_ui_base_basesubui{
 		
 		
 		return $mnu;
+	}
+	function add_mnu_items_by_structure($mnu,$structure){
+		if(!is_array($structure)){
+			return;
+		}
+
+		
+		foreach($structure as $cod=>$structureData){
+			if(is_string($structureData)){
+				if($subs=$this->get_subinterfaces_by_code($structureData)){
+					foreach($subs as $su){
+						$su->add_2_sub_interface_mnu($mnu);	
+					}
+				}
+			}else if(is_array($structureData)){
+				if(isset($structureData["subbui"])){
+					if($subs=$this->get_subinterfaces_by_code($structureData["subbui"],true)){
+						$lbl=isset($structureData["lbl"])?$structureData["lbl"]:$cod;
+						$item=new mwmod_mw_mnu_items_dropdown_single($this->get_cod_for_mnu()."_".$cod,$lbl,$mnu,false);
+						$mnu->add_item_by_item($item);
+
+
+						
+						foreach($subs as $su){
+							$sitem=new mwmod_mw_mnu_mnuitem($su->get_cod_for_mnu(),$su->get_mnu_lbl(),$item,$su->get_url());
+							$item->add_item_by_item($sitem);
+							if($su->is_current()){
+								$sitem->active=true;	
+							}
+						}
+						//$su->add_2_sub_interface_mnu($mnu);
+					}
+					
+				}				
+			}
+			
+		}
+		
+		
 	}
 	
 	/**
