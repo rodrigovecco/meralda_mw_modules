@@ -773,6 +773,19 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 		$jsman->add_item_by_item($item);
 
 	}
+	function setNotification($message,$type="success"){
+		if(!$this->xmlResponse){
+			return false;
+		}
+		$xml=$this->xmlResponse;
+	
+		$xml->set_prop("notify.message",$message);
+		$xml->set_prop("notify.type",$type);
+		return true;
+	}
+	function setNotificationError($message){
+		return $this->setNotification($message,"error");
+	}
 	
 	/**
 	 * AJAX endpoint to create a new item.

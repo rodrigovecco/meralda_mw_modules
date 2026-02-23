@@ -54,6 +54,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 	
 	function get_exec_cmd_sxml_url_from_ui_full_cod($xmlcmd,$ui_full_cod,$params=array()){
 		$p=array();
+		
 		$p["ui"]="";
 		if($ui_full_cod){
 			if(is_string($ui_full_cod)){
@@ -65,10 +66,12 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 				$p[$cod]=$pp;	
 			}
 		}
+
 		if(!$xmlcmd){
 			return $this->get_exec_cmd_url("sxml",$p,false);	
 		}
 		$filename=$xmlcmd.".xml";
+		
 		return $this->get_exec_cmd_url("sxml",$p,$filename);
 	}
 	function get_exec_cmd_sxml_url($xmlcmd,$sub_ui,$params=array()){
@@ -130,6 +133,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 			return false;	
 		}
 		$cods=explode("-",$cods,2);
+
 		if(!$sub_ui=$this->get_subinterface($cods[0])){
 			return false;	
 		}
@@ -139,6 +143,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 			
 			return false;	
 		}
+		
 		if(!$this->set_current_subinterface($sub_ui)){
 			return false;	
 		}
@@ -154,6 +159,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 		
 	}
 	function exec_getcmd_sxml($params=array(),$filename=false){
+		
 		if(!$this->sxml_cmd_ok()){
 			
 			return $this->exec_getcmd_sxml_not_allowed($params,$filename);	
@@ -162,6 +168,7 @@ abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs
 			return $this->exec_getcmd_sxml_not_allowed($params,$filename);	
 		}
 		if(!$sub_ui=$this->set_current_subinterface_for_getcmd($params["ui"],$params,$filename)){
+			
 			return $this->exec_getcmd_sxml_not_allowed($params,$filename);		
 		}
 		if(!$filename){
