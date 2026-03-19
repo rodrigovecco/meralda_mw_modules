@@ -65,9 +65,9 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 	 * Status codes match the `status` column values in the table.
 	 */
 	function statusListCreate($list) {
-		$list->add_item(new mwmod_mw_util_itemsbycod_item(0, $this->lng_get_msg_txt("status_pending",   "Pendiente")));
-		$list->add_item(new mwmod_mw_util_itemsbycod_item(1, $this->lng_get_msg_txt("status_read",      "Leído")));
-		$list->add_item(new mwmod_mw_util_itemsbycod_item(2, $this->lng_get_msg_txt("status_processed", "Procesado")));
+		$list->add_item(new mwmod_mw_util_itemsbycod_item(1, $this->lng_get_msg_txt("status_new",       "New")));
+		$list->add_item(new mwmod_mw_util_itemsbycod_item(2, $this->lng_get_msg_txt("status_read",      "Read")));
+		$list->add_item(new mwmod_mw_util_itemsbycod_item(3, $this->lng_get_msg_txt("status_processed", "Processed")));
 	}
 
 	/** @return mwmod_mw_util_itemsbycod */
@@ -134,7 +134,7 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 			"ip_address"   => $ip,
 			"submitted_at" => date("Y-m-d H:i:s"),
 			"data_json"    => json_encode($data, JSON_UNESCAPED_UNICODE),
-			"status"       => 0,
+			"status"       => 1,
 		];
 		return $this->insert_item($nd);
 	}
@@ -225,16 +225,26 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 
 	/**
 	 * Builds a plain-text email body from the submission item.
+	 * Uses getAllowedFields() when available so individual-column managers work
+	 * correctly; falls back to data_json for legacy managers.
 	 */
 	function getNotificationEmailBody($item) {
 		$lines = [];
-		$lines[] = $this->lng_get_msg_txt("mail_body_header", "Nueva respuesta de formulario");
+		$lines[] = $this->lng_get_msg_txt("mail_body_header", "New form submission");
 		$lines[] = "";
 		$lines[] = "IP: " . $item->getIP();
-		$lines[] = $this->lng_get_msg_txt("submitted_at", "Enviado") . ": " . $item->getSubmittedAt();
+		$lines[] = $this->lng_get_msg_txt("submitted_at", "Submitted") . ": " . $item->getSubmittedAt();
 		$lines[] = "";
-		foreach ($item->getFormData() as $k => $v) {
-			$lines[] = htmlspecialchars($k) . ": " . htmlspecialchars($v);
+		$fields = $this->getAllowedFields();
+		if ($fields) {
+			foreach ($fields as $field) {
+				$val = $item->get_data($field);
+				$lines[] = $field . ": " . ($val !== null ? $val : "");
+			}
+		} else {
+			foreach ($item->getFormData() as $k => $v) {
+				$lines[] = $k . ": " . $v;
+			}
 		}
 		return implode("\n", $lines);
 	}
@@ -261,7 +271,7 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 		}
 		$mailer->CharSet = "utf-8";
 		$mailer->addAddress($to);
-		$mailer->Subject = $this->lng_get_msg_txt("mail_subject", "Nueva respuesta") . " [" . $this->getTableName() . "]";
+		$mailer->Subject = $this->lng_get_msg_txt("new_submission", "Nueva respuesta") . " [" . $this->getTableName() . "]";
 		$mailer->Body    = $this->getNotificationEmailBody($item);
 		$mailer->isHTML(false);
 		return $mailer->send();

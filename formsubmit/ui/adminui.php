@@ -97,6 +97,7 @@ abstract class mwmod_mw_formsubmit_ui_adminui extends mwmod_mw_ui_base_dxtbladmi
 	// ---- Top info panel ----------------------------------------------------
 
 	function getTopHtml($container) {
+		/*
 		$man = $this->getFormMan();
 		if (!$man) {
 			return;
@@ -107,13 +108,14 @@ abstract class mwmod_mw_formsubmit_ui_adminui extends mwmod_mw_ui_base_dxtbladmi
 		$to      = $man->getNotificationEmailTo() ?: "—";
 		$table   = $man->getTableName();
 
-		$p = $container->add_cont_elem("p");
-		$p->set_style("font-size:0.85em;color:#666;margin-bottom:8px");
-		$p->add_html(
+		$p = $container->add_cont_elem("","p");
+		//$p->set_style("font-size:0.85em;color:#666;margin-bottom:8px");
+		$p->add_cont(
 			$this->lng_get_msg_txt("tbl", "Tabla") . ": <b>" . htmlspecialchars($table) . "</b> &nbsp;|&nbsp; " .
 			$this->lng_get_msg_txt("mail_enabled", "Notificación email") . ": <b>" . htmlspecialchars($enabled) . "</b> &nbsp;|&nbsp; " .
 			$this->lng_get_msg_txt("mail_to", "Destinatario") . ": <b>" . htmlspecialchars($to) . "</b>"
 		);
+		*/
 	}
 }
 ?>
