@@ -44,7 +44,7 @@ abstract class mwmod_mw_uitemplates_sbadmin_main extends mwmod_mw_ui_main_uimain
 
 			
 			
-			$sub=$mnuitem->add_new_item("logout",$this->get_msg("Cerrar sesión"),$this->get_logout_url());	
+			$sub=$mnuitem->add_new_item("logout",$this->lng_get_msg_txt("logout","Cerrar sesión"),$this->get_logout_url());	
 			$sub->addInnerHTML_icon("fas fa-sign-out-alt mnuicon",true);
 			//$sub->addInnerHTML_icon("fa fa-sign-out fa-fw");
 		}

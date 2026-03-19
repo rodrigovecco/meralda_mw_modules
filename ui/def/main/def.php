@@ -28,7 +28,7 @@ abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_uitemplates_sbadmin_mai
 	*/
 	function add_mnu_items_toplinks($mnu){
 		if($user=$this->get_admin_current_user()){
-			$mnuitem= new mwmod_mw_mnu_items_dropdown_top("user",$this->get_msg("Usuario"),$mnu);
+			$mnuitem= new mwmod_mw_mnu_items_dropdown_top("user",$this->lng_get_msg_txt("user","Usuario"),$mnu);
 			$mnuitem->add_param("icon_class","fa fa-user fa-fw");
 			$mnu->add_item_by_item($mnuitem);
 			if($myacc=$this->get_subinterface("myaccount")){
@@ -38,7 +38,7 @@ abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_uitemplates_sbadmin_mai
 			}
 			
 			
-			$sub=$mnuitem->add_new_item("logout",$this->get_msg("Cerrar sesión"),$this->get_logout_url());	
+			$sub=$mnuitem->add_new_item("logout",$this->lng_get_msg_txt("logout","Cerrar sesión"),$this->get_logout_url());	
 			$sub->addInnerHTML_icon("fa fa-sign-out fa-fw");
 		}
 		

@@ -633,7 +633,7 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	function add_lat_mnu_items($mnu){
 		
 		//$mnu->add_new_item("logout",$this->get_msg("Cerrar sesión"),"index.php?logout=true");	
-		$mnu->add_new_item("logout",$this->get_msg("Cerrar sesión"),$this->get_logout_url());	
+		$mnu->add_new_item("logout",$this->lng_get_msg_txt("logout","Cerrar sesión"),$this->get_logout_url());	
 	}
 	
 	function create_lat_mnu(){
