@@ -30,13 +30,7 @@ class mwmod_mw_ui_install_installmain extends mwmod_mw_uitemplates_sbadmin_main{
 	}
 	
 	function add_mnu_items($mnu){
-		/*
-		$this->add_sub_interface_to_mnu_by_code($mnu,"def,adminuser");
 		
-		if($this->install_credentials_ok()){
-			$mnu->add_new_item("logout",$this->get_msg("Cerrar sesión"),"index.php?logout=true");	
-		}
-		*/
 	}
 	function logout(){
 		$_SESSION[$this->session_var_name]=array();

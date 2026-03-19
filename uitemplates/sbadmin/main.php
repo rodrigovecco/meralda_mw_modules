@@ -73,16 +73,7 @@ abstract class mwmod_mw_uitemplates_sbadmin_main extends mwmod_mw_ui_main_uimain
 	}
 	
 	function add_mnu_items_side($mnu){
-		/*
-		if($user=$this->get_admin_current_user()){
-			
-			$mnuitem= new mwmod_mw_mnu_items_dropdown("user",$this->get_msg("Usuario"),$mnu);
-			$mnuitem->add_param("class","dropdown-user");
-			$mnu->add_item_by_item($mnuitem);
-			$sub=$mnuitem->add_new_item("logout",$this->get_msg("Cerrar sesión"),"index.php?logout=true");	
-			$sub->addInnerHTML_icon("fa fa-sign-out fa-fw");
-		}
-		*/
+		
 		
 	}
 	

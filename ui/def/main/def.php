@@ -64,7 +64,7 @@ abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_uitemplates_sbadmin_mai
 		$mnuitem=new mwmod_mw_mnu_items_html("__divider","",$mnu);
 		$mnuitem->html_elem->add_cont('<hr class="sidebar-divider d-none d-md-block">');
 		$mnu->add_item_by_item($mnuitem);
-		$sub=$mnu->add_new_item("logout",$this->get_msg("Cerrar sesión"),$this->get_logout_url());
+		$sub=$mnu->add_new_item("logout",$this->lng_get_msg_txt("logout","Cerrar sesión"),$this->get_logout_url());
 		$sub->addInnerHTML_icon("fas fa-sign-out-alt");
 	}
 	
