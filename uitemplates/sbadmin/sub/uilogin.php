@@ -248,6 +248,7 @@ class mwmod_mw_uitemplates_sbadmin_sub_uilogin extends mwmod_mw_uitemplates_sbad
 		return;
 	}
 	function get_login_frm_html(){
+		
 		if(!$msg_man=$this->mainap->get_msgs_man_common()){
 			return false;	
 		}

@@ -242,7 +242,7 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		$js->set_prop("ui_var",$this->ui_var_name);
 		$js->set_prop("sub_ui_var",$this->sub_ui_var_name);
 		if($this->__accepts_exec_cmd_by_url()){
-			$js->set_prop("xmlurlsubui",$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false));
+			//$js->set_prop("xmlurlsubui",$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false));
 			$js->set_prop("sessionCheckUrl",$this->get_exec_cmd_url("sessioncheck",false,"sessioncheck.xml"));
 			
 		}
@@ -306,8 +306,8 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		$r["url"]=$this->get_url_base();
 		$r["ui_var"]=$this->ui_var_name;
 		$r["sub_ui_var"]=$this->sub_ui_var_name;
-		$r["xmlurl"]=$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false);	
-		$r["dlurl"]=$this->get_exec_cmd_dl_url_from_ui_full_cod(false,false);	
+		//$r["xmlurl"]=$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false);	
+		//$r["dlurl"]=$this->get_exec_cmd_dl_url_from_ui_full_cod(false,false);	
 
 		$this->get_ui_js_info_for_child_sub($r,$sub);
 		
@@ -807,8 +807,22 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	}
 	
 	final function set_current_subinterface($si=false){
+		if($si){
+			$si=$this->onBeforeSetCurrentSubinterface($si);
+		}
 		$this->current_subinterface=$si; 
 		return $this->current_subinterface;
+	}
+	/**
+	 * Hook called before setting a subinterface as current.
+	 * Override to intercept and potentially replace the subinterface
+	 * (e.g., force a security action like password change).
+	 * 
+	 * @param mwmod_mw_ui_sub_uiabs $si The subinterface about to be set as current.
+	 * @return mwmod_mw_ui_sub_uiabs The subinterface to actually set (same or a replacement).
+	 */
+	function onBeforeSetCurrentSubinterface($si){
+		return $si;
 	}
 	function get_subinterface_request_var(){
 		return $this->ui_var_name;	
@@ -937,9 +951,11 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	
 	}
 
+	/*
 	function __call($a,$b){
 		return false;	
 	}
+	*/
 	
 }
 ?>

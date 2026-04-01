@@ -2,6 +2,54 @@
 abstract class mwmod_mw_ui_main_uimainabsajax extends mwmod_mw_ui_main_uimainabs{
 	
 	var $sxml_add_debug_info=false;
+
+
+	function set_info_main_ui_js($js){
+		$js->set_prop("url",$this->get_url_base());
+		$js->set_prop("ui_var",$this->ui_var_name);
+		$js->set_prop("sub_ui_var",$this->sub_ui_var_name);
+		if($this->__accepts_exec_cmd_by_url()){
+			$js->set_prop("xmlurlsubui",$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false));
+			$js->set_prop("sessionCheckUrl",$this->get_exec_cmd_url("sessioncheck",false,"sessioncheck.xml"));
+			
+		}
+		$js->set_prop("sessionCheckTimeout",$this->sessionCheckTimeout);
+		if($uman=$this->get_admin_user_manager()){
+			if($uman->current_user_cookie_enabled()){
+				$js->set_prop("current_user_cookie_name",$uman->current_user_cookie_name);	
+				if($this->sessionCheckTimeout){
+					//$js->set_prop("session_expired_msg",$this->lng_common_get_msg_txt("session_has_expired","La sesión ha expirado")	
+				}
+			}
+		}
+		$js->set_prop("user.ok",false);
+		if($user=$this->get_admin_current_user()){
+			if($id=$user->get_id()){
+				$js->set_prop("user.ok",true);
+				$js->set_prop("user.id",$id);
+				$js->set_prop("user.idname",$user->get_idname());
+				$js->set_prop("user.name",$user->get_real_name());
+			}
+		}
+		$this->set_info_main_ui_js_more($js);
+		//$js->set_prop("xmlurl",$this->get_exec_cmd_xml_url(false,false));
+		//$r["xmlurl"]=$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false);	
+			
+	}
+	function get_ui_js_info_for_child($sub=false){
+		$r=array();
+		$r["url"]=$this->get_url_base();
+		$r["ui_var"]=$this->ui_var_name;
+		$r["sub_ui_var"]=$this->sub_ui_var_name;
+		$r["xmlurl"]=$this->get_exec_cmd_sxml_url_from_ui_full_cod(false,false);	
+		$r["dlurl"]=$this->get_exec_cmd_dl_url_from_ui_full_cod(false,false);	
+
+		$this->get_ui_js_info_for_child_sub($r,$sub);
+		
+		
+		return $r;
+			
+	}
 	function exec_getcmd_sessioncheck($params=array(),$filename=false){
 		$xmlroot=new mwmod_mw_data_xml_root();
 		$xml=$xmlroot->get_sub_root();

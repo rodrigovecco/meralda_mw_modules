@@ -1056,6 +1056,13 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 		if($gr->check_upload_new_img_invalid_attemp($input,$errorinfo)){
 			if($msgcontainer){
 				$msg=$this->lng_get_msg_txt("invalid_image_file","Archivo de imagen no válido");
+				
+				// Add detailed error info
+				$details = $this->getUploadErrorDetails($errorinfo);
+				if ($details) {
+					$msg .= ": " . $details;
+				}
+				
 				$alert=new mwmod_mw_bootstrap_html_specialelem_alert($msg,"danger");
 				$msgcontainer->add_cont($alert);
 			}
@@ -1117,6 +1124,76 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 		$this->set_cfg_profile_imgs_group($group,$user);
 		$this->set_profile_imgs_urls($group,$user);
 	}
+	
+	/**
+	 * Get detailed upload error message from errorinfo
+	 * 
+	 * @param array $errorinfo Error info from check_upload_new_img_invalid_attemp
+	 * @return string|false Detailed error message or false
+	 */
+	protected function getUploadErrorDetails($errorinfo) {
+		if (!is_array($errorinfo)) {
+			return false;
+		}
+		
+		$details = [];
+		
+		// Check for invalid extension
+		if (!empty($errorinfo["extra"]["invalid_ext"])) {
+			$ext = $errorinfo["extra"]["invalid_ext"];
+			$details[] = $this->lng_get_msg_txt("invalid_extension", "extensión no permitida: %ext%", ['ext' => $ext]);
+		}
+		
+		// Check PHP upload error codes
+		if (isset($errorinfo["extra"]["error"]) && $errorinfo["extra"]["error"] > 0) {
+			$phpError = $errorinfo["extra"]["error"];
+			$details[] = $this->getPhpUploadErrorMessage($phpError);
+		}
+		
+		// Check for general error field
+		if (!empty($errorinfo["error"])) {
+			$details[] = $errorinfo["error"];
+		}
+		
+		// Check if file info available
+		if (!empty($errorinfo["extra"]["type"])) {
+			$details[] = "MIME: " . $errorinfo["extra"]["type"];
+		}
+		
+		if (!empty($errorinfo["extra"]["size"])) {
+			$sizeKb = round($errorinfo["extra"]["size"] / 1024, 1);
+			$details[] = "Size: " . $sizeKb . " KB";
+		}
+		
+		return $details ? implode(", ", $details) : false;
+	}
+	
+	/**
+	 * Get human-readable PHP upload error message
+	 * 
+	 * @param int $errorCode PHP upload error code
+	 * @return string Error message
+	 */
+	protected function getPhpUploadErrorMessage($errorCode) {
+		switch ($errorCode) {
+			case UPLOAD_ERR_INI_SIZE:
+				return $this->lng_get_msg_txt("upload_err_ini_size", "El archivo excede el tamaño máximo permitido por el servidor");
+			case UPLOAD_ERR_FORM_SIZE:
+				return $this->lng_get_msg_txt("upload_err_form_size", "El archivo excede el tamaño máximo del formulario");
+			case UPLOAD_ERR_PARTIAL:
+				return $this->lng_get_msg_txt("upload_err_partial", "El archivo se subió parcialmente");
+			case UPLOAD_ERR_NO_FILE:
+				return $this->lng_get_msg_txt("upload_err_no_file", "No se subió ningún archivo");
+			case UPLOAD_ERR_NO_TMP_DIR:
+				return $this->lng_get_msg_txt("upload_err_no_tmp_dir", "Falta carpeta temporal del servidor");
+			case UPLOAD_ERR_CANT_WRITE:
+				return $this->lng_get_msg_txt("upload_err_cant_write", "Error al escribir archivo en disco");
+			case UPLOAD_ERR_EXTENSION:
+				return $this->lng_get_msg_txt("upload_err_extension", "Una extensión de PHP detuvo la subida");
+			default:
+				return "Error code: " . $errorCode;
+		}
+	}
 	////////////////////////////////
 	final function __get_priv_man(){
 		return $this->man; 	
@@ -1132,6 +1209,94 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 
 					
 	}
+
+	// =========================================================================
+	// Stubs for users2 methods (override in users2/userdata.php)
+	// =========================================================================
+
+	/**
+	 * Add inputs for forced password change (no current password)
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 * @param object $user
+	 */
+	public function addForceChangePassInputs($mainGr, $user): void {}
+
+	/**
+	 * Save forced password change
+	 * @param mwmod_mw_helper_inputvalidator_request $input
+	 * @param object $user
+	 * @param mwmod_mw_html_elem|false $uimsgelem
+	 * @return bool
+	 */
+	public function saveForceChangePass($input, $user, $uimsgelem = false): bool { return false; }
+
+	/**
+	 * Add inputs for My Account > Data form (modern JS inputs)
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 * @param object $user
+	 */
+	public function addMyAccountDataInputs($mainGr, $user): void {}
+
+	/**
+	 * Add editable user data inputs
+	 * @param mwmod_mw_jsobj_inputs_input $dataGr
+	 * @param object $user
+	 */
+	public function addUserDataInputs($dataGr, $user): void {}
+
+	/**
+	 * Add inputs for My Account > Change Password form
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 * @param object $user
+	 */
+	public function addChangePassInputs($mainGr, $user): void {}
+
+	/**
+	 * Add inputs for Admin > Change User Password (no current password)
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 * @param object $user
+	 */
+	public function addAdminChangePassInputs($mainGr, $user): void {}
+
+	/**
+	 * Add inputs for new user form
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 */
+	public function addNewUserInputs($mainGr): void {}
+
+	/**
+	 * Save user data from admin edit
+	 * @param array $inputData
+	 * @param object $user
+	 * @param mwmod_mw_html_elem|null $msgs
+	 * @return bool
+	 */
+	public function saveUserData($inputData, $user, $msgs = null): bool { return false; }
+
+	/**
+	 * Save password change from admin (no current password)
+	 * @param array $inputData
+	 * @param object $user
+	 * @param mwmod_mw_html_elem|null $msgs
+	 * @return bool
+	 */
+	public function saveAdminChangePass($inputData, $user, $msgs = null): bool { return false; }
+
+	/**
+	 * Add inputs for user roles assignment
+	 * @param mwmod_mw_jsobj_inputs_input $mainGr
+	 * @param object $user
+	 */
+	public function addUserRolsInputs($mainGr, $user): void {}
+
+	/**
+	 * Save user roles from admin edit
+	 * @param array $inputData
+	 * @param object $user
+	 * @param mwmod_mw_html_elem|null $msgs
+	 * @return bool
+	 */
+	public function saveUserRols($inputData, $user, $msgs = null): bool { return false; }
 
 	
 }

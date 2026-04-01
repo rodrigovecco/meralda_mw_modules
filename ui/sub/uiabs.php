@@ -264,6 +264,21 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function is_allowed_for_get_cmd_no_user(){
 		return false;	
 	}
+
+	/**
+	 * Determines if this subinterface can be accessed during a mandatory security action.
+	 * 
+	 * When the system requires the user to complete a security action (e.g., forced password change,
+	 * 2FA setup), only subinterfaces returning true here will be accessible.
+	 * 
+	 * Override in subclasses that should remain available during security enforcement
+	 * (e.g., the forced password change UI itself, login, logout).
+	 * 
+	 * @return bool False by default. Override to allow access during security enforcement.
+	 */
+	function isAllowedDuringForcedSecurityAction(){
+		return false;
+	}
 	/**
 	 * Retrieves a nested subinterface using a dot-separated path.
 	 *
@@ -3079,11 +3094,6 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 	
 	
-	function XXXXget_input_template(){
-		//DEPRECATED: use maininterface directly
-		return $this->maininterface->get_input_template(); 	
-	}
-
 	/**
 	 * Creates a new table template.
 	 *

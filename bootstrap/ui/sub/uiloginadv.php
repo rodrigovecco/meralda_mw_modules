@@ -98,6 +98,7 @@ class mwmod_mw_bootstrap_ui_sub_uiloginadv extends mwmod_mw_bootstrap_ui_sub_uil
 		//modificar para ir a la io req
 		return $this->maininterface->get_url();	
 	}
+
 	function do_exec_page_in(){
 		$this->login_direct_mode=false;
 		if($this->allow_direct_mode){
@@ -209,6 +210,7 @@ class mwmod_mw_bootstrap_ui_sub_uiloginadv extends mwmod_mw_bootstrap_ui_sub_uil
 		return;
 	}
 	function get_login_frm_html(){
+		
 		if(!$msg_man=$this->mainap->get_msgs_man_common()){
 			return false;	
 		}
