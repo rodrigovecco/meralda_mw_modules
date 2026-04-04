@@ -2,87 +2,104 @@
 /**
  * UI2 Remember Login Data Interface
  * 
- * Modern version of password reset UI using JS inputs system.
+ * Modern version of password reset UI using native HTML Bootstrap elements.
  * Supports both password reset request (by email) and password change (with token).
- * 
- * @todo WIP - EN PAUSA - Requiere revisión de la integración con JS inputs modernos
+ * Uses floating labels - no legacy JS inputs system.
  */
 class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindata {
+	
+	/** @var string JS class name for UI manager */
+	var $js_ui_class_name = "mw_ui_rememberlogin";
 	
 	function __construct($cod, $maininterface) {
 		parent::__construct($cod, $maininterface);
 	}
 	
 	/**
-	 * Prepare UI - load modern inputs JS
+	 * Prepare UI - load custom JS (no legacy inputs system)
 	 */
 	function prepare_before_exec_no_sub_interface() {
 		$p = new mwmod_mw_html_manager_uipreparers_htmlfrm($this);
 		$p->preapare_ui();
 		
 		$jsman = $this->maininterface->jsmanager;
-		$jsman->add_item_by_cod("/res/js/util.js");
-		$jsman->add_item_by_cod("/res/js/ajax.js");
-		$jsman->add_item_by_cod("/res/js/url.js");
-		$jsman->add_item_by_cod("/res/js/inputs/inputs.js");
-		$jsman->add_item_by_cod("/res/js/inputs/container.js");
-		$jsman->add_item_by_cod("/res/js/inputs/frm.js");
-		$jsman->add_item_by_cod("/res/js/validator.js");
+		$jsman->add_item_by_cod_def_path("util.js");
+		$jsman->add_item_by_cod("/res/js/ui/mwui_rememberlogin.js");
 		
 		$item = $this->create_js_man_ui_header_declaration_item();
 		$jsman->add_item_by_item($item);
 	}
 	
+	// =========================================================================
+	// Request Form (Email) - Native HTML
+	// =========================================================================
+	
 	/**
 	 * Request form - email input with optional captcha
+	 * @return string HTML
 	 */
 	function get_request_frm_html() {
 		$uman = $this->get_related_user_man();
 		if (!$uman) return false;
 		
-		$container = new mwmod_mw_bootstrap_html_elem("div");
-		$container->addClass("remember-form-container");
-		
 		// Form element
 		$frm = new mwmod_mw_bootstrap_html_elem("form");
 		$frm->set_att("method", "post");
-		$frm->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("requestform"));
+		$frm->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("form"));
+		$frm->set_att("novalidate", "novalidate");
 		
-		// Inputs wrapper
-		$inputsWrapper = new mwmod_mw_bootstrap_html_elem("div");
+		// Email floating label input
+		$emailGroup = new mwmod_mw_bootstrap_html_elem("div");
+		$emailGroup->addClass("form-floating mb-3");
 		
-		// Input container for JS inputs
-		$inputsDiv = new mwmod_mw_bootstrap_html_elem("div");
-		$inputsDiv->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("requestinputs"));
-		$inputsWrapper->add_cont($inputsDiv);
-		
-		// Captcha container
-		if ($this->use_captcha) {
-			$captchaDiv = new mwmod_mw_bootstrap_html_elem("div");
-			$captchaDiv->addClass("mt-3 captcha-container");
-			$captchaDiv->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("requestcaptcha"));
-			$inputsWrapper->add_cont($captchaDiv);
+		$emailInput = new mwmod_mw_bootstrap_html_elem("input");
+		$emailInput->set_att("type", "email");
+		$emailInput->set_att("name", "reqdata[user_email]");
+		$emailInput->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("input_email"));
+		$emailInput->set_att("placeholder", $this->lng_get_msg_txt("email", "Correo electrónico"));
+		$emailInput->set_att("required", "required");
+		$emailInput->set_att("autocomplete", "email");
+		$emailInput->addClass("form-control");
+		if ($this->email) {
+			$emailInput->set_att("value", htmlspecialchars($this->email));
 		}
+		$emailGroup->add_cont($emailInput);
 		
-		$frm->add_cont($inputsWrapper);
+		$emailLabel = new mwmod_mw_bootstrap_html_elem("label");
+		$emailLabel->set_att("for", $this->get_ui_elem_id("input_email"));
+		$emailLabel->add_cont($this->lng_get_msg_txt("email", "Correo electrónico"));
+		$emailGroup->add_cont($emailLabel);
+		
+		$frm->add_cont($emailGroup);
+		
+		// Captcha
+		if ($this->use_captcha) {
+			$captchaHtml = $this->get_captcha_html("reqdata");
+			$frm->add_cont($captchaHtml);
+		}
 		
 		// Submit button
 		$submitDiv = new mwmod_mw_bootstrap_html_elem("div");
 		$submitDiv->addClass("d-grid gap-2 mt-3");
+		
 		$submitBtn = new mwmod_mw_bootstrap_html_elem("button");
 		$submitBtn->set_att("type", "submit");
 		$submitBtn->addClass("btn btn-success btn-lg");
 		$submitBtn->add_cont($this->lng_get_msg_txt("send", "Enviar"));
 		$submitDiv->add_cont($submitBtn);
+		
 		$frm->add_cont($submitDiv);
 		
-		$container->add_cont($frm);
-		
-		return $container->get_as_html();
+		return $frm->get_as_html();
 	}
+	
+	// =========================================================================
+	// Reset Password Form - Native HTML
+	// =========================================================================
 	
 	/**
 	 * Reset password form - username, token, new password
+	 * @return string HTML
 	 */
 	function get_resetpass_frm_html() {
 		$uman = $this->get_related_user_man();
@@ -91,183 +108,272 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 		$pass_policy = $uman->get_pass_policy();
 		if (!$pass_policy) return false;
 		
-		$container = new mwmod_mw_bootstrap_html_elem("div");
-		$container->addClass("resetpass-form-container");
+		$can_change = $this->can_change_password();
 		
 		// Form element
 		$frm = new mwmod_mw_bootstrap_html_elem("form");
 		$frm->set_att("method", "post");
-		$frm->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("resetform"));
+		$frm->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("form"));
+		$frm->set_att("novalidate", "novalidate");
 		
-		// Inputs wrapper
-		$inputsWrapper = new mwmod_mw_bootstrap_html_elem("div");
+		// Username floating label input
+		$userGroup = new mwmod_mw_bootstrap_html_elem("div");
+		$userGroup->addClass("form-floating mb-3");
 		
-		// Input container for JS inputs
-		$inputsDiv = new mwmod_mw_bootstrap_html_elem("div");
-		$inputsDiv->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("resetinputs"));
-		$inputsWrapper->add_cont($inputsDiv);
+		$userInput = new mwmod_mw_bootstrap_html_elem("input");
+		$userInput->set_att("type", "text");
+		$userInput->set_att("name", "resetpassdata[u][uname]");
+		$userInput->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("input_user"));
+		$userInput->set_att("placeholder", $this->lng_get_msg_txt("user", "Usuario"));
+		$userInput->set_att("required", "required");
+		$userInput->set_att("autocomplete", "username");
+		$userInput->addClass("form-control");
+		if ($uname = $_REQUEST["uname"] ?? null) {
+			$userInput->set_att("value", htmlspecialchars($uname));
+		}
+		$userGroup->add_cont($userInput);
 		
-		// Captcha container
-		if ($this->use_captcha) {
-			$captchaDiv = new mwmod_mw_bootstrap_html_elem("div");
-			$captchaDiv->addClass("mt-3 captcha-container");
-			$captchaDiv->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("resetcaptcha"));
-			$inputsWrapper->add_cont($captchaDiv);
+		$userLabel = new mwmod_mw_bootstrap_html_elem("label");
+		$userLabel->set_att("for", $this->get_ui_elem_id("input_user"));
+		$userLabel->add_cont($this->lng_get_msg_txt("user", "Usuario"));
+		$userGroup->add_cont($userLabel);
+		
+		$frm->add_cont($userGroup);
+		
+		// Token floating label input
+		$tokenGroup = new mwmod_mw_bootstrap_html_elem("div");
+		$tokenGroup->addClass("form-floating mb-3");
+		
+		$tokenInput = new mwmod_mw_bootstrap_html_elem("input");
+		$tokenInput->set_att("type", "text");
+		$tokenInput->set_att("name", "resetpassdata[u][rptoken]");
+		$tokenInput->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("input_token"));
+		$tokenInput->set_att("placeholder", $this->lng_get_msg_txt("reset_pass_code", "Código de reestablecimiento"));
+		$tokenInput->set_att("required", "required");
+		$tokenInput->addClass("form-control");
+		if ($rptoken = $_REQUEST["rptoken"] ?? null) {
+			$tokenInput->set_att("value", htmlspecialchars($rptoken));
+		}
+		$tokenGroup->add_cont($tokenInput);
+		
+		$tokenLabel = new mwmod_mw_bootstrap_html_elem("label");
+		$tokenLabel->set_att("for", $this->get_ui_elem_id("input_token"));
+		$tokenLabel->add_cont($this->lng_get_msg_txt("reset_pass_code", "Código de reestablecimiento"));
+		$tokenGroup->add_cont($tokenLabel);
+		
+		$frm->add_cont($tokenGroup);
+		
+		// Password fields if can change password
+		if ($can_change) {
+			// New password
+			$passGroup = new mwmod_mw_bootstrap_html_elem("div");
+			$passGroup->addClass("form-floating mb-3");
+			
+			$passInput = new mwmod_mw_bootstrap_html_elem("input");
+			$passInput->set_att("type", "password");
+			$passInput->set_att("name", "resetpassdata[u][pass][pass]");
+			$passInput->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("input_pass"));
+			$passInput->set_att("placeholder", $this->lng_get_msg_txt("new_password", "Nueva contraseña"));
+			$passInput->set_att("required", "required");
+			$passInput->set_att("autocomplete", "new-password");
+			$passInput->addClass("form-control");
+			$passGroup->add_cont($passInput);
+			
+			$passLabel = new mwmod_mw_bootstrap_html_elem("label");
+			$passLabel->set_att("for", $this->get_ui_elem_id("input_pass"));
+			$passLabel->add_cont($this->lng_get_msg_txt("new_password", "Nueva contraseña"));
+			$passGroup->add_cont($passLabel);
+			
+			$frm->add_cont($passGroup);
+			
+			// Confirm password
+			$passConfirmGroup = new mwmod_mw_bootstrap_html_elem("div");
+			$passConfirmGroup->addClass("form-floating mb-3");
+			
+			$passConfirmInput = new mwmod_mw_bootstrap_html_elem("input");
+			$passConfirmInput->set_att("type", "password");
+			$passConfirmInput->set_att("name", "resetpassdata[u][pass][pass1]");
+			$passConfirmInput->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("input_pass_confirm"));
+			$passConfirmInput->set_att("placeholder", $this->lng_get_msg_txt("confirm_password", "Confirmar contraseña"));
+			$passConfirmInput->set_att("required", "required");
+			$passConfirmInput->set_att("autocomplete", "new-password");
+			$passConfirmInput->addClass("form-control");
+			$passConfirmGroup->add_cont($passConfirmInput);
+			
+			$passConfirmLabel = new mwmod_mw_bootstrap_html_elem("label");
+			$passConfirmLabel->set_att("for", $this->get_ui_elem_id("input_pass_confirm"));
+			$passConfirmLabel->add_cont($this->lng_get_msg_txt("confirm_password", "Confirmar contraseña"));
+			$passConfirmGroup->add_cont($passConfirmLabel);
+			
+			$frm->add_cont($passConfirmGroup);
 		}
 		
-		$frm->add_cont($inputsWrapper);
+		// Captcha
+		if ($this->use_captcha) {
+			$captchaHtml = $this->get_captcha_html("resetpassdata");
+			$frm->add_cont($captchaHtml);
+		}
 		
 		// Submit button
 		$submitDiv = new mwmod_mw_bootstrap_html_elem("div");
 		$submitDiv->addClass("d-grid gap-2 mt-3");
+		
 		$submitBtn = new mwmod_mw_bootstrap_html_elem("button");
 		$submitBtn->set_att("type", "submit");
 		$submitBtn->addClass("btn btn-success btn-lg");
-		$submitBtn->add_cont($this->can_change_password() 
+		$submitBtn->add_cont($can_change 
 			? $this->lng_get_msg_txt("changepassword", "Cambiar contraseña")
 			: $this->lng_get_msg_txt("send", "Enviar"));
 		$submitDiv->add_cont($submitBtn);
+		
 		$frm->add_cont($submitDiv);
 		
-		$container->add_cont($frm);
-		
-		return $container->get_as_html();
+		return $frm->get_as_html();
 	}
 	
+	// =========================================================================
+	// Captcha Helper
+	// =========================================================================
+	
 	/**
-	 * Execute page - render layout and add modern inputs JS
+	 * Get captcha HTML - renders captcha image + input with floating label
+	 * @param string $prefix - Input name prefix (reqdata or resetpassdata)
+	 * @return string HTML
+	 */
+	function get_captcha_html($prefix) {
+		// Get captcha manager
+		if (!$man = $this->mainap->get_submanager("captcha")) {
+			return "";
+		}
+		
+		// Create captcha item
+		if (!$captchaItem = $man->new_item_for_input("captcha")) {
+			return "";
+		}
+		
+		$inputName = $prefix . "[captcha]";
+		$inputId = $this->get_ui_elem_id_and_set_js_init_param("input_captcha");
+		$label = $this->lng_get_msg_txt("input_captcha_code", "Ingresa el código de verificación");
+		
+		// Build HTML with Bootstrap 5 input-group
+		$html = '<div class="mb-3">';
+		$html .= '<label for="' . $inputId . '" class="form-label">' . htmlspecialchars($label) . '</label>';
+		$html .= '<div class="input-group">';
+		$html .= '<span class="input-group-text p-0">' . $captchaItem->get_img_html() . '</span>';
+		$html .= '<input type="text" class="form-control" name="' . $inputName . '" id="' . $inputId . '" required autocomplete="off">';
+		$html .= '</div>';
+		$html .= '</div>';
+		
+		return $html;
+	}
+	
+	// =========================================================================
+	// Page Execution
+	// =========================================================================
+	
+	/**
+	 * Execute page - render layout with centered form and add JS init
+	 * Overrides parent to use Bootstrap 5 centering (justify-content-center + mt-5)
 	 */
 	function do_exec_page_in() {
-		parent::do_exec_page_in();
-		$this->output_modern_inputs_init_js();
-	}
-	
-	/**
-	 * Output JS initialization for modern inputs
-	 */
-	function output_modern_inputs_init_js() {
-		$reset_pass_mode = (mw_array_get_sub_key($_REQUEST, "action") == "resetpass");
+		$reset_pass_mode = false;
 		
-		$js = new mwmod_mw_jsobj_jquery_docreadyfnc();
-		$js->add_cont("(function() {\n");
+		if (mw_array_get_sub_key($_REQUEST, "action") == "resetpass") {
+			$reset_pass_mode = true;
+			$this->set_url_param("action", "resetpass");
+		}
 		
+		if (!$msg_man = $this->mainap->get_msgs_man_common()) {
+			return false;
+		}
+		
+		// Layout Bootstrap 5 - centered
+		$container = new mwmod_mw_bootstrap_html_grid_container();
+		$row = new mwmod_mw_bootstrap_html_grid_row();
+		$container->add_cont($row);
+		$col = new mwmod_mw_bootstrap_html_grid_col(4);
+		$row->add_cont($col);
+		$row->addClass("row justify-content-center");
+		
+		// Card panel con shadow y margin-top
+		$panel = new mwmod_mw_bootstrap_html_def("card card-default shadow-lg rounded-lg mt-5");
+		$col->add_cont($panel);
+		
+		// Card header
+		$panel_head = new mwmod_mw_bootstrap_html_def("card-header");
+		$panel->add_cont($panel_head);
+		
+		$panel_title = new mwmod_mw_bootstrap_html_def("card-title", "h4");
 		if ($reset_pass_mode) {
-			$this->output_reset_form_inputs_js($js);
+			$panel_title->add_cont($this->lng_get_msg_txt("reset_password", "Restablecer contraseña"));
 		} else {
-			$this->output_request_form_inputs_js($js);
+			$panel_title->add_cont($this->lng_get_msg_txt("rememberlogindata", "Recuperar datos de acceso"));
+		}
+		$panel_head->add_cont($panel_title);
+		
+		// Card body
+		$panel_body = new mwmod_mw_bootstrap_html_def("card-body");
+		$panel->add_cont($panel_body);
+		
+		$this->panel_body = $panel_body;
+		$this->alert_fail = new mwmod_mw_bootstrap_html_specialelem_alert(false, "danger");
+		$this->alert_fail->only_visible_when_has_cont = true;
+		$this->alert_fail->addClass("mt-3");
+		
+		if ($this->is_enabled()) {
+			if ($reset_pass_mode) {
+				$this->do_actions_reset_pass();
+			} else {
+				$this->do_actions();
+			}
+		} else {
+			$alert = new mwmod_mw_bootstrap_html_specialelem_alert(
+				$this->lng_get_msg_txt("this_funtion_is_disabled", "Esta función está deshabilitada"), 
+				"danger"
+			);
+			$this->panel_body->add_cont($alert);
 		}
 		
-		$js->add_cont("})();\n");
+		echo $container->get_as_html();
 		
-		echo $js->get_js_script_html();
-		
-		// Render captcha if needed
-		if ($this->use_captcha) {
-			$this->output_captcha_render_js($reset_pass_mode);
-		}
+		// JS init
+		$this->output_js_init();
 	}
 	
 	/**
-	 * JS for request form (email input)
+	 * Output JS initialization
 	 */
-	function output_request_form_inputs_js($js) {
-		$inputsId = $this->get_ui_elem_id("requestinputs");
-		$formId = $this->get_ui_elem_id("requestform");
-		
-		$js->add_cont("  var inputsman = new mw_datainput_item_frmonpanel();\n");
-		$js->add_cont("  inputsman.setTitleMode('floating');\n");
-		$js->add_cont("  inputsman.setPanel(document.getElementById('" . $inputsId . "'));\n");
-		
-		$js->add_cont("  var emailInput = inputsman.addNewChild('reqdata[user_email]', 'input');\n");
-		$js->add_cont("  emailInput.setTitle('" . addslashes($this->lng_get_msg_txt("email", "Correo")) . "');\n");
-		$js->add_cont("  emailInput.setRequired(true);\n");
-		$js->add_cont("  inputsman.addValidation2List(emailInput, 'required', '" . addslashes($this->lng_common_get_msg_txt("required_field", "Campo requerido")) . "');\n");
-		$js->add_cont("  inputsman.addValidation2List(emailInput, 'email', '" . addslashes($this->lng_get_msg_txt("invalid_email", "Correo electrónico inválido")) . "');\n");
-		
-		if ($this->email) {
-			$js->add_cont("  emailInput.setValue('" . addslashes($this->email) . "');\n");
-		}
-		
-		$js->add_cont("  inputsman.render();\n");
-		$js->add_cont("  window._rememberInputsMan = inputsman;\n");
-		
-		$js->add_cont("  var form = document.getElementById('" . $formId . "');\n");
-		$js->add_cont("  if (form) {\n");
-		$js->add_cont("    form.addEventListener('submit', function(e) {\n");
-		$js->add_cont("      if (!inputsman.validate()) { e.preventDefault(); return false; }\n");
-		$js->add_cont("    });\n");
-		$js->add_cont("  }\n");
-	}
-	
-	/**
-	 * JS for reset password form
-	 */
-	function output_reset_form_inputs_js($js) {
-		$inputsId = $this->get_ui_elem_id("resetinputs");
-		$formId = $this->get_ui_elem_id("resetform");
+	function output_js_init() {
+		$reset_pass_mode = (mw_array_get_sub_key($_REQUEST, "action") == "resetpass");
 		$can_change = $this->can_change_password();
 		
-		$js->add_cont("  var inputsman = new mw_datainput_item_frmonpanel();\n");
-		$js->add_cont("  inputsman.setTitleMode('floating');\n");
-		$js->add_cont("  inputsman.setPanel(document.getElementById('" . $inputsId . "'));\n");
+		$this->set_ui_js_params();
 		
-		$js->add_cont("  var grU = inputsman.addNewGr('resetpassdata[u]');\n");
+		// Mode
+		$this->ui_js_init_params->set_prop("mode", $reset_pass_mode ? "reset" : "request");
 		
-		// Username
-		$js->add_cont("  var unameInput = grU.addNewChild('uname', 'input');\n");
-		$js->add_cont("  unameInput.setTitle('" . addslashes($this->lng_get_msg_txt("user", "Usuario")) . "');\n");
-		$js->add_cont("  unameInput.setRequired(true);\n");
-		$js->add_cont("  inputsman.addValidation2List(unameInput, 'required', '" . addslashes($this->lng_common_get_msg_txt("required_field", "Campo requerido")) . "');\n");
+		// Messages
+		$this->ui_js_init_params->set_prop("msg_required", $this->lng_common_get_msg_txt("required_field", "Campo requerido"));
+		$this->ui_js_init_params->set_prop("msg_invalid_email", $this->lng_get_msg_txt("invalid_email", "Correo electrónico inválido"));
+		$this->ui_js_init_params->set_prop("msg_passwords_dont_match", $this->lng_get_msg_txt("passwords_dont_match", "Las contraseñas no coinciden"));
 		
-		if ($uname = $_REQUEST["uname"] ?? null) {
-			$js->add_cont("  unameInput.setValue('" . addslashes($uname) . "');\n");
+		// Password policy
+		if ($reset_pass_mode && $can_change) {
+			$this->add_password_policy_params();
 		}
 		
-		// Token
-		$js->add_cont("  var tokenInput = grU.addNewChild('rptoken', 'input');\n");
-		$js->add_cont("  tokenInput.setTitle('" . addslashes($this->lng_get_msg_txt("reset_pass_code", "Código de reestablecimiento de contraseña")) . "');\n");
-		$js->add_cont("  tokenInput.setRequired(true);\n");
-		$js->add_cont("  inputsman.addValidation2List(tokenInput, 'required', '" . addslashes($this->lng_common_get_msg_txt("required_field", "Campo requerido")) . "');\n");
+		// JS init
+		$js = new mwmod_mw_jsobj_jquery_docreadyfnc();
+		$var = $this->get_js_ui_man_name();
+		$js->add_cont($var . ".init(" . $this->ui_js_init_params->get_as_js_val() . ");\n");
 		
-		if ($rptoken = $_REQUEST["rptoken"] ?? null) {
-			$js->add_cont("  tokenInput.setValue('" . addslashes($rptoken) . "');\n");
-		}
-		
-		// Password fields
-		if ($can_change) {
-			$js->add_cont("  var grPass = grU.addNewGr('pass');\n");
-			
-			$js->add_cont("  var passInput = grPass.addNewChild('pass', 'password');\n");
-			$js->add_cont("  passInput.setTitle('" . addslashes($this->lng_get_msg_txt("new_password", "Nueva contraseña")) . "');\n");
-			$js->add_cont("  passInput.setRequired(true);\n");
-			$js->add_cont("  inputsman.addValidation2List(passInput, 'required', '" . addslashes($this->lng_common_get_msg_txt("required_field", "Campo requerido")) . "');\n");
-			
-			$this->addPasswordPolicyValidationsJs($js, 'passInput');
-			
-			$js->add_cont("  var passConfirmInput = grPass.addNewChild('pass1', 'password');\n");
-			$js->add_cont("  passConfirmInput.setTitle('" . addslashes($this->lng_get_msg_txt("confirm_password", "Confirmar contraseña")) . "');\n");
-			$js->add_cont("  passConfirmInput.setRequired(true);\n");
-			$js->add_cont("  inputsman.addValidation2List(passConfirmInput, 'required', '" . addslashes($this->lng_common_get_msg_txt("required_field", "Campo requerido")) . "');\n");
-			$js->add_cont("  inputsman.addValidation2List(passConfirmInput, function() {\n");
-			$js->add_cont("    return passInput.getValue() === passConfirmInput.getValue();\n");
-			$js->add_cont("  }, '" . addslashes($this->lng_get_msg_txt("passwords_dont_match", "Las contraseñas no coinciden")) . "');\n");
-		}
-		
-		$js->add_cont("  inputsman.render();\n");
-		$js->add_cont("  window._resetInputsMan = inputsman;\n");
-		
-		$js->add_cont("  var form = document.getElementById('" . $formId . "');\n");
-		$js->add_cont("  if (form) {\n");
-		$js->add_cont("    form.addEventListener('submit', function(e) {\n");
-		$js->add_cont("      if (!inputsman.validate()) { e.preventDefault(); return false; }\n");
-		$js->add_cont("    });\n");
-		$js->add_cont("  }\n");
+		echo $js->get_js_script_html();
 	}
 	
 	/**
-	 * Add password policy validations
+	 * Add password policy parameters to JS init
 	 */
-	function addPasswordPolicyValidationsJs($js, $inputVarName) {
+	function add_password_policy_params() {
 		$uman = $this->get_related_user_man();
 		if (!$uman) return;
 		
@@ -275,52 +381,34 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 		if (!$pass_policy) return;
 		
 		if ($minLen = $pass_policy->min_length ?? 0) {
-			$js->add_cont("  inputsman.addValidation2List({$inputVarName}, 'minLength:{$minLen}', '" . 
-				addslashes($this->lng_get_msg_txt("password_min_length", "La contraseña debe tener al menos {$minLen} caracteres")) . "');\n");
+			$this->ui_js_init_params->set_prop("pass_min_length", $minLen);
+			$this->ui_js_init_params->set_prop("msg_pass_min_length", 
+				$this->lng_get_msg_txt("password_min_length", "La contraseña debe tener al menos $minLen caracteres"));
 		}
 		
-		if ($pass_policy->require_uppercase ?? false) {
-			$js->add_cont("  inputsman.addValidation2List({$inputVarName}, function() { return /[A-Z]/.test({$inputVarName}.getValue()); }, '" . 
-				addslashes($this->lng_get_msg_txt("password_require_uppercase", "La contraseña debe contener al menos una mayúscula")) . "');\n");
+		if ($pass_policy->must_contain_uppers ?? false) {
+			$this->ui_js_init_params->set_prop("pass_require_uppercase", true);
+			$this->ui_js_init_params->set_prop("msg_pass_require_uppercase", 
+				$this->lng_get_msg_txt("password_require_uppercase", "La contraseña debe contener al menos una mayúscula"));
 		}
 		
-		if ($pass_policy->require_lowercase ?? false) {
-			$js->add_cont("  inputsman.addValidation2List({$inputVarName}, function() { return /[a-z]/.test({$inputVarName}.getValue()); }, '" . 
-				addslashes($this->lng_get_msg_txt("password_require_lowercase", "La contraseña debe contener al menos una minúscula")) . "');\n");
+		if ($pass_policy->must_contain_lowers ?? false) {
+			$this->ui_js_init_params->set_prop("pass_require_lowercase", true);
+			$this->ui_js_init_params->set_prop("msg_pass_require_lowercase", 
+				$this->lng_get_msg_txt("password_require_lowercase", "La contraseña debe contener al menos una minúscula"));
 		}
 		
-		if ($pass_policy->require_number ?? false) {
-			$js->add_cont("  inputsman.addValidation2List({$inputVarName}, function() { return /[0-9]/.test({$inputVarName}.getValue()); }, '" . 
-				addslashes($this->lng_get_msg_txt("password_require_number", "La contraseña debe contener al menos un número")) . "');\n");
+		if ($pass_policy->must_contain_numbers ?? false) {
+			$this->ui_js_init_params->set_prop("pass_require_number", true);
+			$this->ui_js_init_params->set_prop("msg_pass_require_number", 
+				$this->lng_get_msg_txt("password_require_number", "La contraseña debe contener al menos un número"));
 		}
 		
-		if ($pass_policy->require_special ?? false) {
-			$js->add_cont("  inputsman.addValidation2List({$inputVarName}, function() { return /[!@#$%^&*(),.?\":{}|<>]/.test({$inputVarName}.getValue()); }, '" . 
-				addslashes($this->lng_get_msg_txt("password_require_special", "La contraseña debe contener al menos un carácter especial")) . "');\n");
+		if ($pass_policy->must_contain_specials ?? false) {
+			$this->ui_js_init_params->set_prop("pass_require_special", true);
+			$this->ui_js_init_params->set_prop("msg_pass_require_special", 
+				$this->lng_get_msg_txt("password_require_special", "La contraseña debe contener al menos un carácter especial"));
 		}
-	}
-	
-	/**
-	 * Render captcha using legacy system
-	 */
-	function output_captcha_render_js($reset_pass_mode) {
-		if (!$this->use_captcha) return;
-		
-		$captchaInput = new mwmod_mw_helper_captcha_input("captcha");
-		$captchaInput->captcha_cod = "captcha";
-		$captchaInput->set_attr_name_prefix($reset_pass_mode ? "resetpassdata" : "reqdata");
-		
-		$captchaHtml = $captchaInput->get_bootstrap_fg_html();
-		$captchaHtml = addslashes(str_replace(array("\r", "\n"), '', $captchaHtml));
-		
-		$containerId = $reset_pass_mode ? 
-			$this->get_ui_elem_id("resetcaptcha") : 
-			$this->get_ui_elem_id("requestcaptcha");
-		
-		$js = new mwmod_mw_jsobj_jquery_docreadyfnc();
-		$js->add_cont("document.getElementById('" . $containerId . "').innerHTML = '" . $captchaHtml . "';\n");
-		
-		echo $js->get_js_script_html();
 	}
 	
 	/**

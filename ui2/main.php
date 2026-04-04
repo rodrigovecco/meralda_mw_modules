@@ -7,6 +7,8 @@
  * mandatory action (forced password change, future 2FA, etc.), only
  * subinterfaces that declare themselves compatible via
  * isAllowedDuringForcedSecurityAction() will be set as current.
+ * 
+ * Uses custom UI2 template with modular CSS and CSS variables for theming.
  */
 abstract class mwmod_mw_ui2_main extends mwmod_mw_uitemplates_sbadmin_main {
     
@@ -16,19 +18,45 @@ abstract class mwmod_mw_ui2_main extends mwmod_mw_uitemplates_sbadmin_main {
      */
     protected string $forceChangePassSubinterfaceCode = 'forcechangepass';
 	
-	// ==========================================================================
-	// @todo WIP - UI modernas de login/rememberlogindata EN PAUSA
-	// Descomentar cuando se retome el trabajo en ui2/sub/uilogin.php y rememberlogindata.php
-	// ==========================================================================
-	// function create_subinterface_rememberlogindata(){
-	// 	$si=new mwmod_mw_ui2_sub_rememberlogindata("rememberlogindata",$this);
-	// 	return $si;
-	// }
-	// function create_subinterface_login(){
-	// 	$si= new mwmod_mw_ui2_sub_uilogin("login",$this);
-	// 	return $si;
-	// }
-	// ==========================================================================
+	/**
+	 * Create UI2 template with custom CSS structure
+	 * @return mwmod_mw_ui2_template_main
+	 */
+	function create_template() {
+		return new mwmod_mw_ui2_template_main($this);
+	}
+	
+	/**
+	 * Override JS loading to use UI2 Bootstrap JS
+	 * @param mwmod_mw_html_manager_js $jsmanager
+	 */
+	function add_default_js_scripts_sub($jsmanager) {
+		$jsmanager->add_jquery();
+		
+		// Bootstrap 5.2.3 JS from UI2 folder
+		$item = new mwmod_mw_html_manager_item_jsexternal("bootstrap", "/res/ui2/js/bootstrap.bundle.min.js");
+		$jsmanager->add_item_by_item($item);
+		
+		// MW Bootstrap utilities
+		$item = new mwmod_mw_html_manager_item_jsexternal("mwbootstrap", "/res/js/mwbootstrap.js");
+		$jsmanager->add_item_by_item($item);
+	}
+	
+	/**
+	 * Create remember login data subinterface (modern UI with JS inputs)
+	 */
+	function create_subinterface_rememberlogindata(){
+	 $si=new mwmod_mw_ui2_sub_rememberlogindata("rememberlogindata",$this);
+	 	return $si;
+	}
+	
+	/**
+	 * Create login subinterface (modern UI with JS inputs)
+	 */
+	function create_subinterface_login(){
+		$si= new mwmod_mw_ui2_sub_uilogin("login",$this);
+		return $si;
+	}
 	
     /**
      * Create My Account subinterface using users2 module

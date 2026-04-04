@@ -1011,10 +1011,14 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	
 	function exec_login_and_user_validation(){
 		
+		//$this->__get_priv_login_js_response();
+		
+		//$this->login_js_response->set_prop("debug.sws",$_REQUEST);
 		if($_REQUEST["logout"]??false){
 			return $this->logout();	
 		}
-		if($_REQUEST["login_userid"]??null){
+		if($i=$_REQUEST["login_userid"]??null){
+			//$this->login_js_response->set_prop("debug.aaaa","dsfsd");
 
 			
 			
