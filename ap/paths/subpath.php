@@ -503,6 +503,53 @@ class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 	function get_file_man(){
 		return $this->pathman->get_file_man();	
 	}
+
+	/**
+	 * Upload a file to this subpath from a form file input.
+	 * Creates the directory if it doesn't exist.
+	 * 
+	 * @param array|string $input File input info: array with "fileinputname" key, or just the input name string
+	 * @param string|false $subpath Optional subpath within this subpath manager
+	 * @param string|false $deleteifexists Filename to delete before uploading (old file)
+	 * @param bool $isimg Whether to treat as image upload
+	 * @param string|false $newfilename Force a specific filename for the uploaded file
+	 * @param bool $replace Whether to replace if file with same name exists
+	 * @param bool $urlsercurefilename Whether to sanitize filename for URL safety
+	 * @param array|false $valid_exts Allowed extensions (false = fileman defaults)
+	 * @return string|false Uploaded filename on success, false on failure
+	 */
+	function upload_input($input, $subpath=false, $deleteifexists=false, $isimg=false, $newfilename=false, $replace=true, $urlsercurefilename=true, $valid_exts=false){
+		if(!$fm=$this->get_file_man()){
+			return false;
+		}
+		if(is_string($input)){
+			$input = ["fileinputname" => $input];
+		}
+		if(!$path=$this->check_and_create_path($subpath)){
+			return false;
+		}
+		return $fm->process_upload_input($input, $path, $deleteifexists, $isimg, $newfilename, $replace, $urlsercurefilename, $valid_exts);
+	}
+
+	/**
+	 * Check if a file upload is pending for this subpath without processing it.
+	 * 
+	 * @param array|string $input File input info: array with "fileinputname" key, or just the input name string
+	 * @param string|false $subpath Optional subpath within this subpath manager
+	 * @param array &$info Output: detailed info about the upload check
+	 * @param bool &$invaliduploadattempt Output: true if user attempted upload but it was invalid
+	 * @return bool True if a valid upload is pending
+	 */
+	function check_upload_input($input, $subpath=false, &$info=[], &$invaliduploadattempt=false){
+		if(!$fm=$this->get_file_man()){
+			return false;
+		}
+		if(is_string($input)){
+			$input = ["fileinputname" => $input];
+		}
+		$path = $this->get_sub_path($subpath) ?: "";
+		return $fm->check_process_upload_input($input, $path, false, false, false, true, true, false, $info, $invaliduploadattempt);
+	}
 	
 	/**
 	 * Build and return the relative subpath for this subpath manager.
