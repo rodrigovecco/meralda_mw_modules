@@ -37,7 +37,7 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 	 * @param mwmod_mw_html_manager_js $jsmanager
 	 */
 	function add_default_js_scripts_for_main($mainUI, $jsmanager) {
-		$item = new mwmod_mw_html_manager_item_jsexternal("ui2scripts", "/res/ui2/js/scripts.js");
+		$item = new mwmod_mw_html_manager_item_jsexternal("ui2scripts", "/res/meralda/ui2/js/scripts.js");
 		$jsmanager->add_item_by_item($item);
 		$item->bottom = true;
 	}

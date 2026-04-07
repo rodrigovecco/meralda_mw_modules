@@ -1,5 +1,5 @@
 <?php
-abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_uitemplates_sbadmin_main{
+abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_ui2_def_main_admin{
 	function create_subinterface_welcome(){
 		$si= new mwmod_mw_ui_def_welcome("welcome",$this);
 		return $si;
