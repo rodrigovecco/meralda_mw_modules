@@ -329,10 +329,21 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 			]);
 		}
 
-		return $this->_json_output([
+		return $this->_json_output($this->getSubmitSuccessResponse($item));
+	}
+
+	/**
+	 * Build the success response array after a valid submission.
+	 * Override in subclass to add custom fields (e.g., download_url).
+	 *
+	 * @param object $item The saved submission item
+	 * @return array
+	 */
+	function getSubmitSuccessResponse($item) {
+		return [
 			"ok" => true,
 			"id" => $item->get_id(),
-		]);
+		];
 	}
 
 	// ---- Override in subclass to whitelist fields ------------------------

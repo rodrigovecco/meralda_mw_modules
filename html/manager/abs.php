@@ -119,6 +119,9 @@ abstract class mwmod_mw_html_manager_abs extends mw_apsubbaseobj{
 		if(!$cod=$this->check_str_key($cod)){
 			return false;	
 		}
+		if(!isset($this->_items[$cod])){
+			return false;	
+		}
 		if($this->_items[$cod]){
 			unset($this->_items[$cod]);	
 			unset($this->_new_items[$cod]);	

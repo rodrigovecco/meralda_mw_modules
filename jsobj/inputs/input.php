@@ -91,12 +91,16 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 		}
 		return $input;
 	}
-	function setFileMode($filetypesStr=false){
+	function setFileMode($filetypesStr=false,$inputName=false){
 		$this->set_js_type("file");
 		$this->set_prop("inputAttsCfgEnabled",true);	
 		if($filetypesStr){
 			$this->set_prop("inputAtts.accept",$filetypesStr);
 			
+		}
+		if($inputName){
+			$this->set_prop("input_name",$inputName);
+		
 			
 		}
 		

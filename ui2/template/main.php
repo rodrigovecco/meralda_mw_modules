@@ -23,11 +23,11 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("meraldaicons", "/res/css/meralda_icons.css"));
 		
 		// UI2 CSS - Bootstrap 5 + custom variables + components
-		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-bootstrap", "/res/meralda/css/bootstrap.min.css"));
-		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-variables", "/res/meralda/css/variables.css"));
-		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-layout", "/res/meralda/css/layout.css"));
-		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-components", "/res/meralda/css/components.css"));
-		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-theme", "/res/meralda/css/theme.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-bootstrap", "/res/meralda/ui2/css/bootstrap.min.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-variables", "/res/meralda/ui2/css/variables.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-layout", "/res/meralda/ui2/css/layout.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-components", "/res/meralda/ui2/css/components.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-theme", "/res/meralda/ui2/css/theme.css"));
 	}
 	
 	/**
@@ -37,7 +37,7 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 	 * @param mwmod_mw_html_manager_js $jsmanager
 	 */
 	function add_default_js_scripts_for_main($mainUI, $jsmanager) {
-		$item = new mwmod_mw_html_manager_item_jsexternal("ui2scripts", "/res/meralda/js/scripts.js");
+		$item = new mwmod_mw_html_manager_item_jsexternal("ui2scripts", "/res/ui2/js/scripts.js");
 		$jsmanager->add_item_by_item($item);
 		$item->bottom = true;
 	}

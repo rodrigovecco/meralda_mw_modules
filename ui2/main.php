@@ -33,8 +33,8 @@ abstract class mwmod_mw_ui2_main extends mwmod_mw_uitemplates_sbadmin_main {
 	function add_default_js_scripts_sub($jsmanager) {
 		$jsmanager->add_jquery();
 		
-		// Bootstrap 5.2.3 JS from meralda folder
-		$item = new mwmod_mw_html_manager_item_jsexternal("bootstrap", "/res/meralda/js/bootstrap.bundle.min.js");
+		// Bootstrap 5.2.3 JS from UI2 folder
+		$item = new mwmod_mw_html_manager_item_jsexternal("bootstrap", "/res/meralda/ui2/js/bootstrap.bundle.min.js");
 		$jsmanager->add_item_by_item($item);
 		
 		// MW Bootstrap utilities
