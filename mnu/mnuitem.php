@@ -77,6 +77,9 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 			$a->set_att("href","#");
 		}
 		$a->addClass("nav-link");
+		if($this->active){
+			$a->addClass("active");	
+		}
 		$id=$this->getElemID("dd");
 		if($str=$this->get_target()){
 			$a->set_att("target",$str);

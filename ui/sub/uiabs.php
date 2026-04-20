@@ -1326,6 +1326,30 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function is_current(){
 		return $this->is_current;	
 	}
+	function mnuItemIsActive(){
+		if($this->is_in_exec_chain()){
+			return true;	
+		}
+		if($this->is_active()){
+
+			return true;	
+		}
+		if($this->selected_as_current){
+			return true;	
+		}
+		if($this->parent_subinterface){
+			if($this->parent_subinterface->current_subinterface){
+				if($this->parent_subinterface->current_subinterface->cod ===$this->cod	){
+					return true;	
+				}
+			
+				
+			}
+			
+		}
+		
+		return false;
+	}
 	
 	/**
 	 * Checks if this subinterface is in the execution chain.
@@ -1338,6 +1362,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		}
 		return $this->is_current();	
 	}
+	
 	
 	/**
 	 * Initializes as either main or sub, depending on parent type.
@@ -1979,10 +2004,12 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 */
 	function add_as_sub_mnu_item($parent_mnu_item){
 		$item=new mwmod_mw_mnu_mnuitem($this->get_cod_for_mnu(),$this->get_mnu_lbl(),$parent_mnu_item,$this->get_url());
-		if($this->is_current()){
+		if($this->mnuItemIsActive()){
 			$item->set_active(true);
+			
 				
 		}
+		
 		if($this->tooltip){
 			$item->tooltip=	$this->tooltip;
 		}
@@ -2029,9 +2056,17 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 			
 			return false;	
 		}
+		if($this->mnuItemIsActive()){
+			$item->set_active(true);	
+			//die("ss".$this->get_name());
+		}
+		
+		/*
 		if($this->is_current()){
+			//die("ss".$this->get_name());
 			$item->set_active(true);	
 		}
+		*/
 		$this->prepare_mnu_item($item);
 		
 		
@@ -2381,6 +2416,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 * @return mwmod_mw_ui_sub_uiabs The final current subinterface.
 	 */
 	function get_this_or_final_current_subinterface(){
+		
 		if($this->current_sub_interface){
 			if($this->current_sub_interface->is_allowed()){
 				if($r=$this->current_sub_interface->get_this_or_final_current_subinterface()){
