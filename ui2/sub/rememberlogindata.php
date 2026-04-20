@@ -11,10 +11,6 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 	/** @var string JS class name for UI manager */
 	var $js_ui_class_name = "mw_ui_rememberlogin";
 	
-	function __construct($cod, $maininterface) {
-		parent::__construct($cod, $maininterface);
-	}
-	
 	/**
 	 * Prepare UI - load custom JS (no legacy inputs system)
 	 */
@@ -41,9 +37,12 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 	function get_request_frm_html() {
 		$uman = $this->get_related_user_man();
 		if (!$uman) return false;
+		$container=$this->get_ui_dom_elem_container();
+		
 		
 		// Form element
 		$frm = new mwmod_mw_bootstrap_html_elem("form");
+		$container->add_cont($frm);
 		$frm->set_att("method", "post");
 		$frm->set_att("id", $this->get_ui_elem_id_and_set_js_init_param("form"));
 		$frm->set_att("novalidate", "novalidate");
@@ -90,7 +89,7 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 		
 		$frm->add_cont($submitDiv);
 		
-		return $frm->get_as_html();
+		return $container->get_as_html();
 	}
 	
 	// =========================================================================
@@ -277,7 +276,7 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 	 */
 	function do_exec_page_in() {
 		$reset_pass_mode = false;
-		
+		//die("que pasa");
 		if (mw_array_get_sub_key($_REQUEST, "action") == "resetpass") {
 			$reset_pass_mode = true;
 			$this->set_url_param("action", "resetpass");
@@ -287,35 +286,35 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 			return false;
 		}
 		
-		// Layout Bootstrap 5 - centered
-		$container = new mwmod_mw_bootstrap_html_grid_container();
-		$row = new mwmod_mw_bootstrap_html_grid_row();
-		$container->add_cont($row);
-		$col = new mwmod_mw_bootstrap_html_grid_col(4);
-		$row->add_cont($col);
-		$row->addClass("row justify-content-center");
+		// Wrapper div
+		$wrapper = new mwmod_mw_html_elem("div");
+		$wrapper->addClass("auth-form-wrapper");
 		
-		// Card panel con shadow y margin-top
-		$panel = new mwmod_mw_bootstrap_html_def("card card-default shadow-lg rounded-lg mt-5");
-		$col->add_cont($panel);
+		// Card
+		$card = new mwmod_mw_html_elem("div");
+		$card->addClass("card card-default shadow-lg rounded-lg mt-5");
+		$wrapper->add_cont($card);
 		
 		// Card header
-		$panel_head = new mwmod_mw_bootstrap_html_def("card-header");
-		$panel->add_cont($panel_head);
+		$cardHeader = new mwmod_mw_html_elem("div");
+		$cardHeader->addClass("card-header");
+		$card->add_cont($cardHeader);
 		
-		$panel_title = new mwmod_mw_bootstrap_html_def("card-title", "h4");
+		$cardTitle = new mwmod_mw_html_elem("h4");
+		$cardTitle->addClass("card-title");
 		if ($reset_pass_mode) {
-			$panel_title->add_cont($this->lng_get_msg_txt("reset_password", "Restablecer contraseña"));
+			$cardTitle->add_cont($this->lng_get_msg_txt("reset_password", "Restablecer contraseña"));
 		} else {
-			$panel_title->add_cont($this->lng_get_msg_txt("rememberlogindata", "Recuperar datos de acceso"));
+			$cardTitle->add_cont($this->lng_get_msg_txt("rememberlogindata", "Recuperar datos de acceso"));
 		}
-		$panel_head->add_cont($panel_title);
+		$cardHeader->add_cont($cardTitle);
 		
 		// Card body
-		$panel_body = new mwmod_mw_bootstrap_html_def("card-body");
-		$panel->add_cont($panel_body);
+		$cardBody = new mwmod_mw_html_elem("div");
+		$cardBody->addClass("card-body");
+		$card->add_cont($cardBody);
 		
-		$this->panel_body = $panel_body;
+		$this->panel_body = $cardBody;
 		$this->alert_fail = new mwmod_mw_bootstrap_html_specialelem_alert(false, "danger");
 		$this->alert_fail->only_visible_when_has_cont = true;
 		$this->alert_fail->addClass("mt-3");
@@ -331,10 +330,10 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 				$this->lng_get_msg_txt("this_funtion_is_disabled", "Esta función está deshabilitada"), 
 				"danger"
 			);
-			$this->panel_body->add_cont($alert);
+			$cardBody->add_cont($alert);
 		}
 		
-		echo $container->get_as_html();
+		echo $wrapper->get_as_html();
 		
 		// JS init
 		$this->output_js_init();
@@ -409,6 +408,13 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 			$this->ui_js_init_params->set_prop("msg_pass_require_special", 
 				$this->lng_get_msg_txt("password_require_special", "La contraseña debe contener al menos un carácter especial"));
 		}
+	}
+	
+	/**
+	 * Use single mode layout (no sidebar, authentication layout)
+	 */
+	function is_single_mode() {
+		return true;
 	}
 	
 	/**

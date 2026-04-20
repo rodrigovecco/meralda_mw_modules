@@ -67,11 +67,12 @@ abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_ui2_def_main_admin{
 		$sub=$mnu->add_new_item("logout",$this->lng_get_msg_txt("logout","Cerrar sesión"),$this->get_logout_url());
 		$sub->addInnerHTML_icon("fas fa-sign-out-alt");
 	}
-	
+	/*
 	function create_subinterface_rememberlogindata(){
 		$si=new mwmod_mw_subui_rememberlogindata("rememberlogindata",$this);
 		return $si;
 	}
+		*/
 	
 
 	function get_subinterface_not_allowed_no_user(){

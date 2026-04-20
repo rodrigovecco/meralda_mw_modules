@@ -24,6 +24,7 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 		
 		// UI2 CSS - Bootstrap 5 + custom variables + components
 		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-bootstrap", "/res/meralda/ui2/css/bootstrap.min.css"));
+		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-fonts", "/res/meralda/ui2/css/fonts.css"));
 		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-variables", "/res/meralda/ui2/css/variables.css"));
 		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-layout", "/res/meralda/ui2/css/layout.css"));
 		$cssmanager->add_item_by_item(new mwmod_mw_html_manager_item_css("ui2-components", "/res/meralda/ui2/css/components.css"));
@@ -40,6 +41,20 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 		$item = new mwmod_mw_html_manager_item_jsexternal("ui2scripts", "/res/meralda/ui2/js/scripts.js");
 		$jsmanager->add_item_by_item($item);
 		$item->bottom = true;
+	}
+	
+	/**
+	 * Override single mode rendering to use authentication layout
+	 * Wraps content in #layoutAuthentication for glassmorphism styling
+	 * 
+	 * @param object $subinterface
+	 */
+	function exec_page_full_body_sub_interface_single_mode($subinterface) {
+		echo '<div id="layoutAuthentication">';
+		echo '<div id="layoutAuthentication_content">';
+		$subinterface->do_exec_page_single_mode();
+		echo '</div>';
+		echo '</div>';
 	}
 }
 ?>

@@ -174,17 +174,13 @@ class mwmod_mw_ui2_sub_uilogin extends mwmod_mw_uitemplates_sbadmin_sub_abs {
 		
 		$maincontainer = $this->get_ui_dom_elem_container_empty();
 		
-		// Layout Bootstrap
-		$container = new mwmod_mw_bootstrap_html_grid_container();
-		$row = new mwmod_mw_bootstrap_html_grid_row();
-		$container->add_cont($row);
-		$col = new mwmod_mw_bootstrap_html_grid_col(4);
-		$row->add_cont($col);
-		$row->addClass("row justify-content-center");
+		// Wrapper sin grid
+		$wrapper = new mwmod_mw_html_elem("div");
+		$wrapper->addClass("auth-form-wrapper");
 		
 		// Card panel
 		$panel = new mwmod_mw_bootstrap_html_def("card card-default shadow-lg rounded-lg mt-5");
-		$col->add_cont($panel);
+		$wrapper->add_cont($panel);
 		
 		// Card header
 		$panel_head = new mwmod_mw_bootstrap_html_def("card-header");
@@ -240,7 +236,7 @@ class mwmod_mw_ui2_sub_uilogin extends mwmod_mw_uitemplates_sbadmin_sub_abs {
 			}
 		}
 		
-		$maincontainer->add_cont($container);
+		$maincontainer->add_cont($wrapper);
 		
 		// Iframe for form submission
 		$iframaandfrm = $this->create_ui_dom_elem_iframe_and_frm_container();
