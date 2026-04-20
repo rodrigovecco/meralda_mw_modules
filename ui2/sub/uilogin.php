@@ -242,7 +242,15 @@ class mwmod_mw_ui2_sub_uilogin extends mwmod_mw_uitemplates_sbadmin_sub_abs {
 		$iframaandfrm = $this->create_ui_dom_elem_iframe_and_frm_container();
 		$maincontainer->add_cont($iframaandfrm);
 		
-		echo $maincontainer->get_as_html();
+		// Wrap with authentication layout
+		$authLayout = new mwmod_mw_html_elem("div");
+		$authLayout->set_att("id", "layoutAuthentication");
+		
+		$authContent = $authLayout->add_cont_elem();
+		$authContent->set_att("id", "layoutAuthentication_content");
+		$authContent->add_cont($maincontainer);
+		
+		echo $authLayout->get_as_html();
 		
 		// JS initialization
 		$this->output_ui_init_js($userman);

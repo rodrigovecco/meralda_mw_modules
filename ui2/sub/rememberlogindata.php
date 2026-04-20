@@ -333,7 +333,15 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 			$cardBody->add_cont($alert);
 		}
 		
-		echo $wrapper->get_as_html();
+		// Wrap with authentication layout
+		$authLayout = new mwmod_mw_html_elem("div");
+		$authLayout->set_att("id", "layoutAuthentication");
+		
+		$authContent = $authLayout->add_cont_elem();
+		$authContent->set_att("id", "layoutAuthentication_content");
+		$authContent->add_cont($wrapper);
+		
+		echo $authLayout->get_as_html();
 		
 		// JS init
 		$this->output_js_init();

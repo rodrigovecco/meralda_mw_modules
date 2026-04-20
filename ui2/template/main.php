@@ -44,17 +44,48 @@ class mwmod_mw_ui2_template_main extends mwmod_mw_uitemplates_sbadmin_template_m
 	}
 	
 	/**
-	 * Override single mode rendering to use authentication layout
-	 * Wraps content in #layoutAuthentication for glassmorphism styling
+	 * Override single mode rendering with generic wrapper
+	 * Sub-interfaces can add their own specific wrappers (e.g., #layoutAuthentication for login)
 	 * 
 	 * @param object $subinterface
 	 */
 	function exec_page_full_body_sub_interface_single_mode($subinterface) {
-		echo '<div id="layoutAuthentication">';
-		echo '<div id="layoutAuthentication_content">';
+		echo '<div class="layout-single-mode">';
+		echo '<div class="layout-single-mode-content">';
 		$subinterface->do_exec_page_single_mode();
 		echo '</div>';
 		echo '</div>';
+	}
+	
+	/**
+	 * Override main footer to add Meralda branding
+	 * Shows copyright + small Meralda logo on the right
+	 * 
+	 * @param mwmod_mw_html_elem $container
+	 */
+	function addContMainUIFooter($container) {
+		$wrapper = $container->add_cont_elem();
+		$wrapper->addClass("d-flex align-items-center justify-content-between small");
+		
+		// Copyright text on the left
+		$copyright = $wrapper->add_cont_elem();
+		$copyright->addClass("text-muted");
+		$copyright->add_cont("Copyright © " . $this->mainap->get_cfg()->get_value("site_name") . " " . date("Y"));
+		
+		// Meralda branding on the right
+		$brandDiv = $wrapper->add_cont_elem();
+		$brandDiv->addClass("footer-brand");
+		
+		$logoLink = $brandDiv->add_cont_elem(false, "a");
+		$logoLink->set_att("href", "https://meralda.dev");
+		$logoLink->set_att("target", "_blank");
+		$logoLink->set_att("rel", "noopener noreferrer");
+		$logoLink->set_att("title", "Powered by Meralda");
+		
+		$logoImg = $logoLink->add_cont_elem(false, "img");
+		$logoImg->set_att("src", "/res/meralda/meralda_logo_32px.png");
+		$logoImg->set_att("alt", "Meralda");
+		$logoImg->addClass("footer-logo");
 	}
 }
 ?>
