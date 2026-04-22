@@ -240,6 +240,70 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 		
 	
 	}
+	
+	/**
+	 * Generate INSERT SQL without IGNORE clause
+	 * @param mixed $data 
+	 * @param mwmod_mw_db_paramstatement_paramquery $paramQuery 
+	 * @return false|string 
+	 */
+	function generate_insert_sql_strict($data,$paramQuery=false){
+		$sql="insert into ".$this->tbl." ";
+		if($paramQuery){
+			$paramQuery->appendSQL($sql);
+		}
+		$fieldslist=array();
+		$valueslist=array();
+		$valueslistPH=array();
+		$ok=false;
+		foreach($data as $c=>$v){
+			if(is_string($c)){
+				if(!is_array($v)){
+					if($field=$this->getField($c)){
+
+						if($this->dbman->dbModeCheckSQLsrv()){
+							$fieldslist[]="$c";
+						}else{
+							$fieldslist[]="`$c`";
+						}
+
+						
+						$valueslistPH[]=" ? ";
+						if(is_null($v) and $field->nullAllowed()){
+							$valueslist[]=" NULL ";
+							if($paramQuery){
+								$paramQuery->addParam(null);
+
+							}
+						}else{
+							$valueslist[]="'".$this->real_escape_string($v)."'";
+							if($paramQuery){
+								$paramQuery->addParam($v);
+
+							}
+						}
+						$ok=true;
+					
+					}
+					
+				}
+			}
+		}
+		if(!$ok){
+			
+			return false;	
+		
+		}
+		$sql.="(".implode(",",$fieldslist).") ";
+		$sql.=" values (".implode(",",$valueslist).") ";
+		if($paramQuery){
+			$paramQuery->appendSQL("(".implode(",",$fieldslist).") ");
+			$paramQuery->appendSQL(" values (".implode(",",$valueslistPH).") ");
+
+		}
+		return $sql;
+	
+	}
 	function getInsertOrUpdateSQL($data,$keys){
 		//todo: paramQ
 		if(!is_array($data)){
@@ -355,6 +419,66 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 		}
 	
 		return $this->load_item($id);
+	}
+	
+	/**
+	 * Insert item without IGNORE clause (strict mode)
+	 * @param array $data 
+	 * @return mwmod_mw_db_row|false
+	 */
+	function insert_item_strict($data){
+		if(!is_array($data)){
+			return false;
+		}
+		unset($data[$this->id_field]);
+		if(!$id=$this->_insert_item_strict($data)){
+			return false;
+		}
+	
+		return $this->load_item($id);
+	}
+	
+	/**
+	 * Internal insert without IGNORE clause
+	 * @param array $data
+	 * @return int|false
+	 */
+	private function _insert_item_strict($data){
+		
+		if($this->dbman->useAlwaysParameterizedMode()){
+			$paramQuery=new mwmod_mw_db_paramstatement_paramquery();
+			if(!$sql=$this->generate_insert_sql_strict($data,$paramQuery)){
+				
+				return false;
+			}
+			
+			$sql=$paramQuery;
+			$this->last_paramquery = $paramQuery; // Store for debugging
+
+		}else{
+			if(!$sql=$this->generate_insert_sql_strict($data)){
+				return false;
+			}
+			$this->last_paramquery = null;
+						
+		}
+		if(!$insertResponse=$this->dbman->insert($sql)){
+			$this->last_insert_error=$this->dbman->get_error();
+			return false;
+		}
+		if(is_array($insertResponse)){
+			$id=$insertResponse[$this->id_field]??null;
+		}else{
+			$id=$insertResponse;
+		}
+		if(!isset($id)){
+			
+			return false;
+		}
+
+		return $id;
+		
+	
 	}
 	function create_item($id,$data){
 		$item= new mwmod_mw_db_row($id,$data,$this);
