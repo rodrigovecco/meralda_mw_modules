@@ -19,6 +19,14 @@
  * @property-read string $code_for_parent Code used to identify this subinterface in the parent.
  * @property mwmod_mw_jsobj_obj $js_output JavaScript output object.
  * @property mwmod_mw_data_xml_root $xml_output XML output object.
+ * 
+ * @method mwmod_mw_data_xml_root new_getcmd_sxml_answer(bool $ok = true, string $msg = "") Create XML response object for AJAX endpoints
+ * @method bool is_allowed() Check if current user is allowed to access this UI
+ * @method mwmod_mw_html_elem set_ui_dom_elem_id(string $cod, mwmod_mw_html_elem|false $elem = false) Set a DOM element ID for JavaScript access
+ * @method mwmod_mw_html_elem get_ui_dom_elem_container() Get the main container DOM element
+ * @method mwmod_mw_html_elem get_ui_dom_elem_container_empty(mwmod_mw_html_elem|false $container = false) Get empty container DOM element
+ * @method string get_ui_elem_id(string $cod) Get the full DOM element ID for a code
+ * @method string get_ui_elem_id_and_set_js_init_param(string $cod) Get element ID and add to JS init params
  */
 abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	/**
@@ -3278,6 +3286,9 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 * Magic method for handling undefined method calls.
 	 *
 	 * Returns false for any undefined method.
+	 * 
+	 * @internal This method should NOT be used for method validation by IDE.
+	 * @ignore IDE should not consider this for autocomplete or method existence checks.
 	 *
 	 * @param string $a Method name.
 	 * @param array $b Method arguments.
