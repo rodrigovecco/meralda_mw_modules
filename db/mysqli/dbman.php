@@ -144,10 +144,15 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 		if($v=$cfg["charset"]??null){
 			$mysqli->set_charset($cfg["charset"]);
 		}
-		
-		// Always disable strict mode for MW framework compatibility
-		$mysqli->query("SET SESSION sql_mode='NO_ENGINE_SUBSTITUTION'");
-		
+		/*
+		if(!$v=$cfg["servermode"]??null){
+			$mysqli->query("SET sql_mode=''");
+		}
+		*/
+		if (!isset($cfg["servermode"]) || !$cfg["servermode"]) {
+			//$mysqli->query("SET GLOBAL sql_mode=''");
+			$mysqli->query("SET SESSION sql_mode=''");
+		}
 		return $mysqli;
 		
 		
@@ -199,7 +204,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			
 			return false;	
 		}
-		$l->error;
+		return $l->error;
 		//return mysql_error($l);
 			
 	}
@@ -208,7 +213,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			
 			return false;	
 		}
-		$l->errno;
+		return $l->errno;
 		//return mysql_errno($l);
 			
 	}
