@@ -20,6 +20,7 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	
 	var $only_update_if_different=false;
 	public $last_insert_error=null;
+	public $last_paramquery=null;
 	function __construct($dbman,$tbl){
 		$this->init($dbman,$tbl);	
 	}
@@ -304,11 +305,13 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 			}
 			
 			$sql=$paramQuery;
+			$this->last_paramquery = $paramQuery; // Store for debugging
 
 		}else{
 			if(!$sql=$this->get_insert_sql($data)){
 				return false;
 			}
+			$this->last_paramquery = null;
 						
 		}
 		if(!$insertResponse=$this->dbman->insert($sql)){
