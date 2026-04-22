@@ -73,7 +73,11 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 					}
 
 					array_unshift($values, $types);
-					call_user_func_array([$stmt, 'bind_param'], $values);
+					$bindResult = call_user_func_array([$stmt, 'bind_param'], $values);
+					if ($bindResult === false) {
+						$this->lastException = new Exception("bind_param failed: " . $stmt->error);
+						return false;
+					}
 				}
 				if (!$stmt->execute()) {
 					$this->lastException = new Exception($stmt->error);
