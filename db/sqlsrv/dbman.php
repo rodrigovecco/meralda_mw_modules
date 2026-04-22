@@ -136,7 +136,10 @@ class mwmod_mw_db_sqlsrv_dbman extends mwmod_mw_db_mysqli_dbman{
 	       
 
 	        if($result === false) {
-	        	
+	        	$errors = sqlsrv_errors();
+	        	if($errors){
+	        		$this->lastException = new Exception($errors[0]['message']);
+	        	}
 	            return false;
 	        }
 	        
@@ -188,25 +191,48 @@ class mwmod_mw_db_sqlsrv_dbman extends mwmod_mw_db_mysqli_dbman{
 	        return false;
 	    }
 	    
-
-	    if(is_string($sql)){
-	    	 $result = sqlsrv_query($l, $sql);
-	    }elseif(is_object($sql)){
-	    	 $result = sqlsrv_query($l, $sql->getSQL(),$sql->getParams());
-
-	    }
-	   	
-	    if(!$result){
-	    	
-	    	return false;
-	    }
-	    $stmt = sqlsrv_query($l, "select last_insert_id=@@identity");
-	    if ($stmt !== false) {
-	        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
-	        if ($row !== false) {
-	            return $row[0];
-	        }
-	    }
+	    try {
+		    if(is_string($sql)){
+		    	 $result = sqlsrv_query($l, $sql);
+		    }elseif(is_object($sql)){
+		    	 $result = sqlsrv_query($l, $sql->getSQL(),$sql->getParams());
+		    }
+		   	
+		    if(!$result){
+		    	$errors = sqlsrv_errors();
+		    	if($errors){
+		    		$this->lastException = new Exception($errors[0]['message']);
+		    	}
+		    	return false;
+		    }
+		    
+		    $affectedRows = sqlsrv_rows_affected($result);
+		    
+		    $stmt = sqlsrv_query($l, "select last_insert_id=@@identity");
+		    if ($stmt !== false) {
+		        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_NUMERIC);
+		        if ($row !== false) {
+		            $insertId = $row[0];
+		            
+		            // Si insert_id es 0 pero affected_rows > 0, la inserción fue exitosa
+		            if ($insertId == 0 && $affectedRows > 0) {
+		            	return true;
+		            }
+		            
+		            return $insertId;
+		        }
+		    }
+		    
+		    // Si no pudimos obtener insert_id pero affected_rows > 0, retornar true
+		    if ($affectedRows > 0) {
+		    	return true;
+		    }
+		    
+		} catch (Exception $e) {
+			$this->lastException = $e;
+			return false;
+		}
+		
 	    return false;
 
 	  

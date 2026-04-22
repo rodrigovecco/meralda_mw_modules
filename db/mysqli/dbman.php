@@ -113,7 +113,27 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			return false;
 		}
 
-		return $l->insert_id;
+		$insertId = $l->insert_id;
+		$affectedRows = $l->affected_rows;
+		
+		// Si insert_id es 0 pero affected_rows > 0, la inserción fue exitosa
+		// (puede pasar con tablas sin auto-increment o con ID especificado)
+		if ($insertId == 0 && $affectedRows > 0) {
+			// Retornar true para indicar éxito aunque no haya insert_id
+			return true;
+		}
+		
+		// Si insert_id es 0 y affected_rows es 0 o negativo, verificar error
+		if ($insertId == 0) {
+			// Si no hay error de MySQL, la query se ejecutó pero no insertó
+			// (ej: INSERT IGNORE con duplicate, o constraint que previene insert)
+			if ($l->errno == 0) {
+				// No hay error pero tampoco se insertó - retornar false
+				return false;
+			}
+		}
+		
+		return $insertId;
 	}
 
 
