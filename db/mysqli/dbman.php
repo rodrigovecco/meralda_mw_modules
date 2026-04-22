@@ -1,7 +1,6 @@
 <?php
 //20250207
 class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
-	public $lastException;
 	function __construct($ap){
 		$this->init($ap);	
 	}

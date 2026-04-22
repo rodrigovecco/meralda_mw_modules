@@ -5,6 +5,7 @@ abstract class mwmod_mw_db_dbman extends mw_apsubbaseobj{
 	private $_connected;
 	private $_tblmanagers;
 	private $_viewsmanagers;
+	public $lastException;
 	function __construct($ap){
 		$this->init($ap);	
 	}
