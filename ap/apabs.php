@@ -524,6 +524,7 @@ abstract class mwmod_mw_ap_apabs extends mw_baseobj{
 		return $this->get_user_manager(); 	
 	}
 
+	/** @return mwmod_mw_users_usersman  */
 	final function get_user_manager(){
 		if(!isset($this->usermanager)){
 			$this->usermanager=$this->create_user_manager();

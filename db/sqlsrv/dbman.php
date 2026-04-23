@@ -1,4 +1,13 @@
 <?php
+// @phpstan-ignore-next-line
+/** @noinspection PhpUndefinedFunctionInspection */
+
+/**
+ * SQL Server Database Manager
+ * 
+ * @noinspection PhpUndefinedFunctionInspection
+ * @phpstan-ignore-file
+ */
 class mwmod_mw_db_sqlsrv_dbman extends mwmod_mw_db_mysqli_dbman{
 	public $serverName;
 	public $dbName;
