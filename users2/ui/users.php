@@ -325,7 +325,7 @@ class mwmod_mw_users2_ui_users extends mwmod_mw_ui_sub_uiabs {
         $col->mw_js_colum_obj_params->set_prop("dataitems", $rolsdoptiom);
         
         $col = $datagrid->add_column_boolean("active", $this->lng_common_get_msg_txt("active", "Activo"));
-        $col->js_data->set_prop("filterValue", true);
+        //$col->js_data->set_prop("filterValue", true);
     }
     
     /**
