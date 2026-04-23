@@ -54,7 +54,7 @@ class mwmod_mw_users2_ui_newuser extends mwmod_mw_users2_ui_abs {
         $this->alertMsg->only_visible_when_has_cont = true;
         
         // Process form submission
-        $inputMan = new mwmod_mw_helper_inputvalidator_request("nduser.usernd");
+        $inputMan = new mwmod_mw_helper_inputvalidator_request("nduser_usernd");
         if ($inputMan->is_req_input_ok()) {
             if ($this->processNewUserForm($dm, $inputMan)) {
                 // Success - show success message
@@ -97,7 +97,7 @@ class mwmod_mw_users2_ui_newuser extends mwmod_mw_users2_ui_abs {
         $frm = new mwmod_mw_jsobj_inputs_frmonpanel();
         $frm->set_prop("lbl", $this->lng_common_get_msg_txt("new_user", "Nuevo usuario"));
         
-        $mainGr = $frm->add_data_main_gr("nduser.usernd");
+        $mainGr = $frm->add_data_main_gr("nduser_usernd");
         
         // Delegate input creation to dataman (extensible)
         $dm->addNewUserInputs($mainGr);

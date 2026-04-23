@@ -860,7 +860,12 @@ class mwmod_mw_users2_userdata extends mwmod_mw_users_def_userdata {
         $input->setLabel($this->lng_get_msg_txt("user_name", "Nombre de usuario"));
         $input->set_value($user->get_idname());
         $input->setRequired(true);
-        $input->addValidationEmail();
+        // Only enforce email format if the existing username already looks like an email.
+        // Otherwise the form would silently refuse to submit when editing legacy
+        // non-email usernames (e.g. "admin").
+        if ($user->get_idname() && filter_var($user->get_idname(), FILTER_VALIDATE_EMAIL)) {
+            $input->addValidationEmail();
+        }
         
         // Active checkbox
         $input = $accessGr->addNewChild("active", "checkbox");
