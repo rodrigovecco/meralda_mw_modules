@@ -304,7 +304,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		if(!is_array($keys)){
 			return false;
 		}
-		$tblman=$this->get_tblman();
+		if(!$tblman=$this->get_tblman()){
+			
+			return false;	
+		}
 		$query=$tblman->new_query();
 		foreach($keys as $c=>$v){
 			if($f=$tblman->getField($c)){

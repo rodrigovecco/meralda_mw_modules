@@ -1,8 +1,12 @@
 <?php
 
-/** @property-read mwmod_mw_html_manager_js $jsmanager   */
+/**
+ * @property-read mwmod_mw_html_manager_js $jsmanager
+ * @property-read object|false           $SEOurlMan  Lazy-loaded SEO URL manager (false if none).
+ */
 abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 	private $___subinterfaces=array();
+	private $SEOurlMan;
 	private $___all_subinterfaces;
 	private $___all_subinterfaces_loaded;
 	private $current_subinterface;
@@ -61,8 +65,32 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		}
 		return $this->uiSessionDataMan;
 	}
-
+	/**
+	 * Lazy-loaded SEO URL manager.
+	 *
+	 * @return object|false  SEO URL manager instance, or false if none.
+	 */
+	final function __get_priv_SEOurlMan(){
+		if(!isset($this->SEOurlMan)){
+			if(!$this->SEOurlMan=$this->createSEOurlMan()){
+				$this->SEOurlMan=false;
+			}
+		}
+		return $this->SEOurlMan;
+	}
+	/**
+	 * Factory hook for the SEO URL manager. Override in subclasses to provide one.
+	 *
+	 * @return object|false
+	 */
+	function createSEOurlMan(){
+		return false;
+	}
+	//typo:
 	function evaluateHTTPSendRedirect(){
+		$this->evaluateHTTPSandRedirect();
+	}
+	function evaluateHTTPSandRedirect(){
 		if(!$this->forceHTTPs()){
 			return;	
 		}

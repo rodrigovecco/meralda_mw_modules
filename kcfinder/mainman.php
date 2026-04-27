@@ -29,7 +29,7 @@ class  mwmod_mw_kcfinder_mainman extends mw_apsubbaseobj implements mwmod_mw_kcf
 		if(!is_array($urlparams)){
 			$urlparams=array();	
 		}
-		if(!$urlparams["lng"]){
+		if(!($urlparams["lng"]??null)){
 			if($lngman=$this->mainap->get_current_lng_man()){
 				if($lng=$lngman->get_globalize_locale_cod()){
 					$urlparams["lng"]=$lng;		
