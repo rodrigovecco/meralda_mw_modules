@@ -1364,6 +1364,21 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 	//loading single user
 	function load_and_create_user_by_idname($idname){
+		
+		$q=$this->new_users_query();
+		if(!$this->check_user_name_loose($idname)){
+			return false;	
+		}
+		$q->where->add_where_crit("name",$idname);
+		$q->limit->set_limit(1);
+		$users=$this->get_users_by_query($q);
+		if(is_array($users)){
+			foreach($users as $u){
+				return $u;	
+			}
+		}
+		return false;
+		/*
 		if(!$this->check_user_name_loose($idname)){
 			return false;	
 		}
@@ -1380,6 +1395,8 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		//echo $sql;
 	
 		return $this->load_and_create_user_by_tblitem($tblman->get_item_by_sql($sql));
+		*/
+		
 		
 	}
 
