@@ -1,7 +1,6 @@
 <?php
 //20250207
 class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
-	public $lastException;
 	function __construct($ap){
 		$this->init($ap);	
 	}
@@ -53,16 +52,12 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			// Soporte para paramQuery
 			if (is_object($sql) && method_exists($sql, 'getSQL') && method_exists($sql, 'getParamsItems')) {
 				
-				
 				$stmt = $l->prepare($sql->getSQL());
 				
 				if (!$stmt) {
 					$this->lastException = new Exception($l->error);
-					
 					return false;
 				}
-
-				
 
 				$params = $sql->getParamsItems();
 				if (!empty($params)) {
@@ -78,10 +73,13 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 					}
 
 					array_unshift($values, $types);
-					call_user_func_array([$stmt, 'bind_param'], $values);
+					$bindResult = call_user_func_array([$stmt, 'bind_param'], $values);
+					if ($bindResult === false) {
+						$this->lastException = new Exception("bind_param failed: " . $stmt->error);
+						return false;
+					}
 				}
 				if (!$stmt->execute()) {
-					
 					$this->lastException = new Exception($stmt->error);
 					return false;
 				}
@@ -115,7 +113,27 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			return false;
 		}
 
-		return $l->insert_id;
+		$insertId = $l->insert_id;
+		$affectedRows = $l->affected_rows;
+		
+		// Si insert_id es 0 pero affected_rows > 0, la inserción fue exitosa
+		// (puede pasar con tablas sin auto-increment o con ID especificado)
+		if ($insertId == 0 && $affectedRows > 0) {
+			// Retornar true para indicar éxito aunque no haya insert_id
+			return true;
+		}
+		
+		// Si insert_id es 0 y affected_rows es 0 o negativo, verificar error
+		if ($insertId == 0) {
+			// Si no hay error de MySQL, la query se ejecutó pero no insertó
+			// (ej: INSERT IGNORE con duplicate, o constraint que previene insert)
+			if ($l->errno == 0) {
+				// No hay error pero tampoco se insertó - retornar false
+				return false;
+			}
+		}
+		
+		return $insertId;
 	}
 
 
@@ -204,7 +222,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			
 			return false;	
 		}
-		$l->error;
+		return $l->error;
 		//return mysql_error($l);
 			
 	}
@@ -213,7 +231,7 @@ class mwmod_mw_db_mysqli_dbman extends mwmod_mw_db_dbman{
 			
 			return false;	
 		}
-		$l->errno;
+		return $l->errno;
 		//return mysql_errno($l);
 			
 	}

@@ -418,6 +418,24 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		return $this->get_or_create_item($dbitem);
 			
 	}
+	
+	/**
+	 * Insert item without IGNORE clause (strict mode)
+	 * @param array $data 
+	 * @return T|false
+	 */
+	function insert_item_strict($data){
+		if(!$man=$this->get_tblman()){
+			return false;	
+		}
+		
+		if(!$dbitem=$man->insert_item_strict($data)){
+			return false;	
+		}
+		
+		return $this->get_or_create_item($dbitem);
+	}
+	
 	function validate_new_item_data_sub(&$data){
 		return $data;	
 	}

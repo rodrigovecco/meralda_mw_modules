@@ -23,6 +23,7 @@ class mwmod_mw_db_paramstatement_param extends mw_apsubbaseobj{
 	function getValueTypeCod(){
 		//todo check for field data type
 		$value=$this->getValueRaw();
+		
 		if (is_int($value)) {
         	return 'i'; // Integer
 	    } elseif (is_float($value)) {
