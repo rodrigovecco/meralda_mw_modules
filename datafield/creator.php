@@ -48,7 +48,11 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 			return false;
 		}
 		foreach ($this->items as $cod=>$item){
-			$item->set_value($value[$cod]);	
+			if(array_key_exists($cod,$value)){
+				$item->set_value($value[$cod]);	
+			}else{
+				$item->set_value(null);
+			}
 		}
 	}
 	//items
