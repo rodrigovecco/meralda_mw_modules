@@ -1,9 +1,10 @@
 <?php
-
 class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 	public $items;
 	public $frm;
 	public $items_pref;
+	public $maininterface;
+	public $subinterface;
 	function __construct(&$items=array()){
 		$this->set_mainap();
 		$this->init($items);
@@ -26,7 +27,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 	}
 	/*
 	function get_js_init_code_for_frm($frm=false){
-		
 		if(is_array($this->items)){
 			foreach ($this->items as $i){
 				$r[]=$i->get_js_init_code_for_frm($frm);	
@@ -36,7 +36,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		}
 	}
 	*/
-	
 	//data
 	function set_value($value){
 		return $this->set_data($value);	
@@ -60,12 +59,10 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		}
 		$this->btns_group=new mwmod_mw_datafield_btnsgroup("_btns");
 		$this->add_item($this->btns_group);
-		
 		return $this->btns_group;
-		
 	}
-	
 	function add_btn($btn=false,$cod=false){
+		$lbl=null;
 		if($btn){
 			if(is_string($btn)){
 				$lbl=$btn;
@@ -85,7 +82,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 			$gr->add_item($btn);
 			return $btn;
 		}
-		
 	}
 	function add_cancel($url=false){
 		$lbl=$this->lng_get_msg_txt("cancel","Cancelar");	
@@ -105,7 +101,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		return $i;
 		*/
 	}
-	
 	function add_submit($lbl=false){
 		if(!$lbl){
 			$lbl=$this->lng_get_msg_txt("save","Guardar");	
@@ -118,7 +113,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		}
 		return $i;
 	}
-	
 	function add_sub_item_by_dot_cod($item,$parentdotcod=false){
 		if(!$parentdotcod){
 			return $this->add_item($item);
@@ -138,7 +132,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		if(sizeof($coda)){
 			$cod2=implode(".",$coda);	
 		}
-		
 		if(!$pitem=$this->get_item($cod1)){
 			$ni=new mwmod_mw_datafield_group($cod1);
 			$pitem=$this->add_item($ni);
@@ -151,9 +144,6 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		}else{
 			return $pitem->get_or_add_groupitem_by_dot_cod($cod2);
 		}
-		
-		
-		
 	}
 	function get_item_by_dot_cod($cod){
 		if(empty($cod)){
@@ -165,24 +155,21 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		if(sizeof($coda)){
 			$cod2=implode(".",$coda);	
 		}
-		
 		if($i=$this->get_item($cod1)){
 			if($cod2){
 				return $i->get_item_by_dot_cod($cod2);	
 			}
 			return $i;
 		}
-		
 	}
 	function get_item($cod){
 		if(empty($cod)){
 			return false;
 		}
-		if($this->items[$cod]??false){
-			return 	$this->items[$cod];
+		if(array_key_exists($cod,$this->items)){
+			return $this->items[$cod];	
 		}
 	}
-
 	function add_items($items,$setcreator=true){
 		if(!$items){
 			return false;
@@ -198,9 +185,7 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 			}
 			return $r;
 		}
-		
 	}
-
 	function add_item($item,$setcreator=true){
 		if(!$item){
 			return false;
@@ -216,24 +201,17 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 			return $this->items[$cod];
 		}
 	}
-	
-	
 	function get_html_items_names_debug(){
-		
+		$r="";
 		if(is_array($this->items)){
 			$r.="<ul>";
 			foreach ($this->items as $i){
-				
 				$r.="<li>".$i->get_html_items_names_debug()."</li>";	
 			}
 			$r.="</ul>";
 		}
-		
 		return $r;
-			
 	}
-
-	
 	//frm
 	function set_frm($frm){
 		$this->frm=$frm;
@@ -245,24 +223,17 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 		}
 		*/
 	}
-	
-	
 	//por verificar
 	function add2jsreqclasseslist(&$list){
 		if(is_array($this->items)){
-			
 			foreach ($this->items as $i){
 				$i->add2jsreqclasseslist($list);	
 			}
 			reset($this->items);
-			
 		}
-
-		
 	}
 	//js
 	function get_js_init_code_for_frm($frm=false){
-		
 		if(is_array($this->items)){
 			foreach ($this->items as $i){
 				$r[]=$i->get_js_init_code_for_frm($frm);	
@@ -271,28 +242,21 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 			return $r;
 		}
 	}
-
-	
 	//
-	
 	function get_frm_field_name_pref_for_children(){
 		return $this->items_pref;	
 	}
-	
 	function get_inputs_html(){
-	
+		$r="";
 		if(is_array($this->items)){
 			foreach ($this->items as $i){
 				$r.=$i->get_full_input_html();	
 			}
 		}
-		
 		return $r;
-		
 	}
 	function set_main_interface($maininterface){
 		$this->maininterface=$maininterface;
-			
 	}
 	function set_sub_interface($subinterface){
 		$this->subinterface=$subinterface;
@@ -309,8 +273,7 @@ class mwmod_mw_datafield_creator extends mw_apsubbaseobj{
 				return $r;	
 			}
 		}
-		return $this->mainap->get_input_template();
+		//return $this->mainap->get_input_template();
 	}
-
 }
 ?>
