@@ -15,7 +15,7 @@ class mwmod_mw_google_ui_cfg_maps extends mwmod_mw_google_ui_cfg_abs{
 		$input->set_prop("help",$this->lng_get_msg_txt("mapidhelpMSG","(opcional) Identificador de estilo de mapa personalizado. Ver https://developers.google.com/maps/documentation/javascript/get-api-key#map-id"));
 		
 		if($man=$this->getGoogleMan()){
-			if($td=$man->getJsonDataItem("maps")){
+			if($td=$man->getCfgDataItem("maps")){
 				$inputsgrdata->set_value($td->get_data());	
 			}
 		}
@@ -28,7 +28,7 @@ class mwmod_mw_google_ui_cfg_maps extends mwmod_mw_google_ui_cfg_abs{
 		}
 		if($nd=$input->get_value_as_list()){
 			if($man=$this->getGoogleMan()){
-				if($td=$man->getJsonDataItem("maps")){
+				if($td=$man->get_treedata_item("maps")){
 					$td->set_data($nd);	
 					$td->save();
 				}

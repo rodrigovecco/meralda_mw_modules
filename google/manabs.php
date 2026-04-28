@@ -8,8 +8,21 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
 		
 	}
 
+	/**
+	 * Returns the data item used by the manager to store its config blocks
+	 * (cfg, keys, maps). Override in subclasses to change the storage format.
+	 * Default: JSON files (`*.json`) under `man/google/data/`.
+	 * Pastipan override returns treedata (`*.mwtreedata`) for legacy data.
+	 *
+	 * @param string $code Sub-item code (e.g. "cfg", "keys", "maps").
+	 * @return mwmod_mw_data_tree_item|false
+	 */
+	function getCfgDataItem($code){
+		return $this->getJsonDataItem($code);
+	}
+
 	function getMapID(){
-		if($td=$this->getJsonDataItem("maps")){
+		if($td=$this->getCfgDataItem("maps")){
 			if($v=$td->get_data("mapid")){
 				return $v;	
 			};	
@@ -28,7 +41,7 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
    					$src.="&language=$lng";
    				}
    			}
-			if($td=$this->getJsonDataItem("maps")){
+			if($td=$this->getCfgDataItem("maps")){
 				if($v=$td->get_data("apikey")){
 					$src.="&key=".$v;
 				}
@@ -63,7 +76,7 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
 			
 	}
 	function get_js_src(){
-		return "https://apis.google.com/js/platform.js";	
+		return "https://accounts.google.com/gsi/client";
 	}
 
 	
@@ -71,7 +84,7 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
 		return new mwmod_mw_google_jsinit($this);	
 	}
 	function isEnabled(){
-		if(!$td=$this->getJsonDataItem("cfg")){
+		if(!$td=$this->getCfgDataItem("cfg")){
 			return false;
 		}
 		if(!$td->get_data("enabled")){
@@ -84,7 +97,7 @@ abstract class  mwmod_mw_google_manabs extends mwmod_mw_manager_baseman{
 			
 	}
 	function getAppID(){
-		if($td=$this->getJsonDataItem("keys")){
+		if($td=$this->getCfgDataItem("keys")){
 			return $td->get_data("appId")."";	
 		}
 	}

@@ -4,11 +4,16 @@ abstract class mwmod_mw_datafield_datafielabs extends mw_apsubbaseobj{
 	private $_params_man;
 	private $_allow_set_value=true;
 	public $datafields_creator;
+	public $allways_enable;
+	public $disable_if_empty_items;
+	public $disable_if_empty_parent;
+	public $enable_if_empty_items;
+	public $disabled_enable_if_empty_parent;
 	var $fix_slashes_and_quotes=false;
 	public $att=array();
 	public $placeholder;
 	public $omit_lbl=false;
-	
+	public $frm_name_pref;
 	private $_bootstrap_params;
 	public $output_as_html=false;
 	public $name;
@@ -278,7 +283,7 @@ abstract class mwmod_mw_datafield_datafielabs extends mw_apsubbaseobj{
 		$this->datafields_creator=$cr;	
 	}
 	function get_html_items_names_debug(){
-		$r.="<div>".$this->get_frm_field_name()."</div>";
+		$r="<div>".$this->get_frm_field_name()."</div>";
 		if(is_array($this->items)){
 			$r.="<ul>";
 			foreach ($this->items as $i){
@@ -391,6 +396,10 @@ abstract class mwmod_mw_datafield_datafielabs extends mw_apsubbaseobj{
 		return $jsfnc;
 			
 	}
+	/**
+	 * @param bool $inner_code 
+	 * @return mwmod_mw_datafield_js_validfnc 
+	 */
 	function set_js_validation_function($inner_code=false){
 		$fnc=new mwmod_mw_datafield_js_validfnc($inner_code);
 		return $this->add_after_init_event_to_list($fnc);

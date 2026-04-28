@@ -260,7 +260,7 @@ class  mwmod_mw_paymentapi_api_niubiz_man extends mwmod_mw_paymentapi_abs_man{
 		$data->channel="web";
 		$data->amount=$amount;
 		$data->antifraud=new stdClass();
-		$data->antifraud->clientIp=$_SERVER['REMOTE_ADDR'];//reescrita en setMerchantDefineDataStd1
+		$data->antifraud->clientIp=$_SERVER['REMOTE_ADDR'] ?? "";//reescrita en setMerchantDefineDataStd1
 		$data->antifraud->merchantDefineData=new stdClass();
 		$data->antifraud->merchantDefineData->MMD4="web";//correo del cliente
 		$data->antifraud->merchantDefineData->MDD21="0";

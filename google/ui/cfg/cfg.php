@@ -13,7 +13,7 @@ class mwmod_mw_google_ui_cfg_cfg extends mwmod_mw_google_ui_cfg_abs{
 		
 		
 		if($man=$this->getGoogleMan()){
-			if($td=$man->getJsonDataItem("cfg")){
+			if($td=$man->getCfgDataItem("cfg")){
 				$inputsgrdata->set_value($td->get_data());	
 			}
 		}
@@ -25,7 +25,7 @@ class mwmod_mw_google_ui_cfg_cfg extends mwmod_mw_google_ui_cfg_abs{
 		}
 		if($nd=$input->get_value_as_list()){
 			if($man=$this->getGoogleMan()){
-				if($td=$man->getJsonDataItem("cfg")){
+				if($td=$man->getCfgDataItem("cfg")){
 					$td->set_data($nd);	
 					$td->save();
 				}
