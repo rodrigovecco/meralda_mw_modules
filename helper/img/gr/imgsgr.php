@@ -10,6 +10,7 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 	private $_sub_path_man;
 	var $uploaded_filename;
 	var $default_item_cod="def";
+	var $default_ref_cod;
 	var $_temp_subpath_man;
 	public $mainSrcImgItem;
 	var $uploaded_cfg=array();
@@ -56,6 +57,42 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		$imgman->delete_all_files();
 		return $r;
 	
+	}
+	
+	function update_images_from_ref($refcod=false,$onlyMissing=true){
+		if(!$refcod){
+			$refcod=$this->default_ref_cod;
+		}
+		if(!$refcod){
+			return false;
+		}
+		if(!$ref=$this->get_item_active($refcod)){
+			return false;
+		}
+		if(!$src=$ref->get_file_full_path_if_ok()){
+			return false;
+		}
+		if(!$items=$this->get_items()){
+			return false;
+		}
+		$r=false;
+		foreach($items as $cod=>$item){
+			if($cod==$refcod){
+				continue;
+			}
+			if($onlyMissing){
+				if($item->get_file_full_path_if_ok()){
+					continue;
+				}
+			}
+			if(!$subman=$item->new_img_subman()){
+				continue;
+			}
+			if($n=$subman->copy_from_file($src)){
+				$r=$n;
+			}
+		}
+		return $r;
 	}
 	
 	function check_upload_new_img_invalid_attemp($input,&$info=array(),&$invaliduploadattempt=false ){
