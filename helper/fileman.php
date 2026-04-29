@@ -452,17 +452,17 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 			return false;	
 		}
 		$dir=$mainpath."/".$subdir;
-		if(is_dir($dir)){
+		if(is_dir($dir)||is_link($dir)){
 			return true;	
 		}
-		if(!is_dir($mainpath)){
+		if(!is_dir($mainpath)&&!is_link($mainpath)){
 			return true;	
 		}
 		$l=explode("/",$subdir);
 		$nd=$mainpath;
 		foreach ($l as $s){
 			$nd.="/".$s;
-			if(!is_dir($nd)){
+			if(!is_dir($nd)&&!is_link($nd)){
 				if (!@mkdir($nd,$chmod)){
 					return false;
 				}
@@ -495,7 +495,7 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		if(!is_string($dir)){
 			return false;
 		}
-		if(is_dir($dir)){
+		if(is_dir($dir)||is_link($dir)){
 			return true;	
 		}
 		return $this->_create_dir($dir,$chmod);
