@@ -61,7 +61,7 @@ class mwmod_mw_culqi_client extends mwmod_mw_culqi_client_abs{
 			return false;	
 		}
 		try {
-			$ch=$culqi->Refunds->create($params);
+			$ch=self::normalizeCulqiResult($culqi->Refunds->create($params));
 		} catch (Exception $e) {
 			$this->culqiError=$e;
 			return false;
@@ -86,7 +86,7 @@ class mwmod_mw_culqi_client extends mwmod_mw_culqi_client_abs{
 			return false;	
 		}
 		try {
-			$ch=$culqi->Refunds->create($params);
+			$ch=self::normalizeCulqiResult($culqi->Refunds->create($params));
 		} catch (Exception $e) {
 			$this->culqiError=$e;
 			return false;
@@ -102,7 +102,13 @@ class mwmod_mw_culqi_client extends mwmod_mw_culqi_client_abs{
 			return false;	
 		}
 		try {
-			$ch=$culqi->Charges->getCapture($id);
+			// COMPAT culqi-php 2.0.x: el método se llama 'capture' (antes 'getCapture').
+			if(method_exists($culqi->Charges,'capture')){
+				$raw=$culqi->Charges->capture($id);
+			}else{
+				$raw=$culqi->Charges->getCapture($id);
+			}
+			$ch=self::normalizeCulqiResult($raw);
 		} catch (Exception $e) {
 			$this->culqiError=$e;
 			return false;
@@ -119,7 +125,7 @@ class mwmod_mw_culqi_client extends mwmod_mw_culqi_client_abs{
 			return false;	
 		}
 		try {
-			$ch=$culqi->Charges->get($id);
+			$ch=self::normalizeCulqiResult($culqi->Charges->get($id));
 		} catch (Exception $e) {
 			$this->culqiError=$e;
 			return false;
@@ -145,7 +151,7 @@ class mwmod_mw_culqi_client extends mwmod_mw_culqi_client_abs{
 			"token_id" => $token
 		);
 		try {
-			$ch=$culqi->Cards->create($params);
+			$ch=self::normalizeCulqiResult($culqi->Cards->create($params));
 		} catch (Exception $e) {
 			$this->createCardError=$e;
 			if($e){

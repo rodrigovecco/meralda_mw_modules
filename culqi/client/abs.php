@@ -1,5 +1,28 @@
 <?php
 abstract class mwmod_mw_culqi_client_abs extends mw_apsubbaseobj{
+	/**
+	 * COMPAT culqi-php >= 2.0.x: los métodos de Charges/Cards/Customers/Refunds
+	 * envuelven internamente try/catch y, ante error, devuelven el mensaje
+	 * (string) en lugar de lanzar excepción. Este helper normaliza el resultado:
+	 * si no es un objeto, lanza una Exception con el cuerpo de error original
+	 * (que en general es un JSON con merchant_message, user_message, etc.).
+	 * Así el resto del código —escrito para la versión vieja que sí lanzaba—
+	 * sigue funcionando sin cambios estructurales.
+	 *
+	 * @param mixed $result Lo retornado por la llamada a la API.
+	 * @return object
+	 * @throws Exception
+	 */
+	public static function normalizeCulqiResult($result){
+		if(is_object($result)){
+			return $result;
+		}
+		$rawErr=is_string($result)?$result:json_encode($result);
+		if(!$rawErr){
+			$rawErr='{"user_message":"Respuesta vacía de la pasarela de pago."}';
+		}
+		throw new Exception($rawErr);
+	}
 	private $user;
 	private $testMode=false;
 	public $mustCreate=false;
@@ -98,7 +121,7 @@ abstract class mwmod_mw_culqi_client_abs extends mw_apsubbaseobj{
 			return false;	
 		}
 		try {
-			$ch=$culqi->Customers->get($clid);
+			$ch=self::normalizeCulqiResult($culqi->Customers->get($clid));
 		} catch (Exception $e) {
 			$this->error=$e;
 			return false;
@@ -125,7 +148,7 @@ abstract class mwmod_mw_culqi_client_abs extends mw_apsubbaseobj{
 		}
 		
 		try {
-			$ch=$culqi->Customers->create($data);
+			$ch=self::normalizeCulqiResult($culqi->Customers->create($data));
 		} catch (Exception $e) {
 			$this->error=$e;
 			return false;

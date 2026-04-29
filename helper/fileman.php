@@ -441,8 +441,13 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		if($dir=="/"){
 			return false;	
 		}
-		if(strpos($dir,".")!==false){
-			return false;	
+		// reject path traversal: any "." or ".." segment is invalid,
+		// but allow dots inside segment names (e.g. "site.com", "pp2026temp.pp")
+		$segs=explode("/",$dir);
+		foreach($segs as $s){
+			if($s==="."||$s===".."){
+				return false;
+			}
 		}
 		return $dir;
 		
@@ -452,17 +457,17 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 			return false;	
 		}
 		$dir=$mainpath."/".$subdir;
-		if(is_dir($dir)){
+		if(is_dir($dir)||is_link($dir)){
 			return true;	
 		}
-		if(!is_dir($mainpath)){
+		if(!is_dir($mainpath)&&!is_link($mainpath)){
 			return true;	
 		}
 		$l=explode("/",$subdir);
 		$nd=$mainpath;
 		foreach ($l as $s){
 			$nd.="/".$s;
-			if(!is_dir($nd)){
+			if(!is_dir($nd)&&!is_link($nd)){
 				if (!@mkdir($nd,$chmod)){
 					return false;
 				}
@@ -495,7 +500,7 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		if(!is_string($dir)){
 			return false;
 		}
-		if(is_dir($dir)){
+		if(is_dir($dir)||is_link($dir)){
 			return true;	
 		}
 		return $this->_create_dir($dir,$chmod);
@@ -707,7 +712,8 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 	function format_bytes($bytes, $decimals = 2) {
 		$units = ['B', 'KB', 'MB', 'GB'];
 		$factor = floor((strlen($bytes) - 1) / 3);
-		return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . ' ' . $units[$factor];
+		$f=intval($factor);
+		return sprintf("%.{$decimals}f", $bytes / pow(1024, $f)) . ' ' . $units[$f];
 	}
 	function get_max_upload_size_formatted() {
 		$max_size = $this->get_max_upload_size_bytes();

@@ -208,23 +208,36 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 			
 	}
+	public $debugLog=array();
 	function copy_from_file($srcfile){
-		
+		$this->debugLog=array();
+		$this->debugLog[]="copy_from_file src=$srcfile";
 		if(!$this->set_src($srcfile)){
+			$this->debugLog[]="set_src failed";
 			return false;	
 		}
 		
 		if(!$pinfo=$this->set_proccess_info_from_file($srcfile)){
+			$this->debugLog[]="set_proccess_info_from_file failed";
 			//return $filename;
 			return false;
 		}
 		if(!$path=$this->img_path){
+			$this->debugLog[]="no img_path";
 			return false;	
+		}
+		$this->debugLog[]="dest path=$path";
+		if(!is_dir($path)){
+			$this->debugLog[]="dest path is not a directory";
+		}elseif(!is_writable($path)){
+			$this->debugLog[]="dest path NOT writable";
 		}
 		$this->delete();
 		if(!$new=$this->create_new_img_file(basename($srcfile),$path)){
+			$this->debugLog[]="create_new_img_file failed";
 			return false;	
 		}
+		$this->debugLog[]="created=$new";
 		return $new;
 			
 	}
@@ -319,27 +332,32 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 	
 	}
 	function create_new_img_file($filename,$path){
-		
+		$this->debugLog[]="create_new_img_file filename=$filename path=$path";
 		if(!$filename){
+			$this->debugLog[]="create_new_img_file: no filename";
 			return false;	
 		}
 		if(!$filename=basename($filename)){
+			$this->debugLog[]="create_new_img_file: basename failed";
 			return false;
 		}
 		if(!$dest=$this->create_new_img()){
-		
+			$this->debugLog[]="create_new_img_file: create_new_img failed";
 			return false;	
 		}
 		if(!$srcdata=$this->get_src_data()){
+			$this->debugLog[]="create_new_img_file: no src_data";
 			return false;	
 		}
 		
 		$mode=$srcdata["mode"];
 		if(!$fm=$this->get_filemanager()){
+			$this->debugLog[]="create_new_img_file: no filemanager";
 			return false;	
 		}
 		
 		if(!$fnamenoext=$fm->get_url_secure_filename_noext($filename)){
+			$this->debugLog[]="create_new_img_file: get_url_secure_filename_noext failed for $filename";
 			return false;	
 		}
 		$new_filename=false;
@@ -351,14 +369,16 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}elseif($mode=="jpg"){
 			$new_filename=$fnamenoext.".jpg";
 		}else{
+			$this->debugLog[]="create_new_img_file: unknown mode=$mode";
 			return false;	
 		}
 		
-		
 		if(!$fm->create_dir($path)){
+			$this->debugLog[]="create_new_img_file: create_dir failed for path=$path";
 			return false;	
 		}
 		$new_file=$path."/".$new_filename;
+		$this->debugLog[]="create_new_img_file: writing $new_file";
 		if(file_exists($new_file)){
 			unlink($new_file);	
 		}
@@ -370,8 +390,14 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}elseif($mode=="jpg"){
 			imagejpeg($dest,$new_file,100);
 		}else{
+			$this->debugLog[]="create_new_img_file: unknown mode on save=$mode";
 			return false;	
 		}
+		if(!file_exists($new_file)){
+			$this->debugLog[]="create_new_img_file: file not created after imagejpeg/gif/png";
+			return false;
+		}
+		$this->debugLog[]="create_new_img_file: ok=$new_filename";
 		return $new_filename;
 	
 

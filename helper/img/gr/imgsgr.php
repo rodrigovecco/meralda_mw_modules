@@ -10,8 +10,10 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 	private $_sub_path_man;
 	var $uploaded_filename;
 	var $default_item_cod="def";
+	var $default_ref_cod;
 	var $_temp_subpath_man;
 	public $mainSrcImgItem;
+	public $debugLog=array();
 	var $uploaded_cfg=array();
 	//var $uploaded_cfg=array("width"=>array("dim"=>1500,"mode"=>4,),"height"=>array("dim"=>1500,"mode"=>4,));
 	function __construct(){
@@ -56,6 +58,60 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		$imgman->delete_all_files();
 		return $r;
 	
+	}
+	
+	function update_images_from_ref($refcod=false,$onlyMissing=true){
+		$this->debugLog=array();
+		if(!$refcod){
+			$refcod=$this->default_ref_cod;
+		}
+		if(!$refcod){
+			$this->debugLog[]="no refcod";
+			return false;
+		}
+		$this->debugLog[]="refcod=$refcod";
+		if(!$ref=$this->get_item_active($refcod)){
+			$this->debugLog[]="ref item not active or not found";
+			return false;
+		}
+		if(!$src=$ref->get_file_full_path_if_ok()){
+			$this->debugLog[]="ref file missing";
+			return false;
+		}
+		$this->debugLog[]="ref file=$src";
+		if(!$items=$this->get_items()){
+			$this->debugLog[]="no items";
+			return false;
+		}
+		$r=false;
+		foreach($items as $cod=>$item){
+			if($cod==$refcod){
+				$this->debugLog[]="$cod: skip (is ref)";
+				continue;
+			}
+			if($onlyMissing){
+				if($item->get_file_full_path_if_ok()){
+					$this->debugLog[]="$cod: skip (already exists)";
+					continue;
+				}
+			}
+			if(!$subman=$item->new_img_subman()){
+				$this->debugLog[]="$cod: no subman";
+				continue;
+			}
+			if($n=$subman->copy_from_file($src)){
+				$this->debugLog[]="$cod: created $n";
+				$r=$n;
+			}else{
+				$this->debugLog[]="$cod: copy_from_file failed";
+				if(is_array($subman->debugLog)){
+					foreach($subman->debugLog as $line){
+						$this->debugLog[]="$cod:   $line";
+					}
+				}
+			}
+		}
+		return $r;
 	}
 	
 	function check_upload_new_img_invalid_attemp($input,&$info=array(),&$invaliduploadattempt=false ){
