@@ -441,8 +441,13 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		if($dir=="/"){
 			return false;	
 		}
-		if(strpos($dir,".")!==false){
-			return false;	
+		// reject path traversal: any "." or ".." segment is invalid,
+		// but allow dots inside segment names (e.g. "site.com", "pp2026temp.pp")
+		$segs=explode("/",$dir);
+		foreach($segs as $s){
+			if($s==="."||$s===".."){
+				return false;
+			}
 		}
 		return $dir;
 		
