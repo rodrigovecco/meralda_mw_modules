@@ -208,23 +208,36 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 			
 	}
+	public $debugLog=array();
 	function copy_from_file($srcfile){
-		
+		$this->debugLog=array();
+		$this->debugLog[]="copy_from_file src=$srcfile";
 		if(!$this->set_src($srcfile)){
+			$this->debugLog[]="set_src failed";
 			return false;	
 		}
 		
 		if(!$pinfo=$this->set_proccess_info_from_file($srcfile)){
+			$this->debugLog[]="set_proccess_info_from_file failed";
 			//return $filename;
 			return false;
 		}
 		if(!$path=$this->img_path){
+			$this->debugLog[]="no img_path";
 			return false;	
+		}
+		$this->debugLog[]="dest path=$path";
+		if(!is_dir($path)){
+			$this->debugLog[]="dest path is not a directory";
+		}elseif(!is_writable($path)){
+			$this->debugLog[]="dest path NOT writable";
 		}
 		$this->delete();
 		if(!$new=$this->create_new_img_file(basename($srcfile),$path)){
+			$this->debugLog[]="create_new_img_file failed";
 			return false;	
 		}
+		$this->debugLog[]="created=$new";
 		return $new;
 			
 	}

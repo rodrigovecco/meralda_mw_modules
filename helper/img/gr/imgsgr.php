@@ -104,6 +104,11 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 				$r=$n;
 			}else{
 				$this->debugLog[]="$cod: copy_from_file failed";
+				if(is_array($subman->debugLog)){
+					foreach($subman->debugLog as $line){
+						$this->debugLog[]="$cod:   $line";
+					}
+				}
 			}
 		}
 		return $r;
