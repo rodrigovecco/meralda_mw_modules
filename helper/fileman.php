@@ -707,7 +707,8 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 	function format_bytes($bytes, $decimals = 2) {
 		$units = ['B', 'KB', 'MB', 'GB'];
 		$factor = floor((strlen($bytes) - 1) / 3);
-		return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . ' ' . $units[$factor];
+		$f=intval($factor);
+		return sprintf("%.{$decimals}f", $bytes / pow(1024, $f)) . ' ' . $units[$f];
 	}
 	function get_max_upload_size_formatted() {
 		$max_size = $this->get_max_upload_size_bytes();
