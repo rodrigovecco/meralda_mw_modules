@@ -11,6 +11,10 @@ class  mwmod_mw_paymentapi_api_culqi_api extends mwmod_mw_paymentapi_abs_api{
 
 	}
 	function createAutoloaders(){
+		$exmodpath=$this->mainap->get_sub_path("modulesext","system");
+		//echo $exmodpath."<br>";
+		require_once($exmodpath."/culqi/autoload.php");
+		/*
 		$autoloader=mw_get_autoload_manager();
 		
 
@@ -24,6 +28,7 @@ class  mwmod_mw_paymentapi_api_culqi_api extends mwmod_mw_paymentapi_abs_api{
 						"Culqi","Culqi"
 						);
 		}
+						*/
 	}
 	function createCulqi(){
 		if(!$key=$this->man->get_key_item("privatekey")->get_data()){

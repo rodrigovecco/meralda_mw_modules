@@ -76,7 +76,9 @@ class mwmod_mw_bootstrap_html_specialelem_alert extends mwmod_mw_bootstrap_html_
 	function updateCurrentJsNotify(){
 		if($this->jsNotify){
 			$this->updateJsNotify($this->jsNotify);
+			return true;
 		}
+		return false;
 	}
 	function disableAlert($enabled=false){
 		$this->set_visible($enabled);

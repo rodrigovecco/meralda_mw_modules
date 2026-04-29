@@ -1,4 +1,5 @@
 <?php
+/** @property-read mwmod_mw_bootstrap_html_specialelem_alert $alert */
 abstract class mwmod_mw_helper_output_abs extends mw_baseobj{
 	private $alert;
 	private $js;
