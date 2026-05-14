@@ -1,11 +1,11 @@
 <?php
-abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_ui2_def_main_admin{
+// Note: for the new look & feel, extend from mwmod_mw_ui2_main
+// instead of mwmod_mw_uitemplates_sbadmin_main (and rename this class to
+// mwmod_mw_ui2_def_main_def). The ui2 variant is also optimized to make
+// customization easier.
+abstract class mwmod_mw_ui_def_main_def extends mwmod_mw_uitemplates_sbadmin_main{
 	function create_subinterface_welcome(){
 		$si= new mwmod_mw_ui_def_welcome("welcome",$this);
-		return $si;
-	}
-	function create_subinterface_system(){
-		$si= new mwmod_mw_ui_system_main("system",$this);
 		return $si;
 	}
 	function create_subinterface_uidebug(){

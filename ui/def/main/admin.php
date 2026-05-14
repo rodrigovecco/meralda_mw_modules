@@ -1,4 +1,8 @@
 <?php
+// Note: for the new look & feel, extend from mwmod_mw_ui2_def_main_def
+// instead of mwmod_mw_ui_def_main_def (and rename this class to
+// mwmod_mw_ui2_def_main_admin). The ui2 variant is also optimized to make
+// customization easier.
 class mwmod_mw_ui_def_main_admin extends mwmod_mw_ui_def_main_def{
 	function __construct($ap){
 		$this->set_mainap($ap);	
@@ -10,6 +14,10 @@ class mwmod_mw_ui_def_main_admin extends mwmod_mw_ui_def_main_def{
 	}
 	function create_subinterface_cfg(){
 		$si= new mwmod_mw_ui_def_cfg("cfg",$this);
+		return $si;
+	}
+	function create_subinterface_system(){
+		$si= new mwmod_mw_ui_system_main("system",$this);
 		return $si;
 	}
 	function admin_user_ok(){

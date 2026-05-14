@@ -1029,7 +1029,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			
 			if($this->login_session_token_enabled()){
 				if(!$this->login_session_token_check($_REQUEST["login_token"]??null)){
-					$this->session_register_login_fail($this->lng_get_msg_txt("invalid_session_token","Clave de control se sesión no válida"));	
+					$this->session_register_login_fail($this->lng_get_msg_txt("invalid_session_token","Clave de control de sesión no válida"));	
 					return false;
 				}
 			}

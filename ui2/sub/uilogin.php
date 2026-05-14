@@ -187,6 +187,7 @@ class mwmod_mw_ui2_sub_uilogin extends mwmod_mw_uitemplates_sbadmin_sub_abs {
 		$panel->add_cont($panel_head);
 		
 		$fixcontent = new mwmod_mw_data_fixcontent_item("login/panelhead.html");
+		
 		if ($fixcontentHtml = $fixcontent->getContentHTML()) {
 			$panel_head->add_cont($fixcontentHtml);
 		} else {

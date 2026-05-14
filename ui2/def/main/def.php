@@ -14,10 +14,6 @@ abstract class mwmod_mw_ui2_def_main_def extends mwmod_mw_ui2_main {
 		$si= new mwmod_mw_ui_def_welcome("welcome",$this);
 		return $si;
 	}
-	function create_subinterface_system(){
-		$si= new mwmod_mw_ui_system_main("system",$this);
-		return $si;
-	}
 	function create_subinterface_uidebug(){
 		$si= new mwmod_mw_ui_debug_uidebug("uidebug",$this);
 		return $si;
