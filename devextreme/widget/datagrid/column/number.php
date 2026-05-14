@@ -10,6 +10,13 @@ class mwmod_mw_devextreme_widget_datagrid_column_number extends mwmod_mw_devextr
 	function get_value($val){
 		return $val+0;
 	}
+	function setFixedFormat($precision=2){
+		$this->js_data->set_prop("format.type","fixedPoint");
+		$this->js_data->set_prop("format.precision",$precision);
+
+
+		return $this;
+	}
 	
 	
 }
