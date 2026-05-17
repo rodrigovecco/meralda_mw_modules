@@ -1,8 +1,9 @@
 <?php
 /**
  *
- * @property-read mwmod_mw_users_jwt_man   $jwtMan             Gestor JWT (si la app lo provee; de lo contrario false)
- * @property-read mwmod_mw_util_itemsbycod       $usersList          Lista ligera de usuarios (id => data) para selects/UI
+ * @property-read mwmod_mw_users_jwt_man          $jwtMan         Gestor JWT (si la app lo provee; de lo contrario false)
+ * @property-read mwmod_mw_users_apitoken_man      $apitokenMan    Gestor de API tokens de usuario
+ * @property-read mwmod_mw_util_itemsbycod         $usersList      Lista ligera de usuarios (id => data) para selects/UI
  * @property-read mwmod_mw_users_tokens_man $tokensMan               Gestor de tokens transitorios (puede ser false si no se implementa)
  * @property-read string                         $manRelPathRoot     Prefijo de rutas del manager (por defecto "users")
  * @property-read string                         $userRelPath        Prefijo de rutas del usuario (por defecto "user")
@@ -62,10 +63,17 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $usersList;
 
 	private $jwtMan;
+	private $apitokenMan;
+	/** @var mwmod_mw_users_apitoken_item|null Active API token for the current service request */
+	private $currentApiToken = null;
 
 	function createJwtMan(){
 		//return new mwmod_mw_users_jwt_access($this);
 		return false;	
+	}
+
+	function createApitokenMan(){
+		return new mwmod_mw_users_apitoken_man($this->mainap);
 	}
 	function createRolsAndPermissions(){
 		//create roles and permissions
@@ -78,6 +86,37 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			$this->jwtMan=$this->createJwtMan();
 		}
 		return $this->jwtMan;
+	}
+	final function __get_priv_apitokenMan(){
+		if(!isset($this->apitokenMan)){
+			$this->apitokenMan=$this->createApitokenMan();
+		}
+		return $this->apitokenMan;
+	}
+	/** @return mwmod_mw_users_apitoken_man|false */
+	final function getApitokenMan(){
+		return $this->__get_priv_apitokenMan();
+	}
+
+	// --------------------------------------------------------
+	// API token session binding
+	// --------------------------------------------------------
+
+	/**
+	 * Bind an API token to this request. Called by serviceauth after validation.
+	 * Subsequent allow() calls will intersect user permissions with token permissions.
+	 * @param mwmod_mw_users_apitoken_item $tokenItem
+	 */
+	final function setCurrentApiToken($tokenItem){
+		$this->currentApiToken = $tokenItem;
+	}
+	/** @return mwmod_mw_users_apitoken_item|null */
+	final function getCurrentApiToken(){
+		return $this->currentApiToken;
+	}
+	/** @return bool */
+	final function isTokenBasedSession(){
+		return $this->currentApiToken !== null;
 	}
 
 
@@ -539,7 +578,15 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		$this->register_permission_request_if_enabled($action);
 		if($user=$this->get_current_user()){
-			return $user->allow($action,$params);	
+			if(!$user->allow($action,$params)){
+				return false;
+			}
+			// If authenticated via API token, also enforce token-level permission scope.
+			// Tokens can only restrict; they cannot grant permissions the user doesn't have.
+			if($this->currentApiToken !== null){
+				return $this->currentApiToken->allowsPermission($action);
+			}
+			return true;
 		}
 		return $this->allow_no_user($action,$params);
 		
