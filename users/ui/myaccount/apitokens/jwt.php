@@ -19,7 +19,7 @@ class mwmod_mw_users_ui_myaccount_apitokens_jwt extends mwmod_mw_users_ui_myacco
 		if (!$user = $this->get_current_user()) {
 			return false;
 		}
-		if (!$user->man->jwtMan) {
+		if (!$user->man->getJwtMan()) {
 			return false;
 		}
 		return $this->allow("owntoken");
@@ -40,7 +40,7 @@ class mwmod_mw_users_ui_myaccount_apitokens_jwt extends mwmod_mw_users_ui_myacco
 		$inputMan = new mwmod_mw_helper_inputvalidator_request("newdata");
 		if ($inputMan->is_req_input_ok()) {
 			if ($inputMan->get_value_by_dot_cod("confirm")) {
-				$newToken = $user->man->jwtMan->createTokenForUser($user);
+				$newToken = $user->man->getJwtMan()->createTokenForUser($user);
 			}
 		}
 
@@ -66,6 +66,20 @@ class mwmod_mw_users_ui_myaccount_apitokens_jwt extends mwmod_mw_users_ui_myacco
 			$input->setLabel($this->lng_get_msg_txt("newToken", "Nuevo token"));
 			$input->set_value($newToken);
 			$input->setReadOnly(true);
+
+			$copyBtn = $mainGr->addNewHtml("_copy");
+			$copyBtn->setCont(
+				"<button type='button' class='btn btn-sm btn-outline-secondary mt-1' " .
+				"onclick=\"(function(btn){" .
+				"var ta=btn.closest('form').querySelector('textarea[readonly]');" .
+				"if(!ta)return;" .
+				"if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(ta.value||'');}" .
+				"else{ta.focus();ta.select();document.execCommand('copy');}" .
+				"})(this);\">" .
+				"<i class='fa fa-copy me-1'></i>" .
+				htmlspecialchars($this->lng_get_msg_txt("copy", "Copiar")) .
+				"</button>"
+			);
 		}
 
 		$frm->add_submit($this->lng_get_msg_txt("generate", "Generar"));

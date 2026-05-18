@@ -7,19 +7,33 @@ class mwmod_mw_service_whoami_check extends mwmod_mw_service_user_child {
 	}
 
 	function doExecOk($path=false){
-		$perm=trim($path."");
-		if(!$perm){
+		$raw = $this->JsonRequestBodyData->get_data("permissions");
+
+		if(!$raw){
 			$this->outputJSON(array(
 				"ok"    => false,
-				"error" => "missing permission code",
+				"error" => "missing permissions",
 			));
 			return;
 		}
-		$allowed=(bool)$this->allow($perm);
+
+		// Accept both a comma-separated string and an array.
+		if(is_array($raw)){
+			$codes = $raw;
+		}else{
+			$codes = explode(",", $raw."");
+		}
+
+		$result = array();
+		foreach($codes as $code){
+			$code = trim($code);
+			if(!$code) continue;
+			$result[$code] = (bool)$this->allow($code);
+		}
+
 		$this->outputJSON(array(
-			"ok"         => true,
-			"permission" => $perm,
-			"allowed"    => $allowed,
+			"ok"          => true,
+			"permissions" => $result,
 		));
 	}
 

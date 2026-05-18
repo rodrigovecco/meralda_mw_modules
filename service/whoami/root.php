@@ -5,10 +5,15 @@ class mwmod_mw_service_whoami_root extends mwmod_mw_service_user_root {
 	 * Accepts pwdBaseToken authentication (JWT tied to user password).
 	 * Set $authApiToken = true as well to also accept independent API tokens.
 	 */
-	protected $authPwdBaseToken = true;
+	
+
 
 	function __construct($baseurl=false){
 		$this->initAsRoot($baseurl);
+		$this->authFailUnauthenticated();
+		$this->authPwdBaseToken = true;
+		$this->authApiToken = true;
+		$this->authFailSilent=false;
 	}
 
 	function isAllowed(){

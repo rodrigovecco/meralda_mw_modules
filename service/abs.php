@@ -21,6 +21,14 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 	private $JsonRequestBodyData;
 	public $errorResponseData;
 
+	/** HTTP status code sent by execNotAllowed(). Default 401. @var int */
+	public $authFailCode = 401;
+
+	/** When true, execNotAllowed() sends no body even if errorResponseData is set. @var bool */
+	public $authFailSilent = false;
+
+	function setAuthFailCode($code){ $this->authFailCode = (int) $code; }
+
 		
 	function getRequestIP(){
 		$ip=$_SERVER['REMOTE_ADDR']??"";

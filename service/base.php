@@ -4,18 +4,10 @@ abstract class  mwmod_mw_service_base extends mwmod_mw_service_abs{
 			
 	}
 	function execNotAllowed($path=false){
-		http_response_code(403);
-		if($this->errorResponseData){
+		http_response_code($this->authFailCode);
+		if(!$this->authFailSilent && $this->errorResponseData){
 			$this->outputJSON($this->errorResponseData);
 		}
-		/*
-		$this->outputJSON(array(
-			"error"=>array(
-				"msg"=>"not allowed",
-				"path"=>$path,
-			)
-		));
-		*/	
 	}
 	function isAllowed(){
 		return $this->isAllowedByParent();

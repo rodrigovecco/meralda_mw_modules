@@ -141,8 +141,13 @@ class mwmod_mw_users_ui_myaccount_apitokens_api extends mwmod_mw_users_ui_myacco
 				htmlspecialchars($newRawToken) .
 				"</code>" .
 				"<button type='button' class='btn btn-sm btn-outline-secondary' " .
-				"onclick=\"var el=document.getElementById('mw-new-token-val');" .
-				"if(navigator.clipboard){navigator.clipboard.writeText(el.textContent);}else{var r=document.createRange();r.selectNode(el);window.getSelection().removeAllRanges();window.getSelection().addRange(r);}\">" .
+				"onclick=\"(function(){" .
+				"var el=document.getElementById('mw-new-token-val');" .
+				"var txt=el.textContent||el.innerText||'';" .
+				"if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(txt);}" .
+				"else{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';" .
+				"document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);}" .
+				"})();\">" .
 				"<i class='fa fa-copy me-1'></i>" . $this->lng_get_msg_txt("copy", "Copiar") .
 				"</button></div>" .
 				'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="' .

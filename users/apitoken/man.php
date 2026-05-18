@@ -3,15 +3,18 @@
  * User API Token Manager
  * CRUD for user_api_tokens table.
  *
- * Tokens are independent of the user password and survive password changes.
- * Only the SHA-256 hash of the raw token is stored; the raw token is returned
- * once at creation time and never persisted.
+ * Tokens are signed JWTs using the same key as session JWTs but with
+ * type=apitoken. The JWT payload contains: type, sub (user_id), jti (token DB
+ * id), hash (SHA-256 of the original random bytes), permissions[], and exp
+ * (if the token has an expiry). The raw JWT is returned once at creation and
+ * never stored — only the hash is persisted.
  *
- * Permission codes are free-form strings (e.g. hbeat_read, hbeat_metrics_write)
- * but MUST exist in the user manager's permission catalog
- * (`$usersMan->get_permission_man()->get_items()`). Tokens cannot be created
- * with an empty scope. The super admin always passes all checks regardless of
- * token scope.
+ * Validation (findActiveByJwt) verifies the JWT signature, then does a single
+ * DB lookup by primary key (jti), then cross-checks hash, user_id, and
+ * permissions between JWT and DB. Any mismatch is rejected.
+ *
+ * Permission codes MUST exist in the user manager's permission catalog.
+ * Tokens cannot be created with an empty scope.
  *
  * @extends mwmod_mw_manager_man<mwmod_mw_users_apitoken_item>
  */
@@ -110,7 +113,26 @@ class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 		if (!$item) {
 			return false;
 		}
-		return ["token" => $rawToken, "item" => $item];
+
+		// Sign a JWT that embeds the token identity, hash, and permissions.
+		// The JWT is the bearer credential; the raw random bytes are discarded.
+		if (!$jwtMan = $this->usersMan->getJwtMan()) {
+			return false;
+		}
+		$jwtPayload = [
+			"type"        => "apitoken",
+			"sub"         => (int) $userId,
+			"jti"         => $item->get_id(),
+			"hash"        => $hash,
+			"permissions" => $permissions,
+		];
+		if ($expiresAt !== null) {
+			$jwtPayload["exp"] = strtotime($expiresAt);
+		}
+		if (!$jwt = $jwtMan->createToken($jwtPayload)) {
+			return false;
+		}
+		return ["token" => $jwt, "item" => $item];
 	}
 
 	// ============================================
@@ -118,34 +140,74 @@ class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 	// ============================================
 
 	/**
-	 * Find an active, non-expired token by its raw (unhashed) value.
-	 * Updates last_used_at on hit.
+	 * Find an active, non-expired token from a signed API-token JWT.
 	 *
-	 * @param string $rawToken
+	 * Steps:
+	 *   1. Verify JWT signature (no DB hit).
+	 *   2. Confirm type=apitoken (rejects session JWTs).
+	 *   3. Single DB lookup by primary key (jti claim).
+	 *   4. Cross-verify user_id, hash, and permissions between JWT and DB.
+	 *
+	 * @param string $jwtToken
 	 * @return mwmod_mw_users_apitoken_item|false
 	 */
-	function findActiveByRawToken($rawToken) {
-		if (!$rawToken || !is_string($rawToken)) {
+	function findActiveByJwt($jwtToken) {
+		if (!$jwtToken || !is_string($jwtToken)) {
 			return false;
 		}
-		$hash = hash("sha256", $rawToken);
-
-		if (!$tbl = $this->get_tblman()) {
-			return false;
-		}
-		if (!$query = $tbl->new_query()) {
-			return false;
-		}
-		$query->where->add_where_crit("token_hash", $hash);
-		$query->where->add_where_crit("active", 1);
-		$query->where->add_where("(expires_at IS NULL OR expires_at > NOW())");
-		$row = $query->get_one_row_result();
-		if (!$row) {
+		if (!$jwtMan = $this->usersMan->getJwtMan()) {
 			return false;
 		}
 
-		$item = $this->get_item($row["id"]);
+		// Verify signature and decode — also checks exp claim if present.
+		if (!$payload = $jwtMan->validateToken($jwtToken)) {
+			return false;
+		}
+
+		// Reject session JWTs routed here by mistake.
+		if (($payload["type"] ?? null) !== "apitoken") {
+			return false;
+		}
+
+		$tokenId    = $payload["jti"]         ?? null;
+		$userId     = $payload["sub"]         ?? null;
+		$hash       = $payload["hash"]        ?? null;
+		$jwtPerms   = $payload["permissions"] ?? null;
+
+		if (!$tokenId || !$userId || !$hash || !is_array($jwtPerms)) {
+			return false;
+		}
+
+		// Single DB lookup by primary key.
+		$item = $this->get_item((int) $tokenId);
 		if (!$item) {
+			return false;
+		}
+
+		// DB-side revocation and expiry check (authoritative).
+		if (!$item->isActive()) {
+			return false;
+		}
+		if ($exp = $item->getExpiresAt()) {
+			if (strtotime($exp) <= time()) {
+				return false;
+			}
+		}
+
+		// Cross-verify JWT claims against DB values.
+		if ($item->getUserId() !== (int) $userId) {
+			return false;
+		}
+		if ($item->getTokenHash() !== $hash) {
+			return false;
+		}
+
+		// Permissions must match exactly: protects against stale JWTs after
+		// a scope change in the DB.
+		$dbPerms = $item->getPermissions();
+		sort($dbPerms);
+		sort($jwtPerms);
+		if ($dbPerms !== $jwtPerms) {
 			return false;
 		}
 

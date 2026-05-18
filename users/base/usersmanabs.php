@@ -885,6 +885,25 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		
 		return $r;
 	}
+
+	/**
+	 * Log in a user in service mode and bind an API token to this request.
+	 * Equivalent of login_user_service_mode() for API token authentication.
+	 * Sets authMethod='token' so allow() will intersect with the token scope.
+	 *
+	 * @param mwmod_mw_users_user            $user
+	 * @param mwmod_mw_users_apitoken_item   $tokenItem
+	 * @return mwmod_mw_users_user|false
+	 */
+	function login_user_api_token_mode($user, $tokenItem){
+		$this->ServiceMode = true;
+		$r = $this->login_user($user);
+		if($r){
+			$this->setCurrentApiToken($tokenItem);
+		}
+		return $r;
+	}
+
 	function login_user($user){
 		$this->unset_currentuser();
 		if(!$user->can_login()){
