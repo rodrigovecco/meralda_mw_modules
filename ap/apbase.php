@@ -43,6 +43,23 @@ class mwmod_mw_ap_apbase  extends mwmod_mw_ap_apabs{
 		$man=new mwmod_mw_db_migrations_man($this);
 		return $man;
 	}
+
+	/**
+	 * Override in app subclasses to register additional migration modules.
+	 * Called lazily the first time the migration manager needs the module list.
+	 *
+	 * Example:
+	 *   function registerDBMigrationModules($man) {
+	 *       parent::registerDBMigrationModules($man);
+	 *       $man->registerModule("digitalsales", "modules/digitalsales/db/migrations");
+	 *       $man->registerModule("myapp",        "app/db/migrations");
+	 *   }
+	 *
+	 * @param mwmod_mw_db_migrations_man $man
+	 */
+	function registerDBMigrationModules($man) {
+		// Base: no extra modules. Override in your app class.
+	}
 	
 	function create_submanager_captcha(){
 		
