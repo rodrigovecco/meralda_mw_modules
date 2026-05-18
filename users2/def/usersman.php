@@ -30,4 +30,8 @@ class mwmod_mw_users2_def_usersman extends mwmod_mw_users2_usersmanabs {
         $man->set_msg_enabled("user_reset_pass_request");
         return $man;
     }
+
+    public function createJwtMan() {
+        return new mwmod_mw_users_jwt_access($this);
+    }
 }

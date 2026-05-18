@@ -7,16 +7,26 @@
  * Only the SHA-256 hash of the raw token is stored; the raw token is returned
  * once at creation time and never persisted.
  *
- * Permission codes are free-form strings (e.g. hbeat_read, hbeat_metrics_write).
- * When permissions_json is NULL the token imposes no additional restriction.
- * The super admin always passes all checks regardless of token scope.
+ * Permission codes are free-form strings (e.g. hbeat_read, hbeat_metrics_write)
+ * but MUST exist in the user manager's permission catalog
+ * (`$usersMan->get_permission_man()->get_items()`). Tokens cannot be created
+ * with an empty scope. The super admin always passes all checks regardless of
+ * token scope.
  *
  * @extends mwmod_mw_manager_man<mwmod_mw_users_apitoken_item>
  */
 class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 
-	function __construct($mainap) {
-		$this->init("user_api_tokens", $mainap, "user_api_tokens");
+	/** @var mwmod_mw_users_base_usersmanabs */
+	private $usersMan;
+
+	function __construct($usersMan) {
+		$this->usersMan = $usersMan;
+		$this->init("user_api_tokens", $usersMan->mainap, "user_api_tokens");
+	}
+
+	final function __get_priv_usersMan(){
+		return $this->usersMan;
 	}
 
 	/**
@@ -39,27 +49,57 @@ class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 	 * Generate a new API token and persist it.
 	 * Returns an array with the plain-text token (show once) and the saved item.
 	 *
+	 * Security: permissions are MANDATORY. An empty list is rejected; tokens
+	 * must always declare an explicit scope.
+	 *
 	 * @param int      $userId
 	 * @param string   $label
-	 * @param string[] $permissions   Array of permission code strings. Empty array or
-	 *                                omit for no restriction (NULL stored in DB).
+	 * @param string[] $permissions   Non-empty array of permission code strings.
 	 * @param int|null $expiresInDays NULL = never expires
 	 * @return array{token: string, item: mwmod_mw_users_apitoken_item}|false
 	 */
 	function createToken($userId, $label, $permissions = [], $expiresInDays = null) {
+		// Reject tokens without an explicit permission scope.
+		if (!is_array($permissions) || empty($permissions)) {
+			return false;
+		}
+
+		// Validate every requested code against the declared permission catalog
+		// so callers cannot smuggle arbitrary strings into the scope.
+		if (!$permissionsMan = $this->usersMan->get_permission_man()) {
+			return false;
+		}
+		$validCodes = [];
+		if ($declared = $permissionsMan->get_items()) {
+			foreach ($declared as $perm) {
+				$validCodes[$perm->get_code()] = true;
+			}
+		}
+		if (empty($validCodes)) {
+			return false;
+		}
+		$clean = [];
+		foreach ($permissions as $code) {
+			if (!is_string($code) || $code === "") {
+				return false;
+			}
+			if (!isset($validCodes[$code])) {
+				return false;
+			}
+			$clean[$code] = true;
+		}
+		$permissions = array_keys($clean);
+
 		$rawToken = bin2hex(random_bytes(32));
 		$hash     = hash("sha256", $rawToken);
 
-		$permJson = (!empty($permissions)) ? json_encode(array_values($permissions)) : null;
+		$permJson = json_encode(array_values($permissions));
 		$expiresAt = null;
 		if ($expiresInDays !== null && $expiresInDays > 0) {
 			$expiresAt = date("Y-m-d H:i:s", strtotime("+" . (int) $expiresInDays . " days"));
 		}
 
-		if (!$tbl = $this->get_tblman()) {
-			return false;
-		}
-		$newId = $tbl->insert_item([
+		$item = $this->insert_item([
 			"user_id"          => (int) $userId,
 			"token_hash"       => $hash,
 			"label"            => $label,
@@ -67,10 +107,6 @@ class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 			"active"           => 1,
 			"expires_at"       => $expiresAt,
 		]);
-		if (!$newId) {
-			return false;
-		}
-		$item = $this->get_item($newId);
 		if (!$item) {
 			return false;
 		}
@@ -97,14 +133,13 @@ class mwmod_mw_users_apitoken_man extends mwmod_mw_manager_man {
 		if (!$tbl = $this->get_tblman()) {
 			return false;
 		}
-
-		$sql = "SELECT * FROM user_api_tokens
-				WHERE token_hash = '" . $tbl->escape($hash) . "'
-				  AND active = 1
-				  AND (expires_at IS NULL OR expires_at > NOW())
-				LIMIT 1";
-
-		$row = $tbl->fetch_assoc($tbl->new_query()->from->set_sql($sql));
+		if (!$query = $tbl->new_query()) {
+			return false;
+		}
+		$query->where->add_where_crit("token_hash", $hash);
+		$query->where->add_where_crit("active", 1);
+		$query->where->add_where("(expires_at IS NULL OR expires_at > NOW())");
+		$row = $query->get_one_row_result();
 		if (!$row) {
 			return false;
 		}

@@ -3,6 +3,20 @@
 abstract class  mwmod_mw_service_user_root extends mwmod_mw_service_base{
 	private $userMan;
 
+	/**
+	 * Enable pwdBaseToken authentication (JWT tied to user password).
+	 * Full user permissions, no per-token scope restriction.
+	 * @var bool
+	 */
+	protected $authPwdBaseToken = false;
+
+	/**
+	 * Enable API token authentication (independent token with optional permission scope).
+	 * allow() will intersect user permissions with the token's declared scope.
+	 * @var bool
+	 */
+	protected $authApiToken = false;
+
 
 
 
@@ -19,14 +33,32 @@ abstract class  mwmod_mw_service_user_root extends mwmod_mw_service_base{
 
 		if(!$uman=$this->get_user_manager()){
 			return false;
-			
 		}
-		if($uman->jwtMan){
-			if($user=$uman->jwtMan->validateAndRetrieveUser($tokenHeadder)){
-				return $uman->login_user_service_mode($user);
-				
+
+		// pwdBaseToken auth: JWT tied to user password (full permissions, no scope restriction)
+		if($this->authPwdBaseToken && ($jwtMan=$uman->getJwtMan())){
+			if($user=$jwtMan->validateAndRetrieveUser($tokenHeadder)){
+				$result=$uman->login_user_service_mode($user);
+				if($result){
+					$uman->setPswBaseTokenSession();
+				}
+				return $result;
 			}
 		}
+
+		// API token auth: independent token with optional per-token permission scope
+		if($this->authApiToken && ($apitokenMan=$uman->getApitokenMan())){
+			if($tokenItem=$apitokenMan->findActiveByRawToken($tokenHeadder)){
+				$user=$uman->get_user($tokenItem->getUserId());
+				if($user && $user->is_active()){
+					$uman->set_currentuser_obj($user);
+					$uman->setCurrentApiToken($tokenItem);
+					return $user;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/** @return mwmod_mw_users_user  */

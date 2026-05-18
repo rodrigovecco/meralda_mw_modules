@@ -66,6 +66,15 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	private $apitokenMan;
 	/** @var mwmod_mw_users_apitoken_item|null Active API token for the current service request */
 	private $currentApiToken = null;
+	/**
+	 * How the current request was authenticated.
+	 * null           = not yet authenticated
+	 * 'password'     = interactive login via password
+	 * 'pswbasetoken' = pwdBaseToken: JWT tied to user password; behaves like password
+	 * 'token'        = new API token (independent); subject to per-token permission scope
+	 * @var string|null
+	 */
+	private $authMethod = null;
 
 	function createJwtMan(){
 		//return new mwmod_mw_users_jwt_access($this);
@@ -73,7 +82,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 
 	function createApitokenMan(){
-		return new mwmod_mw_users_apitoken_man($this->mainap);
+		return new mwmod_mw_users_apitoken_man($this);
 	}
 	function createRolsAndPermissions(){
 		//create roles and permissions
@@ -93,6 +102,10 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		return $this->apitokenMan;
 	}
+/** @return mwmod_mw_users_jwt_man|false */
+	final function getJwtMan(){
+			return $this->__get_priv_jwtMan();
+	}
 	/** @return mwmod_mw_users_apitoken_man|false */
 	final function getApitokenMan(){
 		return $this->__get_priv_apitokenMan();
@@ -103,20 +116,50 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	// --------------------------------------------------------
 
 	/**
+	 * Mark the session as authenticated via password login.
+	 * Should be called from the concrete login implementation on success.
+	 */
+	final function setPasswordSession(){
+		$this->authMethod = 'password';
+	}
+
+	/**
+	 * Mark the session as authenticated via a pwdBaseToken (JWT tied to user password).
+	 * Behaves identically to a password session: full user permissions, no token scope restriction.
+	 * Should be called by the JWT auth flow after validating the token.
+	 */
+	final function setPswBaseTokenSession(){
+		$this->authMethod = 'pswbasetoken';
+	}
+
+	/**
 	 * Bind an API token to this request. Called by serviceauth after validation.
 	 * Subsequent allow() calls will intersect user permissions with token permissions.
 	 * @param mwmod_mw_users_apitoken_item $tokenItem
 	 */
 	final function setCurrentApiToken($tokenItem){
 		$this->currentApiToken = $tokenItem;
+		$this->authMethod = 'token';
 	}
 	/** @return mwmod_mw_users_apitoken_item|null */
 	final function getCurrentApiToken(){
 		return $this->currentApiToken;
 	}
-	/** @return bool */
+	/** @return bool True only when authenticated via the new independent API token */
 	final function isTokenBasedSession(){
-		return $this->currentApiToken !== null;
+		return $this->authMethod === 'token';
+	}
+	/** @return bool True when authenticated via interactive password */
+	final function isPasswordSession(){
+		return $this->authMethod === 'password';
+	}
+	/** @return bool True when authenticated via pwdBaseToken (JWT tied to user password) */
+	final function isPswBaseTokenSession(){
+		return $this->authMethod === 'pswbasetoken';
+	}
+	/** @return bool True when the session has full user permissions (password or pwdBaseToken) */
+	final function isFullPermissionSession(){
+		return $this->authMethod === 'password' || $this->authMethod === 'pswbasetoken';
 	}
 
 
@@ -581,9 +624,9 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			if(!$user->allow($action,$params)){
 				return false;
 			}
-			// If authenticated via API token, also enforce token-level permission scope.
-			// Tokens can only restrict; they cannot grant permissions the user doesn't have.
-			if($this->currentApiToken !== null){
+			// New API tokens carry a permission scope that can only restrict, never expand.
+			// Password and pwdBaseToken sessions bypass this check (full user permissions).
+			if($this->isTokenBasedSession()){
 				return $this->currentApiToken->allowsPermission($action);
 			}
 			return true;

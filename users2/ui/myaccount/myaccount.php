@@ -9,7 +9,7 @@ class mwmod_mw_users2_ui_myaccount_myaccount extends mwmod_mw_ui_base_basesubuia
         $this->init_as_main_or_sub($cod, $maininterface);
         $this->set_def_title($this->lng_get_msg_txt("my_account", "Mi cuenta"));
         $this->subinterface_def_code = "data";
-        $this->sucods = "data,pass,img,token";
+        $this->sucods = "data,pass,img,apitokens";
     }
     
     function _do_create_subinterface_child_data($cod) {
@@ -24,8 +24,10 @@ class mwmod_mw_users2_ui_myaccount_myaccount extends mwmod_mw_ui_base_basesubuia
         return new mwmod_mw_users2_ui_myaccount_img($cod, $this);
     }
     
-    function _do_create_subinterface_child_token($cod) {
-        return new mwmod_mw_users2_ui_myaccount_token($cod, $this);
+    
+    
+    function _do_create_subinterface_child_apitokens($cod) {
+        return new mwmod_mw_users2_ui_myaccount_apitokens($cod, $this);
     }
     
     function do_exec_no_sub_interface() {

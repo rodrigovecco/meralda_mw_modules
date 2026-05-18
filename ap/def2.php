@@ -31,13 +31,18 @@ class mwmod_mw_ap_def2  extends mwmod_mw_ap_def{
 							"admin","Administrar","admin",$permissionsman));
 		$permissionsman->add_item(new mwmod_mw_users_permissions_permission(
 							"mainadmin","Administración","admin",$permissionsman));
-
+		$permissionsman->add_item(new mwmod_mw_users_permissions_permission(
+							"owntoken","Gestionar tokens de API propios","user,admin",$permissionsman));
 		$permissionsman->add_item(new mwmod_mw_users_permissions_special_debug(
 							"debug","Pruebas del sistema",false,$permissionsman));
 
 		$permissionsman->init_rols();
 
 		return $subman;
+	}
+
+	function createJwtMan() {
+		return new mwmod_mw_users_jwt_man();
 	}
 	
 

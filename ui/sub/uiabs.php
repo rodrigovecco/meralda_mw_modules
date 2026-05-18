@@ -1854,7 +1854,19 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 
 	/**
-	 * Hook for loading all subinterfaces.
+	 * Hook for eagerly loading all subinterfaces.
+	 *
+	 * @deprecated Prefer dynamic (lazy) creation by overriding
+	 *             allowcreatesubinterfacechildbycode() to return true and
+	 *             defining one _do_create_subinterface_child_<cod>($cod)
+	 *             method per child code. Lazy creation only instantiates
+	 *             the subinterface actually requested, instead of building
+	 *             every child on every request.
+	 *
+	 *             Eager loading is kept for backwards compatibility with
+	 *             existing UIs and may still be needed when the parent has
+	 *             to enumerate all children up front (e.g. to render a list
+	 *             or build a menu that does not call get_subinterfaces_by_code).
 	 *
 	 * Override in child classes to programmatically create and add subinterfaces.
 	 *

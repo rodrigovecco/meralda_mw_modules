@@ -16,37 +16,37 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 
 	/** @return int */
 	function getUserId() {
-		return (int) $this->get_data_field("user_id");
+		return (int) $this->get_data("user_id");
 	}
 
 	/** @return string SHA-256 hash of the raw token */
 	function getTokenHash() {
-		return $this->get_data_field("token_hash");
+		return $this->get_data("token_hash");
 	}
 
 	/** @return string */
 	function getLabel() {
-		return $this->get_data_field("label");
+		return $this->get_data("label");
 	}
 
 	/** @return bool */
 	function isActive() {
-		return (bool) $this->get_data_field("active");
+		return (bool) $this->get_data("active");
 	}
 
 	/** @return string */
 	function getCreatedAt() {
-		return $this->get_data_field("created_at");
+		return $this->get_data("created_at");
 	}
 
 	/** @return string|null */
 	function getLastUsedAt() {
-		return $this->get_data_field("last_used_at");
+		return $this->get_data("last_used_at");
 	}
 
 	/** @return string|null NULL means never expires */
 	function getExpiresAt() {
-		return $this->get_data_field("expires_at");
+		return $this->get_data("expires_at");
 	}
 
 	// ============================================
@@ -55,18 +55,22 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 
 	/**
 	 * Get the decoded permissions array.
-	 * Returns null if permissions_json is NULL (= no restriction).
-	 * Returns an empty array if JSON is empty or malformed (= restrict all).
 	 *
-	 * @return string[]|null
+	 * New tokens always declare an explicit, non-empty scope. Legacy rows
+	 * with NULL permissions_json (created before this rule was enforced)
+	 * fall back to an empty array (= restrict all) to fail closed.
+	 *
+	 * @return string[]
 	 */
 	function getPermissions() {
 		if ($this->permissionsCache !== null) {
 			return $this->permissionsCache;
 		}
-		$raw = $this->get_data_field("permissions_json");
+		$raw = $this->get_data("permissions_json");
 		if ($raw === null || $raw === "") {
-			return null;  // no restriction
+			// Legacy / corrupted row → fail closed.
+			$this->permissionsCache = [];
+			return $this->permissionsCache;
 		}
 		$decoded = json_decode($raw, true);
 		$this->permissionsCache = is_array($decoded) ? $decoded : [];
@@ -76,17 +80,16 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 	/**
 	 * Check whether this token allows a specific permission code.
 	 *
-	 * Rules:
-	 * - permissions_json IS NULL  → token allows everything (no restriction)
-	 * - permissions_json is a JSON array → token only allows listed codes
+	 * Tokens MUST declare every permission they need. A token with an empty
+	 * scope (legacy NULL or malformed JSON) grants nothing.
 	 *
 	 * @param string $code
 	 * @return bool
 	 */
 	function allowsPermission($code) {
 		$perms = $this->getPermissions();
-		if ($perms === null) {
-			return true;  // no restriction
+		if (empty($perms)) {
+			return false;
 		}
 		return in_array($code, $perms, true);
 	}
@@ -96,17 +99,11 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 	// ============================================
 
 	/**
-	 * Update last_used_at to now (lightweight direct query, no full item reload).
+	 * Update last_used_at to now.
 	 * @return void
 	 */
 	function touchLastUsed() {
-		if (!$tbl = $this->man->get_tblman()) {
-			return;
-		}
-		$tbl->update_item_by_id(
-			$this->get_id(),
-			["last_used_at" => date("Y-m-d H:i:s")]
-		);
+		$this->do_save_data(["last_used_at" => date("Y-m-d H:i:s")]);
 	}
 
 	/**
@@ -114,7 +111,7 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 	 * @return bool
 	 */
 	function revoke() {
-		return $this->set_data_and_save(["active" => 0]);
+		return $this->do_save_data(["active" => 0]);
 	}
 }
 ?>

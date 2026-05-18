@@ -38,6 +38,11 @@ class mwmod_mw_ap_apbase  extends mwmod_mw_ap_apabs{
 		$man=new mwmod_mw_bruteforce_man($this);
 		return $man;	
 	}
+
+	function create_submanager_dbmigrations(){
+		$man=new mwmod_mw_db_migrations_man($this);
+		return $man;
+	}
 	
 	function create_submanager_captcha(){
 		
