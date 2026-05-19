@@ -117,6 +117,23 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 		return $item->set_data_and_save((int)$version, "version");
 	}
 
+	/** Returns the last applied version for a given view file, or null if never applied. */
+	function getAppliedViewVersion($code, $file) {
+		if (!$item = $this->getJsonDataItem("state_" . $code)) {
+			return null;
+		}
+		$v = $item->get_data("view_" . $file);
+		return ($v !== null && $v !== false) ? (string)$v : null;
+	}
+
+	/** Persists the applied version for a given view file. */
+	private function _saveAppliedViewVersion($code, $file, $version) {
+		if (!$item = $this->getJsonDataItem("state_" . $code)) {
+			return false;
+		}
+		return $item->set_data_and_save((string)$version, "view_" . $file);
+	}
+
 	/**
 	 * One-time migration of the old single-module state key ("state") to the
 	 * per-module key ("state_meralda"). Call once at app init if upgrading from
@@ -183,45 +200,199 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 		return $n;
 	}
 
+	/** Number of view files whose declared version differs from the last applied version. */
+	function getTotalPendingViewsCount() {
+		$n = 0;
+		foreach (array_keys($this->getModules()) as $code) {
+			if (!$this->moduleViewsDirectoryExists($code)) {
+				continue;
+			}
+			foreach ($this->getViewFiles($code) as $vf) {
+				$applied = $this->getAppliedViewVersion($code, $vf["file"]);
+				if ($applied === null || $applied !== (string)$vf["version"]) {
+					$n++;
+				}
+			}
+		}
+		return $n;
+	}
+
 	// -------------------------------------------------------------------------
 	// Execution
 	// -------------------------------------------------------------------------
 
 	/**
+	 * MySQL error numbers that are safe to skip because they indicate the
+	 * schema change was already applied manually on this instance.
+	 *
+	 *  1050 - Table already exists
+	 *  1060 - Duplicate column name  (ADD COLUMN)
+	 *  1061 - Duplicate key name     (CREATE INDEX)
+	 *  1091 - Can't DROP; check that column/key exists  (DROP COLUMN / DROP INDEX)
+	 */
+	private $_skippableErrNos = [1050, 1060, 1061, 1091];
+
+	/**
 	 * Apply a single migration.
 	 * @param  array $migration  Entry from getAvailableMigrations().
-	 * @return array             [ "ok" => bool, "error" => string|null ]
+	 * @return array             [ "ok" => bool, "error" => string|null, "warnings" => string[] ]
 	 */
 	function applyMigration($migration) {
 		$sql = @file_get_contents($migration["path"]);
 		if ($sql === false) {
-			return ["ok" => false, "error" => "Cannot read file: " . $migration["file"]];
+			return ["ok" => false, "error" => "Cannot read file: " . $migration["file"], "warnings" => []];
 		}
 		if (!$db = $this->mainap->get_submanager("db")) {
-			return ["ok" => false, "error" => "DB manager not available"];
+			return ["ok" => false, "error" => "DB manager not available", "warnings" => []];
 		}
 		$statements = $this->_parseSqlStatements($sql);
 		if (empty($statements)) {
 			$this->saveCurrentVersion($migration["num"], $migration["module"]);
-			return ["ok" => true];
+			return ["ok" => true, "warnings" => []];
 		}
+		$warnings = [];
 		foreach ($statements as $stmt) {
 			if ($db->query($stmt) === false) {
+				$errno = $db->get_errorno();
+				if (in_array($errno, $this->_skippableErrNos, true)) {
+					// Already applied manually — skip and continue.
+					$warnings[] = "Skipped (errno {$errno}): " . $db->get_error();
+					continue;
+				}
 				return [
-					"ok"    => false,
-					"error" => "Error in " . $migration["file"] . ": " . $db->get_error(),
+					"ok"       => false,
+					"error"    => "Error in " . $migration["file"] . ": " . $db->get_error(),
+					"warnings" => $warnings,
 				];
 			}
 		}
 		$this->saveCurrentVersion($migration["num"], $migration["module"]);
-		return ["ok" => true];
+		return ["ok" => true, "warnings" => $warnings];
+	}
+
+	// -------------------------------------------------------------------------
+	// Views support  (re-applied on every run, after all migrations complete)
+	// Convention: each module may have a  views/  subfolder with *.sql files.
+	// Files use CREATE OR REPLACE VIEW so they are idempotent.
+	// Declare the version in each file header:  -- @version X
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Absolute path to the views/ subfolder inside a module's migrations dir.
+	 * @return string|false
+	 */
+	function getModuleViewsAbsPath($code) {
+		$base = $this->getModuleAbsPath($code);
+		if (!$base) {
+			return false;
+		}
+		return $base . "/views";
+	}
+
+	function moduleViewsDirectoryExists($code) {
+		$p = $this->getModuleViewsAbsPath($code);
+		return $p && is_dir($p);
+	}
+
+	/**
+	 * All .sql files inside the views/ subfolder, sorted alphabetically.
+	 * Each entry: [ "module"=>, "file"=>, "path"=>, "version"=> ]
+	 */
+	function getViewFiles($code) {
+		$dir = $this->getModuleViewsAbsPath($code);
+		if (!$dir || !is_dir($dir)) {
+			return [];
+		}
+		$files = glob($dir . "/*.sql");
+		if (!$files) {
+			return [];
+		}
+		sort($files);
+		$result = [];
+		foreach ($files as $f) {
+			$raw      = @file_get_contents($f);
+			$result[] = [
+				"module"  => $code,
+				"file"    => basename($f),
+				"path"    => $f,
+				"version" => $this->_parseViewVersion($raw ?: ""),
+			];
+		}
+		return $result;
+	}
+
+	/** Parses -- @version X from the raw SQL header. */
+	private function _parseViewVersion($sql) {
+		if (preg_match('/--\s*@version\s+(\S+)/i', $sql, $m)) {
+			return $m[1];
+		}
+		return null;
+	}
+
+	/**
+	 * Apply all view files for a module.
+	 * Non-fatal: collects errors but continues across files.
+	 * @return array [ "applied" => string[], "errors" => string[] ]
+	 */
+	function applyViews($code) {
+		$applied = [];
+		$errors  = [];
+		if (!$db = $this->mainap->get_submanager("db")) {
+			$errors[] = "[" . $code . "] DB manager not available";
+			return ["applied" => $applied, "errors" => $errors];
+		}
+		foreach ($this->getViewFiles($code) as $vf) {
+			$sql = @file_get_contents($vf["path"]);
+			if ($sql === false) {
+				$errors[] = "[" . $code . "] Cannot read: " . $vf["file"];
+				continue;
+			}
+			$fileOk = true;
+			foreach ($this->_parseSqlStatements($sql) as $stmt) {
+				if ($db->query($stmt) === false) {
+					$errors[] = "[" . $code . "] " . $vf["file"] . ": " . $db->get_error();
+					$fileOk   = false;
+					break;
+				}
+			}
+			if ($fileOk) {
+				if ($vf["version"]) {
+					$this->_saveAppliedViewVersion($code, $vf["file"], $vf["version"]);
+				}
+				$label = "[" . $code . "] views/" . $vf["file"];
+				if ($vf["version"]) {
+					$label .= " (v" . $vf["version"] . ")";
+				}
+				$applied[] = $label;
+			}
+		}
+		return ["applied" => $applied, "errors" => $errors];
+	}
+
+	/**
+	 * Apply views for all modules that have a views/ subfolder.
+	 * @return array [ "applied" => string[], "errors" => string[] ]
+	 */
+	function applyAllViews() {
+		$applied = [];
+		$errors  = [];
+		foreach (array_keys($this->getModules()) as $code) {
+			if (!$this->moduleViewsDirectoryExists($code)) {
+				continue;
+			}
+			$r       = $this->applyViews($code);
+			$applied = array_merge($applied, $r["applied"]);
+			$errors  = array_merge($errors, $r["errors"]);
+		}
+		return ["applied" => $applied, "errors" => $errors];
 	}
 
 	/**
 	 * Apply all pending migrations across all registered modules, in
 	 * registration order. Stops on the first failure.
+	 * Views are applied last, only after all migrations succeed.
 	 *
-	 * @return array [ "applied" => string[], "errors" => string[] ]
+	 * @return array [ "applied" => string[], "errors" => string[], "views" => array|null ]
 	 */
 	function applyAllPending() {
 		$applied = [];
@@ -233,11 +404,12 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 					$applied[] = "[" . $code . "] " . $m["num"] . " — " . $m["name"];
 				} else {
 					$errors[] = $r["error"];
-					return ["applied" => $applied, "errors" => $errors];
+					return ["applied" => $applied, "errors" => $errors, "views" => null];
 				}
 			}
 		}
-		return ["applied" => $applied, "errors" => $errors];
+		$views = $this->applyAllViews();
+		return ["applied" => $applied, "errors" => $errors, "views" => $views];
 	}
 
 	// -------------------------------------------------------------------------
@@ -284,195 +456,6 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 		$stmt = trim($current);
 		if ($stmt !== '') {
 			$stmts[] = $stmt;
-		}
-		return $stmts;
-	}
-
-}
-?>
-
-	// -------------------------------------------------------------------------
-	// Paths
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Absolute path to the migrations SQL directory.
-	 * Resolves to {mwap}/db/migrations/ relative to this file's location.
-	 */
-	function getMigrationsAbsPath() {
-		// dirname levels: migrations/ → db/ → mw/ → modules/ → mwap/
-		return dirname(__FILE__, 5) . "/db/migrations";
-	}
-
-	/**
-	 * Returns true if the migrations directory exists on disk.
-	 * A missing directory is a normal setup state, not an error.
-	 */
-	function migrationsDirectoryExists() {
-		$p = $this->getMigrationsAbsPath();
-		return $p && is_dir($p);
-	}
-
-	// -------------------------------------------------------------------------
-	// Version persistence (JSON data)
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Returns the currently applied migration version (0 if none applied).
-	 */
-	function getCurrentVersion() {
-		if (!$item = $this->getJsonDataItem("state")) {
-			return 0;
-		}
-		return $item->getInt("version", 0);
-	}
-
-	/**
-	 * Persists the applied migration version.
-	 */
-	function saveCurrentVersion($version) {
-		if (!$item = $this->getJsonDataItem("state")) {
-			return false;
-		}
-		return $item->set_data_and_save((int)$version, "version");
-	}
-
-	// -------------------------------------------------------------------------
-	// Migration file discovery
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Returns all migration files found in the migrations directory, sorted
-	 * numerically by their prefix.
-	 *
-	 * Each entry: [ "num" => int, "name" => string, "file" => string, "path" => string ]
-	 */
-	function getAvailableMigrations() {
-		$dir = $this->getMigrationsAbsPath();
-		if (!$dir || !is_dir($dir)) {
-			return [];
-		}
-		$files = glob($dir . "/*.sql");
-		if (!$files) {
-			return [];
-		}
-		$result = [];
-		foreach ($files as $f) {
-			$base = basename($f, ".sql");
-			if (preg_match('/^(\d+)_(.+)$/', $base, $m)) {
-				$result[] = [
-					"num"  => (int)$m[1],
-					"name" => str_replace("_", " ", $m[2]),
-					"file" => $base . ".sql",
-					"path" => $f,
-				];
-			}
-		}
-		usort($result, function ($a, $b) {
-			return $a["num"] - $b["num"];
-		});
-		return $result;
-	}
-
-	/**
-	 * Returns the subset of available migrations not yet applied.
-	 */
-	function getPendingMigrations() {
-		$current = $this->getCurrentVersion();
-		return array_values(
-			array_filter(
-				$this->getAvailableMigrations(),
-				function ($m) use ($current) {
-					return $m["num"] > $current;
-				}
-			)
-		);
-	}
-
-	// -------------------------------------------------------------------------
-	// Execution
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Applies a single migration.
-	 *
-	 * @param  array $migration  One entry from getAvailableMigrations().
-	 * @return array             [ "ok" => bool, "error" => string|null ]
-	 */
-	function applyMigration($migration) {
-		$sql = @file_get_contents($migration["path"]);
-		if ($sql === false) {
-			return ["ok" => false, "error" => "Cannot read file: " . $migration["file"]];
-		}
-
-		if (!$db = $this->mainap->get_submanager("db")) {
-			return ["ok" => false, "error" => "DB manager not available"];
-		}
-
-		$statements = $this->_parseSqlStatements($sql);
-		if (empty($statements)) {
-			// Empty or comment-only file — still advances the version.
-			$this->saveCurrentVersion($migration["num"]);
-			return ["ok" => true];
-		}
-
-		foreach ($statements as $stmt) {
-			if ($db->query($stmt) === false) {
-				$err = $db->get_error();
-				return [
-					"ok"    => false,
-					"error" => "Error in " . $migration["file"] . ": " . $err,
-				];
-			}
-		}
-
-		$this->saveCurrentVersion($migration["num"]);
-		return ["ok" => true];
-	}
-
-	/**
-	 * Applies all pending migrations in order. Stops on the first failure.
-	 *
-	 * @return array [ "applied" => string[], "errors" => string[] ]
-	 */
-	function applyAllPending() {
-		$pending  = $this->getPendingMigrations();
-		$applied  = [];
-		$errors   = [];
-
-		foreach ($pending as $m) {
-			$r = $this->applyMigration($m);
-			if ($r["ok"]) {
-				$applied[] = $m["num"] . " — " . $m["name"];
-			} else {
-				$errors[] = $r["error"];
-				break; // halt on first failure
-			}
-		}
-
-		return ["applied" => $applied, "errors" => $errors];
-	}
-
-	// -------------------------------------------------------------------------
-	// Internal helpers
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Splits a SQL file into individual statements.
-	 * Strips -- line comments and block comments, then splits on ';'.
-	 */
-	private function _parseSqlStatements($sql) {
-		// Remove block comments /* ... */
-		$sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
-		// Remove line comments -- ...
-		$sql = preg_replace('/--[^\n]*/', '', $sql);
-		$parts = explode(";", $sql);
-		$stmts = [];
-		foreach ($parts as $p) {
-			$p = trim($p);
-			if ($p !== '') {
-				$stmts[] = $p;
-			}
 		}
 		return $stmts;
 	}
