@@ -37,6 +37,9 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 		if(!$inputname=trim($inputname."")){
 			return false;	
 		}
+		if(!isset($_FILES[$inputname])){
+			return false;	
+		}
 		if(is_array($_FILES[$inputname])){
 			return	$_FILES[$inputname];
 		}

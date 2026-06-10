@@ -379,13 +379,16 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		if(!$cod=$this->check_str_key_alnum_underscore($cod)){
 			return false;	
 		}
-		if($this->_items[$cod]){
-			if($checkactive){
-				if(!$this->_items[$cod]->is_active()){
-					return false;	
+
+		if(isset($this->_items[$cod])){
+			if($this->_items[$cod]){
+				if($checkactive){
+					if(!$this->_items[$cod]->is_active()){
+						return false;	
+					}
 				}
+				return $this->_items[$cod];
 			}
-			return $this->_items[$cod];
 		}
 		return false;
 	}

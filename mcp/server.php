@@ -3,32 +3,60 @@
  * MCP Server
  *
  * Handles Model Context Protocol requests (JSON-RPC 2.0) over HTTP POST.
- * Authentication is performed via user API tokens (Bearer scheme).
+ * Built on the meralda service tree (mwmod_mw_service_user_root): the bearer
+ * token is validated by the framework before doExecOk() runs, so any request
+ * (initialize, tools/list, tools/call) requires a valid API token.
  *
- * Supported MCP methods:
+ * Supported MCP methods (single-endpoint JSON-RPC):
  *  - initialize         → server capabilities handshake
  *  - tools/list         → enumerate registered tools
  *  - tools/call         → invoke a named tool
  *
- * Error codes follow the JSON-RPC 2.0 standard:
+ * JSON-RPC error codes used:
  *  -32700  Parse error
  *  -32600  Invalid request
- *  -32601  Method not found
+ *  -32601  Method not found / tool not found
  *  -32602  Invalid params
- *  -32000  Server error (custom)
- *  -32001  Unauthorized
+ *  -32000  Server error (tool exception)
  *  -32003  Permission denied
  */
-class mwmod_mw_mcp_server {
+abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
-	/** @var mw_application */
-	private $mainap;
+	/** API tokens are the only supported credential. */
+	public $authApiToken = true;
 
 	/** @var mwmod_mw_mcp_tool[] name → tool */
-	private $tools = [];
+	private $tools = array();
 
-	function __construct($mainap) {
-		$this->mainap = $mainap;
+	function __construct($baseurl = false) {
+		$this->initAsRoot($baseurl);
+		$this->registerAllTools();
+	}
+
+	/**
+	 * Root-level auth: any authenticated API-token user is allowed to talk to
+	 * the MCP endpoint. Per-tool permission scoping happens later in
+	 * handleToolsCall() via getRequiredPermission() + allow().
+	 */
+	function isAllowed() {
+		return (bool) $this->get_current_user();
+	}
+
+	/**
+	 * Subclasses must register their tools here.
+	 */
+	abstract protected function registerAllTools();
+
+	/**
+	 * Server identification returned by the `initialize` handshake.
+	 * Subclasses may override to expose their own name/version.
+	 * @return array{name:string,version:string}
+	 */
+	protected function getServerInfo() {
+		return array(
+			"name"    => "meralda-mcp",
+			"version" => "1.0",
+		);
 	}
 
 	/**
@@ -40,29 +68,35 @@ class mwmod_mw_mcp_server {
 	}
 
 	// --------------------------------------------------------
-	// Request dispatch
+	// Auth-failure response (overrides service_base to emit JSON-RPC)
 	// --------------------------------------------------------
 
-	/**
-	 * Read stdin, parse JSON-RPC, dispatch and output the response.
-	 * Exits after output (send-and-done pattern for service endpoints).
-	 */
-	function handleRequest() {
-		$raw = file_get_contents("php://input");
-		if (!$raw) {
-			$this->sendError(null, -32700, "Empty request body");
+	function execNotAllowed($path = false) {
+		http_response_code($this->authFailCode);
+		$this->outputJSON(array(
+			"jsonrpc" => "2.0",
+			"id"      => null,
+			"error"   => array(
+				"code"    => -32001,
+				"message" => "Unauthorized: valid Bearer token required",
+			),
+		));
+	}
+
+	// --------------------------------------------------------
+	// Request dispatch (runs only after auth succeeds)
+	// --------------------------------------------------------
+
+	function doExecOk($path = false) {
+		$raw = $this->getJsonRequestBody();
+		if (!$raw || !is_array($raw)) {
+			$this->sendError(null, -32700, "Parse error: invalid or empty JSON body");
 			return;
 		}
 
-		$req = json_decode($raw, true);
-		if ($req === null) {
-			$this->sendError(null, -32700, "Parse error: invalid JSON");
-			return;
-		}
-
-		$id     = $req["id"]     ?? null;
-		$method = $req["method"] ?? null;
-		$params = $req["params"] ?? [];
+		$id     = $raw["id"]     ?? null;
+		$method = $raw["method"] ?? null;
+		$params = $raw["params"] ?? array();
 
 		if (!$method) {
 			$this->sendError($id, -32600, "Invalid request: missing method");
@@ -92,29 +126,26 @@ class mwmod_mw_mcp_server {
 	// --------------------------------------------------------
 
 	private function handleInitialize($id, $params) {
-		$this->sendResult($id, [
+		$this->sendResult($id, array(
 			"protocolVersion" => "2024-11-05",
-			"serverInfo" => [
-				"name"    => "meralda-mcp",
-				"version" => "1.0",
-			],
-			"capabilities" => [
+			"serverInfo"      => $this->getServerInfo(),
+			"capabilities"    => array(
 				"tools" => new stdClass(),
-			],
-		]);
+			),
+		));
 	}
 
 	private function handleToolsList($id, $params) {
-		$definitions = [];
+		$definitions = array();
 		foreach ($this->tools as $tool) {
 			$definitions[] = $tool->getDefinition();
 		}
-		$this->sendResult($id, ["tools" => $definitions]);
+		$this->sendResult($id, array("tools" => $definitions));
 	}
 
 	private function handleToolsCall($id, $params) {
 		$toolName = $params["name"]      ?? null;
-		$args     = $params["arguments"] ?? [];
+		$args     = $params["arguments"] ?? array();
 
 		if (!$toolName) {
 			$this->sendError($id, -32602, "Invalid params: missing tool name");
@@ -128,21 +159,14 @@ class mwmod_mw_mcp_server {
 
 		$tool = $this->tools[$toolName];
 
-		// Authentication: every tools/call requires a valid API token
-		$user = mwmod_mw_users_apitoken_serviceauth::authenticateRequest($this->mainap);
-		if (!$user) {
-			$this->sendError($id, -32001, "Unauthorized: valid Bearer token required");
-			return;
-		}
-
-		// Authorization: check if the token/user has the required permission
+		// Per-tool authorization. Auth itself already ran in validateAllowedAsRoot();
+		// here we only check the specific permission the tool declares.
 		$requiredPerm = $tool->getRequiredPermission();
-		if ($requiredPerm && !$this->mainap->get_submanager("users")->allow($requiredPerm)) {
+		if ($requiredPerm && !$this->allow($requiredPerm)) {
 			$this->sendError($id, -32003, "Permission denied: " . $requiredPerm . " required");
 			return;
 		}
 
-		// Execute
 		try {
 			$result = $tool->execute($args, $this->mainap);
 			$this->sendResult($id, $result);
@@ -156,24 +180,23 @@ class mwmod_mw_mcp_server {
 	// --------------------------------------------------------
 
 	private function sendResult($id, $result) {
-		echo json_encode([
+		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
 			"id"      => $id,
 			"result"  => $result,
-		], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		));
 		exit;
 	}
 
 	private function sendError($id, $code, $message) {
-		http_response_code($code === -32001 ? 401 : 200);
-		echo json_encode([
+		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
 			"id"      => $id,
-			"error"   => [
+			"error"   => array(
 				"code"    => $code,
 				"message" => $message,
-			],
-		], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			),
+		));
 		exit;
 	}
 }
