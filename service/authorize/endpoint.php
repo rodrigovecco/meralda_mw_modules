@@ -80,9 +80,13 @@ class mwmod_mw_service_authorize_endpoint extends mwmod_mw_service_base {
         }
 
         // --- Build admin URL for consent screen ---
-        $adminBasePath = '/admin/';
-        if ($this->mainap) {
-            // Try to read configured admin path from app if available.
+        $adminUrl = '/admin/index.php?ui=' . self::ADMIN_SI;
+        if ($this->mainap && ($uiadmin = $this->mainap->get_submanager('uiadmin'))) {
+            if (method_exists($uiadmin, 'get_url_sub_interface_by_dot_cod')) {
+                $adminUrl = $uiadmin->get_url_sub_interface_by_dot_cod(self::ADMIN_SI);
+            } elseif (method_exists($uiadmin, 'get_url_subinterface')) {
+                $adminUrl = $uiadmin->get_url_subinterface(self::ADMIN_SI);
+            }
         }
 
         // --- Store in session ---
@@ -99,8 +103,8 @@ class mwmod_mw_service_authorize_endpoint extends mwmod_mw_service_base {
         ];
 
         // --- Redirect to admin consent screen ---
-        $adminUrl = rtrim($adminBasePath, '/') . '/?si=' . self::ADMIN_SI
-                  . '&_authz_nonce=' . urlencode($nonce);
+        $sep = (strpos($adminUrl, '?') === false) ? '?' : '&';
+        $adminUrl .= $sep . '_authz_nonce=' . urlencode($nonce);
         ob_end_clean();
         header('Location: ' . $adminUrl);
         exit;

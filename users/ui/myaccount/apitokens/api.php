@@ -37,6 +37,19 @@ class mwmod_mw_users_ui_myaccount_apitokens_api extends mwmod_mw_users_ui_myacco
 			return false;
 		}
 
+		$prefillLabel = trim(strip_tags(isset($_GET['_apitk_label']) ? (string)$_GET['_apitk_label'] : ''));
+		$prefillPerms = [];
+		$prefillRaw = trim(isset($_GET['_apitk_prefill_perms']) ? (string)$_GET['_apitk_prefill_perms'] : '');
+		if ($prefillRaw !== '') {
+			foreach (explode(',', $prefillRaw) as $p) {
+				$p = trim($p);
+				if ($p !== '') {
+					$prefillPerms[$p] = true;
+				}
+			}
+		}
+		$openCreate = isset($_GET['_apitk_open_create']) && ((string)$_GET['_apitk_open_create'] === '1');
+
 		$apitokenMan    = $user->man->getApitokenMan();
 		$permissionsMan = $user->man->get_permission_man();
 
@@ -297,6 +310,9 @@ class mwmod_mw_users_ui_myaccount_apitokens_api extends mwmod_mw_users_ui_myacco
 		$inputLabel->set_att("required", "required");
 		$inputLabel->set_att("maxlength", "160");
 		$inputLabel->set_att("placeholder", $this->lng_get_msg_txt("apiTokenLabelPlaceholder", "Ej: Script de backup, App móvil..."));
+		if ($prefillLabel !== '') {
+			$inputLabel->set_att("value", $prefillLabel);
+		}
 
 		$colExpiry = $row->add_cont_elem();
 		$colExpiry->addClass("col-md-3");
@@ -362,6 +378,9 @@ class mwmod_mw_users_ui_myaccount_apitokens_api extends mwmod_mw_users_ui_myacco
 				$chk->set_att("value", $pCod);
 				$chk->set_att("id", "apitk-perm-" . htmlspecialchars($pCod));
 				$chk->set_att("class", "form-check-input apitk-perm-chk");
+				if (isset($prefillPerms[$pCod])) {
+					$chk->set_att("checked", "checked");
+				}
 				$chkLbl = $chkWrap->add_cont_elem(false, "label");
 				$chkLbl->addClass("form-check-label");
 				$chkLbl->set_att("for", "apitk-perm-" . htmlspecialchars($pCod));
@@ -456,6 +475,16 @@ class mwmod_mw_users_ui_myaccount_apitokens_api extends mwmod_mw_users_ui_myacco
 			if (idInput) idInput.value = id;
 			if (lblEl)   lblEl.textContent = lbl;
 		});
+	}
+	if (' . ($openCreate ? 'true' : 'false') . ') {
+		var createCard = document.querySelector(".card");
+		var createLabel = document.getElementById("apitk-label");
+		if (createLabel) {
+			createLabel.focus();
+		}
+		if (createCard && createCard.scrollIntoView) {
+			createCard.scrollIntoView({behavior:"smooth", block:"start"});
+		}
 	}
 }());
 </script>';

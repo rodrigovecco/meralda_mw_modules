@@ -179,8 +179,14 @@ class mwmod_mw_users_ui_authorize_main extends mwmod_mw_ui_base_basesubuia {
                 $deliverMode = $_POST['_authz_deliver'] ?? 'redirect';
                 if ($deliverMode === 'redirect') {
                     $sep = (strpos($redirectUri, '?') === false) ? '?' : '&';
+                    $prefillPerms = implode(',', $cleanScope);
+                    $redirectTarget = $redirectUri
+                        . $sep . 'token=' . urlencode($tokenStr)
+                        . '&_apitk_open_create=1'
+                        . '&_apitk_label=' . urlencode($label)
+                        . '&_apitk_prefill_perms=' . urlencode($prefillPerms);
                     ob_end_clean();
-                    header('Location: ' . $redirectUri . $sep . 'token=' . urlencode($tokenStr));
+                    header('Location: ' . $redirectTarget);
                     exit;
                 }
 
