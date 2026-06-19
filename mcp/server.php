@@ -72,6 +72,10 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	// --------------------------------------------------------
 
 	function execNotAllowed($path = false) {
+		$statusCode = (int) $this->authFailCode;
+		if ($statusCode === 401) {
+			header('WWW-Authenticate: Bearer realm="' . $this->getAuthRealm() . '"');
+		}
 		http_response_code($this->authFailCode);
 		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
@@ -79,8 +83,31 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			"error"   => array(
 				"code"    => -32001,
 				"message" => "Unauthorized: valid Bearer token required",
+				"data"    => array(
+					"auth_scheme"    => "Bearer",
+					"token_endpoint" => $this->getTokenEndpointUrl(),
+				),
 			),
 		));
+	}
+
+	/** Realm used in WWW-Authenticate challenge. */
+	protected function getAuthRealm() {
+		return "meralda";
+	}
+
+	/**
+	 * Full token-help endpoint URL exposed in 401 payloads.
+	 * Defaults to /{baseurl}/token in the current host.
+	 */
+	protected function getTokenEndpointUrl() {
+		$path = '/' . trim(($this->baseurl ?: 'service/mcp'), '/') . '/token';
+		$host = $_SERVER['HTTP_HOST'] ?? '';
+		if ($host === '') {
+			return $path;
+		}
+		$scheme = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
+		return $scheme . '://' . $host . $path;
 	}
 
 	// --------------------------------------------------------
