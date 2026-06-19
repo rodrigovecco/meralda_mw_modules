@@ -24,7 +24,7 @@ class mwmod_mw_users_ui_authorize_main extends mwmod_mw_ui_base_basesubuia {
     const SESSION_KEY = '_mw_authorize_request';
 
     function __construct($cod, $parent) {
-        $this->init_as_subinterface($cod, $parent);
+        $this->init_as_main_or_sub($cod, $parent);
         $this->set_def_title("Autorizar acceso");
     }
 
