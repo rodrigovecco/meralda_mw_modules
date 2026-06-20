@@ -28,6 +28,16 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	/** @var mwmod_mw_mcp_tool[] name → tool */
 	private $tools = array();
 
+	/**
+	 * Emit a JSON body for MCP. Overrides the base helper so every MCP response
+	 * (including the 401 challenge) carries an explicit UTF-8 charset.
+	 */
+	function outputJSON($data) {
+		ob_end_clean();
+		header('Content-Type: application/json; charset=utf-8');
+		echo json_encode($data);
+	}
+
 	function __construct($baseurl = false) {
 		$this->initAsRoot($baseurl);
 		$this->registerAllTools();
@@ -84,9 +94,12 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
 	function execNotAllowed($path = false) {
 		$statusCode = (int) $this->authFailCode;
+		$realm = $this->getAuthRealm();
+		$tokenUiUrl = $this->getTokenUiUrl();
 		if ($statusCode === 401) {
-			header('WWW-Authenticate: Bearer realm="' . $this->getAuthRealm() . '"');
+			header('WWW-Authenticate: Bearer realm="' . $realm . '", authorization_uri="' . $tokenUiUrl . '"');
 		}
+		header('Content-Type: application/json; charset=utf-8');
 		http_response_code($this->authFailCode);
 		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
@@ -96,13 +109,15 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 				"message" => "Unauthorized: a valid Bearer API token is required.",
 				"data"    => array(
 					"auth_scheme"         => "Bearer",
-					"auth_realm"          => $this->getAuthRealm(),
+					"auth_realm"          => $realm,
 					"how_to_authenticate" => "Send your API token in the 'Authorization: Bearer <token>' header.",
 					"how_to_get_token"    => "Sign in and generate an API token from your account, then use it as the Bearer token.",
-					"token_ui_url"        => $this->getTokenUiUrl(),
+					"authorization_url"   => $tokenUiUrl,
+					"token_ui_url"        => $tokenUiUrl,
 				),
 			),
 		));
+		exit;
 	}
 
 	/**
