@@ -3,6 +3,12 @@
 /**
  * Authorization consent screen.
  *
+ * @deprecated NOT IN USE. This was meant to be the human consent UI bound to the
+ * MCP server (OAuth-style authorize flow with callback/redirect_uri). The MCP
+ * server now points users straight to the existing API-tokens account UI, so
+ * this flow is disabled. Execution is hard-stopped with die() below. Kept for
+ * reference until the consent/callback flow is revived.
+ *
  * Registered as subinterface 'authorize' on mwmod_mw_ui2_def_main_admin.
  * Reached after mwmod_mw_service_authorize_endpoint stores the pending
  * request in $_SESSION['_mw_authorize_request'] and redirects here.
@@ -93,7 +99,12 @@ class mwmod_mw_users_ui_authorize_main extends mwmod_mw_ui_base_basesubuia {
     // Execution
     // ------------------------------------------------------------------
 
+    /**
+     * @deprecated Disabled — the authorize/consent flow is not in use. See class docblock.
+     */
     function do_exec_page_in() {
+        die('authorize consent UI is deprecated and disabled');
+
         $user = $this->get_current_user();
         if (!$user) {
             return;

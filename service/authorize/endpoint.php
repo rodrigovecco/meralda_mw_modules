@@ -3,6 +3,13 @@
 /**
  * OAuth2-style authorization endpoint for Meralda services.
  *
+ * @deprecated NOT IN USE. This endpoint started the OAuth-style authorize flow
+ * that fed the consent UI (mwmod_mw_users_ui_authorize_main) bound to the MCP
+ * server (with redirect_uri/callback). The MCP server now points users directly
+ * to the existing API-tokens account UI, so this endpoint is disabled.
+ * Execution is hard-stopped with die() in doExecOk(). Kept for reference until
+ * the consent/callback flow is revived.
+ *
  * Usage — add to any service root:
  *   function createChildByMethod_authorize() {
  *       return new mwmod_mw_service_authorize_endpoint();
@@ -49,7 +56,12 @@ class mwmod_mw_service_authorize_endpoint extends mwmod_mw_service_base {
         return true;
     }
 
+    /**
+     * @deprecated Disabled — the authorize flow is not in use. See class docblock.
+     */
     function doExecOk($path = false) {
+        die('authorize endpoint is deprecated and disabled');
+
         $scopeRaw       = trim($_GET['scope']       ?? '');
         $redirectUri    = trim($_GET['redirect_uri'] ?? '');
         $label          = trim($_GET['label']        ?? '');
