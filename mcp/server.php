@@ -68,6 +68,9 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	protected $authRealm     = "meralda";
 	protected $tokenUiUrl     = "/admin/index.php?ui=myaccount&sui=apitokens&sui1=api";
 
+	/** Suggested label for the API token the client should create (empty = derive from server name). */
+	protected $tokenLabel = "";
+
 	/**
 	 * Server identification returned by the `initialize` handshake.
 	 * @return array{name:string,version:string}
@@ -96,8 +99,11 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 		$statusCode = (int) $this->authFailCode;
 		$realm = $this->getAuthRealm();
 		$tokenUiUrl = $this->getTokenUiUrl();
+		$authUrl = $this->getAuthorizationUrl();
+		$tokenLabel = $this->getRecommendedTokenLabel();
+		$scopes = $this->getRequiredScopes();
 		if ($statusCode === 401) {
-			header('WWW-Authenticate: Bearer realm="' . $realm . '", authorization_uri="' . $tokenUiUrl . '"');
+			header('WWW-Authenticate: Bearer realm="' . $realm . '", authorization_uri="' . $authUrl . '"');
 		}
 		header('Content-Type: application/json; charset=utf-8');
 		http_response_code($this->authFailCode);
@@ -108,16 +114,62 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 				"code"    => -32001,
 				"message" => "Unauthorized: a valid Bearer API token is required.",
 				"data"    => array(
-					"auth_scheme"         => "Bearer",
-					"auth_realm"          => $realm,
-					"how_to_authenticate" => "Send your API token in the 'Authorization: Bearer <token>' header.",
-					"how_to_get_token"    => "Sign in and generate an API token from your account, then use it as the Bearer token.",
-					"authorization_url"   => $tokenUiUrl,
-					"token_ui_url"        => $tokenUiUrl,
+					"auth_scheme"             => "Bearer",
+					"auth_realm"              => $realm,
+					"how_to_authenticate"     => "Send your API token in the 'Authorization: Bearer <token>' header.",
+					"how_to_get_token"        => "Open authorization_url, then create an API token named '" . $tokenLabel . "' with the scopes listed in required_scopes, and use it as the Bearer token.",
+					"recommended_token_label" => $tokenLabel,
+					"required_scopes"         => $scopes,
+					"authorization_url"       => $authUrl,
+					"token_ui_url"            => $tokenUiUrl,
 				),
 			),
 		));
 		exit;
+	}
+
+	/**
+	 * Distinct permission scopes the registered tools require. Used to tell the
+	 * client exactly which scopes to request when creating the API token.
+	 * @return string[]
+	 */
+	protected function getRequiredScopes() {
+		$scopes = array();
+		foreach ($this->tools as $tool) {
+			$perm = $tool->getRequiredPermission();
+			if ($perm) {
+				$scopes[$perm] = true;
+			}
+		}
+		return array_keys($scopes);
+	}
+
+	/**
+	 * Suggested label/name for the API token the client should create.
+	 * Falls back to the server name so the token is easy to identify later.
+	 */
+	protected function getRecommendedTokenLabel() {
+		if ($this->tokenLabel !== "") {
+			return $this->tokenLabel;
+		}
+		return $this->serverName !== "" ? $this->serverName : "Meralda MCP";
+	}
+
+	/**
+	 * Token-creation UI URL pre-filled with the recommended token label and the
+	 * exact scopes to request, so the user lands on the create form ready to go.
+	 * Relies on the account UI prefill params (_apitk_open_create / _apitk_label
+	 * / _apitk_prefill_perms).
+	 */
+	protected function getAuthorizationUrl() {
+		$base = $this->getTokenUiUrl();
+		$sep  = (strpos($base, '?') === false) ? '?' : '&';
+		$params = array(
+			'_apitk_open_create=1',
+			'_apitk_label=' . urlencode($this->getRecommendedTokenLabel()),
+			'_apitk_prefill_perms=' . urlencode(implode(',', $this->getRequiredScopes())),
+		);
+		return $base . $sep . implode('&', $params);
 	}
 
 	/**
