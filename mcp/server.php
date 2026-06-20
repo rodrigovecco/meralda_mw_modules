@@ -48,7 +48,20 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	abstract protected function registerAllTools();
 
 	/**
-	 * Read a configuration value from the app cfg (cfg.ini), with a fallback.
+	 * Config-key prefix for this MCP server. Each concrete server uses its own
+	 * namespace so a deployment can run several MCP servers side by side, each
+	 * with independent settings in cfg.ini. The base default is "mcp";
+	 * subclasses override it (e.g. the mtsx server uses "mtsx_mcp").
+	 *
+	 * @return string
+	 */
+	protected function getCfgPrefix() {
+		return "mcp";
+	}
+
+	/**
+	 * Read a prefixed configuration value from the app cfg (cfg.ini), with a
+	 * fallback. The effective key is "<prefix>_<key>" (e.g. mtsx_mcp_server_name).
 	 * Keeps the framework project-agnostic: anything project-specific
 	 * (server name, realm, token UI url) is configurable, never hardcoded.
 	 *
@@ -57,6 +70,7 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	 * @return string
 	 */
 	protected function getCfgValue($key, $default = "") {
+		$key = $this->getCfgPrefix() . "_" . $key;
 		if (isset($this->mainap) && isset($this->mainap->cfg)) {
 			$v = $this->mainap->cfg->get_value($key);
 			if ($v !== null && $v !== "") {
@@ -68,20 +82,33 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
 	/**
 	 * Server identification returned by the `initialize` handshake.
-	 * Driven by config (mcp_server_name / mcp_server_version) so each
+	 * Driven by config (<prefix>_server_name / <prefix>_server_version) so each
 	 * Meralda deployment can brand its MCP server without code changes.
 	 * @return array{name:string,version:string}
 	 */
 	protected function getServerInfo() {
-		$name = $this->getCfgValue("mcp_server_name", "");
+		$name = $this->getCfgValue("server_name", "");
 		if ($name === "") {
-			$site = $this->getCfgValue("site_name", "meralda");
+			$site = $this->getSiteName();
 			$name = $site . " MCP";
 		}
 		return array(
 			"name"    => $name,
-			"version" => $this->getCfgValue("mcp_server_version", "1.0.0"),
+			"version" => $this->getCfgValue("server_version", "1.0.0"),
 		);
+	}
+
+	/**
+	 * Site name from the (unprefixed) app cfg, used as a generic fallback.
+	 */
+	protected function getSiteName() {
+		if (isset($this->mainap) && isset($this->mainap->cfg)) {
+			$v = $this->mainap->cfg->get_value("site_name");
+			if ($v !== null && $v !== "") {
+				return $v;
+			}
+		}
+		return "meralda";
 	}
 
 	/**
@@ -121,20 +148,20 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
 	/**
 	 * Realm used in the WWW-Authenticate challenge and the 401 payload.
-	 * Configurable via mcp_auth_realm (falls back to site_name).
+	 * Configurable via <prefix>_auth_realm (falls back to site_name).
 	 */
 	protected function getAuthRealm() {
-		return $this->getCfgValue("mcp_auth_realm", $this->getCfgValue("site_name", "meralda"));
+		return $this->getCfgValue("auth_realm", $this->getSiteName());
 	}
 
 	/**
 	 * URL of the existing in-app UI where the user signs in and generates an
 	 * API token. No dedicated MCP auth/token endpoint exists: the 401 simply
 	 * points the user to the account UI that already ships with the app.
-	 * Configurable via mcp_token_ui_url.
+	 * Configurable via <prefix>_token_ui_url.
 	 */
 	protected function getTokenUiUrl() {
-		$url = $this->getCfgValue("mcp_token_ui_url", "/admin/index.php?ui=myaccount&sui=apitokens&sui1=api");
+		$url = $this->getCfgValue("token_ui_url", "/admin/index.php?ui=myaccount&sui=apitokens&sui1=api");
 		return $this->toAbsoluteUrl($url);
 	}
 
