@@ -48,14 +48,39 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	abstract protected function registerAllTools();
 
 	/**
+	 * Read a configuration value from the app cfg (cfg.ini), with a fallback.
+	 * Keeps the framework project-agnostic: anything project-specific
+	 * (server name, realm, token UI url) is configurable, never hardcoded.
+	 *
+	 * @param string $key
+	 * @param string $default
+	 * @return string
+	 */
+	protected function getCfgValue($key, $default = "") {
+		if (isset($this->mainap) && isset($this->mainap->cfg)) {
+			$v = $this->mainap->cfg->get_value($key);
+			if ($v !== null && $v !== "") {
+				return $v;
+			}
+		}
+		return $default;
+	}
+
+	/**
 	 * Server identification returned by the `initialize` handshake.
-	 * Subclasses may override to expose their own name/version.
+	 * Driven by config (mcp_server_name / mcp_server_version) so each
+	 * Meralda deployment can brand its MCP server without code changes.
 	 * @return array{name:string,version:string}
 	 */
 	protected function getServerInfo() {
+		$name = $this->getCfgValue("mcp_server_name", "");
+		if ($name === "") {
+			$site = $this->getCfgValue("site_name", "meralda");
+			$name = $site . " MCP";
+		}
 		return array(
-			"name"    => "meralda-mcp",
-			"version" => "1.0",
+			"name"    => $name,
+			"version" => $this->getCfgValue("mcp_server_version", "1.0.0"),
 		);
 	}
 
@@ -82,32 +107,53 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			"id"      => null,
 			"error"   => array(
 				"code"    => -32001,
-				"message" => "Unauthorized: valid Bearer token required",
+				"message" => "Unauthorized: a valid Bearer API token is required.",
 				"data"    => array(
-					"auth_scheme"    => "Bearer",
-					"token_endpoint" => $this->getTokenEndpointUrl(),
+					"auth_scheme"         => "Bearer",
+					"auth_realm"          => $this->getAuthRealm(),
+					"how_to_authenticate" => "Send your API token in the 'Authorization: Bearer <token>' header.",
+					"how_to_get_token"    => "Sign in and generate an API token from your account, then use it as the Bearer token.",
+					"token_ui_url"        => $this->getTokenUiUrl(),
 				),
 			),
 		));
 	}
 
-	/** Realm used in WWW-Authenticate challenge. */
+	/**
+	 * Realm used in the WWW-Authenticate challenge and the 401 payload.
+	 * Configurable via mcp_auth_realm (falls back to site_name).
+	 */
 	protected function getAuthRealm() {
-		return "meralda";
+		return $this->getCfgValue("mcp_auth_realm", $this->getCfgValue("site_name", "meralda"));
 	}
 
 	/**
-	 * Full token-help endpoint URL exposed in 401 payloads.
-	 * Defaults to /{baseurl}/token in the current host.
+	 * URL of the existing in-app UI where the user signs in and generates an
+	 * API token. No dedicated MCP auth/token endpoint exists: the 401 simply
+	 * points the user to the account UI that already ships with the app.
+	 * Configurable via mcp_token_ui_url.
 	 */
-	protected function getTokenEndpointUrl() {
-		$path = '/' . trim(($this->baseurl ?: 'service/mcp'), '/') . '/token';
+	protected function getTokenUiUrl() {
+		$url = $this->getCfgValue("mcp_token_ui_url", "/admin/index.php?ui=myaccount&sui=apitokens&sui1=api");
+		return $this->toAbsoluteUrl($url);
+	}
+
+	/**
+	 * Resolve a possibly-relative URL against the current host/scheme.
+	 */
+	protected function toAbsoluteUrl($url) {
+		if ($url === "" || preg_match('#^https?://#i', $url)) {
+			return $url;
+		}
 		$host = $_SERVER['HTTP_HOST'] ?? '';
 		if ($host === '') {
-			return $path;
+			return $url;
 		}
 		$scheme = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
-		return $scheme . '://' . $host . $path;
+		if ($url[0] !== '/') {
+			$url = '/' . $url;
+		}
+		return $scheme . '://' . $host . $url;
 	}
 
 	// --------------------------------------------------------
