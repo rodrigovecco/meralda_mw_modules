@@ -261,17 +261,13 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 	}
 
 	/**
-	 * Write a raw image binary string to a temporary file, detecting the format
-	 * (jpg/png/gif) from the binary itself. Returns the temp file path or false.
-	 * Used so images can be ingested from a string (e.g. an MCP tool that
-	 * receives base64) and then reuse the exact same optimization pipeline as
-	 * an HTTP upload (copy_from_file -> resized variants).
+	 * Detect the image mode (jpg/png/gif) of a raw binary string, or false if
+	 * it is not a supported image. Pure helper, no filesystem access.
 	 *
 	 * @param string $binarystring  Raw image bytes.
-	 * @param string|false $filename Optional desired base name (extension is forced from the detected type).
-	 * @return string|false
+	 * @return string|false  "jpg" | "png" | "gif" or false.
 	 */
-	public static function img_string_to_tempfile($binarystring,$filename=false){
+	public static function img_string_mode($binarystring){
 		if(!is_string($binarystring) || $binarystring===""){
 			return false;
 		}
@@ -279,54 +275,102 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		if(!$info || !isset($info[2])){
 			return false;
 		}
-		$ext=false;
 		switch((int)$info[2]){
-			case IMAGETYPE_JPEG: $ext="jpg"; break;
-			case IMAGETYPE_PNG:  $ext="png"; break;
-			case IMAGETYPE_GIF:  $ext="gif"; break;
+			case IMAGETYPE_JPEG: return "jpg";
+			case IMAGETYPE_PNG:  return "png";
+			case IMAGETYPE_GIF:  return "gif";
 		}
-		if(!$ext){
+		return false;
+	}
+
+	/**
+	 * Set the GD source image directly from a raw binary string, mirroring
+	 * set_src() but without any filesystem/temp file. Uses imagecreatefromstring
+	 * so it is immune to open_basedir / sys_get_temp_dir restrictions.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @return bool
+	 */
+	function set_src_from_string($binarystring){
+		$this->unset_src();
+		if(!$mode=self::img_string_mode($binarystring)){
 			return false;
 		}
+		$src=@imagecreatefromstring($binarystring);
+		if(!$src){
+			return false;
+		}
+		$transp=-1;
+		if($mode=="gif" || $mode=="png"){
+			$transp=@imagecolortransparent($src);
+		}
+		$this->_set_src($src,$mode,$transp);
+		return true;
+	}
+
+	/**
+	 * Populate the processing info (dimensions/mime) from a raw binary string,
+	 * mirroring set_proccess_info_from_file() but reading from the string via
+	 * getimagesizefromstring instead of a file on disk.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @return array|false
+	 */
+	function set_proccess_info_from_string($binarystring){
+		$this->unset_proccess_info();
+		if(!is_string($binarystring) || $binarystring===""){
+			return false;
+		}
+		if(!$info=@getimagesizefromstring($binarystring)){
+			return false;
+		}
+		$r=array(
+			"width"=>$info[0],
+			"height"=>$info[1],
+			"mime"=>$info["mime"]??""
+		);
+		return $this->set_proccess_info_from_array($r);
+	}
+
+	/**
+	 * Generate this dimension's optimized image from a raw binary string.
+	 * Mirrors copy_from_file() but the source is the string itself (decoded GD
+	 * image) instead of a file on disk. No temp file is created, so it works
+	 * regardless of open_basedir / sys temp dir restrictions (e.g. cPanel).
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name (extension is forced from the detected type).
+	 * @return string|false New stored filename, or false on failure.
+	 */
+	function copy_from_string($binarystring,$filename=false){
+		$this->debugLog=array();
+		$this->debugLog[]="copy_from_string";
+		if(!$this->set_src_from_string($binarystring)){
+			$this->debugLog[]="set_src_from_string failed (invalid or unsupported image)";
+			return false;
+		}
+		if(!$pinfo=$this->set_proccess_info_from_string($binarystring)){
+			$this->debugLog[]="set_proccess_info_from_string failed";
+			return false;
+		}
+		if(!$path=$this->img_path){
+			$this->debugLog[]="copy_from_string: no img_path";
+			return false;
+		}
+		$srcdata=$this->get_src_data();
 		$base="img".date("YmdHis");
 		if($filename){
 			$fn=preg_replace('/\.[^.]+$/','',basename((string)$filename));
-			$fn=preg_replace('/[^A-Za-z0-9_\-]+/','_',$fn);
+			$fn=preg_replace('/[^A-Za-z0-9_\-]+/','_',(string)$fn);
 			$fn=trim($fn,"_");
 			if($fn!==""){
 				$base=$fn;
 			}
 		}
-		$dir=sys_get_temp_dir();
-		if(!$dir || !is_dir($dir) || !is_writable($dir)){
+		$this->delete();
+		if(!$new=$this->create_new_img_file($base,$path)){
+			$this->debugLog[]="copy_from_string: create_new_img_file failed";
 			return false;
-		}
-		$tmp=rtrim($dir,"/\\")."/".$base."_".uniqid("",true).".".$ext;
-		if(file_put_contents($tmp,$binarystring)===false){
-			return false;
-		}
-		return $tmp;
-	}
-
-	/**
-	 * Generate this dimension's optimized image from a raw binary string.
-	 * Mirrors copy_from_file() but the source is a string instead of an
-	 * existing file. The string is staged to a temp file and removed afterwards.
-	 *
-	 * @param string $binarystring  Raw image bytes.
-	 * @param string|false $filename Optional desired base name.
-	 * @return string|false New stored filename, or false on failure.
-	 */
-	function copy_from_string($binarystring,$filename=false){
-		$this->debugLog=array();
-		if(!$tmp=self::img_string_to_tempfile($binarystring,$filename)){
-			$this->debugLog[]="copy_from_string: invalid image string or temp write failed";
-			return false;
-		}
-		$new=$this->copy_from_file($tmp);
-		@unlink($tmp);
-		if(!$new){
-			$this->debugLog[]="copy_from_string: copy_from_file failed";
 		}
 		return $new;
 	}

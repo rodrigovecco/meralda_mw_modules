@@ -10,6 +10,7 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 	public $titleByItemName=true;
 	public $publicMode=true;
 	public $updateDone=false;
+	public $debugLog=array();
 	
 	
 	function upload_new_img_and_proc($input){
@@ -99,11 +100,16 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 	 * @return string|false
 	 */
 	function proc_new_img_from_string($binarystring,$filename=false){
+		$this->debugLog=array();
 		if(!$this->imgsgr){
+			$this->debugLog[]="proc_new_img_from_string: no imgsgr";
 			return false;
 		}
 		$this->setImgsPathMan();
 		if(!$new=$this->imgsgr->update_images_from_string($binarystring,$filename)){
+			if(is_array($this->imgsgr->debugLog)){
+				$this->debugLog=array_merge($this->debugLog,$this->imgsgr->debugLog);
+			}
 			return false;
 		}
 		$this->saveFileName($new);
