@@ -106,6 +106,11 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 			return false;
 		}
 		$this->setImgsPathMan();
+		// Populate each dimension's img_path/url (same step the HTTP upload flow
+		// performs in beforeUpload via updateImgsIfChanged). Without this each
+		// dimension item has an empty img_path and new_img_subman() returns false
+		// ("no subman").
+		$this->updateImgsIfChanged();
 		if(!$new=$this->imgsgr->update_images_from_string($binarystring,$filename)){
 			if(is_array($this->imgsgr->debugLog)){
 				$this->debugLog=array_merge($this->debugLog,$this->imgsgr->debugLog);
