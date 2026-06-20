@@ -86,6 +86,30 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 		return $new;
 		
 	}
+
+	/**
+	 * Create/replace this item's image from a raw binary string instead of an
+	 * HTTP upload ($_FILES). Sets up the destination path then delegates to the
+	 * image group to generate every optimized dimension. Returns the new stored
+	 * filename, or false on failure. Intended for non-HTTP ingestion paths such
+	 * as MCP tools that receive image bytes (e.g. base64-decoded).
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name.
+	 * @return string|false
+	 */
+	function proc_new_img_from_string($binarystring,$filename=false){
+		if(!$this->imgsgr){
+			return false;
+		}
+		$this->setImgsPathMan();
+		if(!$new=$this->imgsgr->update_images_from_string($binarystring,$filename)){
+			return false;
+		}
+		$this->saveFileName($new);
+		$this->updateDone=false;
+		return $new;
+	}
 	final function setImgsGr($imgsgr){
 		$this->imgsgr=$imgsgr;
 	}

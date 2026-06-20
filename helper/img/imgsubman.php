@@ -259,6 +259,77 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		return $this->create_new_img_file(basename($srcfile),$path);
 			
 	}
+
+	/**
+	 * Write a raw image binary string to a temporary file, detecting the format
+	 * (jpg/png/gif) from the binary itself. Returns the temp file path or false.
+	 * Used so images can be ingested from a string (e.g. an MCP tool that
+	 * receives base64) and then reuse the exact same optimization pipeline as
+	 * an HTTP upload (copy_from_file -> resized variants).
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name (extension is forced from the detected type).
+	 * @return string|false
+	 */
+	public static function img_string_to_tempfile($binarystring,$filename=false){
+		if(!is_string($binarystring) || $binarystring===""){
+			return false;
+		}
+		$info=@getimagesizefromstring($binarystring);
+		if(!$info || !isset($info[2])){
+			return false;
+		}
+		$ext=false;
+		switch((int)$info[2]){
+			case IMAGETYPE_JPEG: $ext="jpg"; break;
+			case IMAGETYPE_PNG:  $ext="png"; break;
+			case IMAGETYPE_GIF:  $ext="gif"; break;
+		}
+		if(!$ext){
+			return false;
+		}
+		$base="img".date("YmdHis");
+		if($filename){
+			$fn=preg_replace('/\.[^.]+$/','',basename((string)$filename));
+			$fn=preg_replace('/[^A-Za-z0-9_\-]+/','_',$fn);
+			$fn=trim($fn,"_");
+			if($fn!==""){
+				$base=$fn;
+			}
+		}
+		$dir=sys_get_temp_dir();
+		if(!$dir || !is_dir($dir) || !is_writable($dir)){
+			return false;
+		}
+		$tmp=rtrim($dir,"/\\")."/".$base."_".uniqid("",true).".".$ext;
+		if(file_put_contents($tmp,$binarystring)===false){
+			return false;
+		}
+		return $tmp;
+	}
+
+	/**
+	 * Generate this dimension's optimized image from a raw binary string.
+	 * Mirrors copy_from_file() but the source is a string instead of an
+	 * existing file. The string is staged to a temp file and removed afterwards.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name.
+	 * @return string|false New stored filename, or false on failure.
+	 */
+	function copy_from_string($binarystring,$filename=false){
+		$this->debugLog=array();
+		if(!$tmp=self::img_string_to_tempfile($binarystring,$filename)){
+			$this->debugLog[]="copy_from_string: invalid image string or temp write failed";
+			return false;
+		}
+		$new=$this->copy_from_file($tmp);
+		@unlink($tmp);
+		if(!$new){
+			$this->debugLog[]="copy_from_string: copy_from_file failed";
+		}
+		return $new;
+	}
 	/*
 	function move_from_uploaded_file_info($info,$newfilename=false,$replace=true,$urlsercurefilename=true){
 		

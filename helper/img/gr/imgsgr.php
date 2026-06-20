@@ -59,6 +59,38 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		return $r;
 	
 	}
+
+	/**
+	 * Regenerate all dimension variants from a raw image binary string.
+	 * Same pipeline as update_images_from_uploaded() but the source is a string
+	 * (e.g. base64 received by an MCP tool) instead of an HTTP-uploaded file.
+	 * The string is staged to a single temp file, each configured dimension is
+	 * produced via copy_from_file(), then the temp file is removed.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name.
+	 * @return string|false New stored filename, or false on failure.
+	 */
+	function update_images_from_string($binarystring,$filename=false){
+		if(!$tmp=mwmod_mw_helper_img_imgsubman::img_string_to_tempfile($binarystring,$filename)){
+			return false;
+		}
+		if($subpath_man=$this->get_sub_path_man()){
+			$subpath_man->delete();
+		}
+		$r=false;
+		if($items=$this->get_items()){
+			foreach($items as $cod=>$item){
+				if($subman=$item->new_img_subman()){
+					if($n=$subman->copy_from_file($tmp)){
+						$r=$n;
+					}
+				}
+			}
+		}
+		@unlink($tmp);
+		return $r;
+	}
 	
 	function update_images_from_ref($refcod=false,$onlyMissing=true){
 		$this->debugLog=array();
