@@ -102,27 +102,36 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 		$authUrl = $this->getAuthorizationUrl();
 		$tokenLabel = $this->getRecommendedTokenLabel();
 		$scopes = $this->getRequiredScopes();
+		$resourceMetadataUrl = $this->getProtectedResourceMetadataUrl();
 		if ($statusCode === 401) {
-			header('WWW-Authenticate: Bearer realm="' . $realm . '", authorization_uri="' . $authUrl . '"');
+			$challenge = 'WWW-Authenticate: Bearer realm="' . $realm . '", authorization_uri="' . $authUrl . '"';
+			if ($resourceMetadataUrl !== '') {
+				$challenge .= ', resource_metadata="' . $resourceMetadataUrl . '"';
+			}
+			header($challenge);
 		}
 		header('Content-Type: application/json; charset=utf-8');
 		http_response_code($this->authFailCode);
+		$errorData = array(
+			"auth_scheme"             => "Bearer",
+			"auth_realm"              => $realm,
+			"how_to_authenticate"     => "Send your API token in the 'Authorization: Bearer <token>' header.",
+			"how_to_get_token"        => "Open authorization_url, then create an API token named '" . $tokenLabel . "' with the scopes listed in required_scopes, and use it as the Bearer token.",
+			"recommended_token_label" => $tokenLabel,
+			"required_scopes"         => $scopes,
+			"authorization_url"       => $authUrl,
+			"token_ui_url"            => $tokenUiUrl,
+		);
+		if ($resourceMetadataUrl !== '') {
+			$errorData["resource_metadata"] = $resourceMetadataUrl;
+		}
 		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
 			"id"      => null,
 			"error"   => array(
 				"code"    => -32001,
 				"message" => "Unauthorized: a valid Bearer API token is required.",
-				"data"    => array(
-					"auth_scheme"             => "Bearer",
-					"auth_realm"              => $realm,
-					"how_to_authenticate"     => "Send your API token in the 'Authorization: Bearer <token>' header.",
-					"how_to_get_token"        => "Open authorization_url, then create an API token named '" . $tokenLabel . "' with the scopes listed in required_scopes, and use it as the Bearer token.",
-					"recommended_token_label" => $tokenLabel,
-					"required_scopes"         => $scopes,
-					"authorization_url"       => $authUrl,
-					"token_ui_url"            => $tokenUiUrl,
-				),
+				"data"    => $errorData,
 			),
 		));
 		exit;
@@ -186,6 +195,14 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	 */
 	protected function getTokenUiUrl() {
 		return $this->toAbsoluteUrl($this->tokenUiUrl);
+	}
+
+	/**
+	 * Optional RFC 9728 protected-resource metadata URL to expose on 401.
+	 * Return an empty string to keep the classic Bearer challenge.
+	 */
+	protected function getProtectedResourceMetadataUrl() {
+		return "";
 	}
 
 	/**
