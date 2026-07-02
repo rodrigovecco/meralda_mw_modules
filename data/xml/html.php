@@ -33,12 +33,12 @@ class mwmod_mw_data_xml_html extends mwmod_mw_data_xml{
 
 	function output_xml_cont(){
 		$val=$this->get_value();
-		echo mw_array2xml_parse_node_string_value($val);
+		echo $this->xml_parse_node_value($val);
 	}
 	
 	function get_xml_cont(){
 		$val=$this->get_value();
-		return mw_array2xml_parse_node_string_value($val);
+		return $this->xml_parse_node_value($val);
 			
 	}
 	function get_xml_open(){

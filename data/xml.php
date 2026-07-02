@@ -58,7 +58,7 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 	function output_xml_cont(){
 		if($this->is_value_mode()){
 			$val=$this->get_value();
-			echo mw_array2xml_parse_node_string_value($val);
+			echo $this->xml_parse_node_value($val);
 		}else{
 			if(!$items=$this->get_items()){
 				echo "";
@@ -76,7 +76,7 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 	function get_xml_cont(){
 		if($this->is_value_mode()){
 			$val=$this->get_value();
-			return mw_array2xml_parse_node_string_value($val);
+			return $this->xml_parse_node_value($val);
 		}else{
 			if(!$items=$this->get_items()){
 				return "";	
@@ -94,7 +94,7 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 		$r=$this->get_margin_tabs();
 		if($this->is_value_mode()){
 			$val=$this->get_value();
-			$dtype=mw_array2xml_str_data_type($val);
+			$dtype=$this->xml_str_data_type($val);
 			$r.="<item id='".$this->id."' dataType='$dtype'>";
 		}else{
 			$r.="<item id='".$this->id."' dataType='Object'>\n";
@@ -108,6 +108,83 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 		}
 		$r.="</item>\n";
 		return $r;
+	}
+	//// serialización XML autónoma (lógica trasladada desde core/util/array.php y core/util/text.php)
+	function xml_str_data_type($val){
+		//corresponde con la función js fp_ajax_xml2obj_item
+		if(is_array($val)){
+			return "Object";	
+		}
+		if(is_bool($val)){
+			return "Bool";	
+		}
+		if(is_numeric($val)){
+			if(is_int($val)){
+				return "Int";		
+			}
+			return "Numeric";	
+		}
+		return "String";
+	}
+	function xml_parse_node_value($val){
+		if(is_bool($val)){
+			if($val){
+				return 1;	
+			}
+			return 0;	
+		}
+		if(is_null($val)){
+			return "";
+		}
+		if(is_numeric($val)){
+			return $val;	
+		}
+		$val=(string)$val;
+		if($val===""){
+			return "";	
+		}
+		//siempre CDATA para strings: evita romper el XML con <, >, &, comillas, saltos, etc.
+		return $this->xml_cdata($val);
+	}
+	function xml_cdata($str){
+		$str=$this->xml_sanitize_text($str);
+		$str=trim($str);
+		//romper la secuencia prohibida ]]> dentro del CDATA sin invalidarlo
+		$str=str_replace("]]>","]]]]><![CDATA[>",$str);
+		return "<![CDATA[".$str."]]>";
+	}
+	function xml_sanitize_text($str){
+		$str=(string)$str;
+		//asegurar UTF-8 válido: datos antiguos pueden venir en Windows-1252/ISO-8859-1
+		if(!mb_check_encoding($str,'UTF-8')){
+			$conv=@mb_convert_encoding($str,'UTF-8','Windows-1252');
+			if($conv===false||!mb_check_encoding($conv,'UTF-8')){
+				$conv=mb_convert_encoding($str,'UTF-8','UTF-8');
+			}
+			$str=$conv;
+		}
+		//eliminar caracteres de control no permitidos en XML 1.0
+		$str=preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/','',$str);
+		return $str;
+	}
+	function xml_value_as_array_or_str($val){
+		if(is_bool($val)){
+			return $val?"true":"false";	
+		}
+		if(is_object($val)){
+			$obj=$val;
+			if($obj instanceof mw_object_as_array and $obj->__mw_array_allow_use_this_object()){
+				$val=$obj->get_props_as_array_or_str();
+			}elseif(method_exists($obj,'__toString')){
+				$val=$obj."";
+			}else{
+				$val="";	
+			}
+			if(is_bool($val)){
+				return $val?"true":"false";	
+			}
+		}
+		return $val;
 	}
 	function is_value_mode(){
 		return $this->_is_value_mode();	
@@ -131,7 +208,7 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 	function get_props_as_array_or_str(){
 		if($this->is_value_mode()){
 			$val=$this->get_value();
-			return mw_array_get_obj_as_array_or_str($val);
+			return $this->xml_value_as_array_or_str($val);
 		}
 		$r=array();
 		if(!$items=$this->get_items()){
