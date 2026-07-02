@@ -88,6 +88,7 @@ class mwmod_mw_users_apitoken_item extends mwmod_mw_manager_item {
 	 */
 	function allowsPermission($code) {
 		$perms = $this->getPermissions();
+		
 		if (empty($perms)) {
 			return false;
 		}

@@ -96,6 +96,7 @@ abstract class  mwmod_mw_service_user_root extends mwmod_mw_service_base{
 	
 	function allow($action,$params=false){
 		if($man=$this->get_user_manager()){
+			
 			return $man->allow($action,$params);	
 		}
 	

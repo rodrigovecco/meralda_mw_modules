@@ -627,7 +627,12 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			// New API tokens carry a permission scope that can only restrict, never expand.
 			// Password and pwdBaseToken sessions bypass this check (full user permissions).
 			if($this->isTokenBasedSession()){
-				return $this->currentApiToken->allowsPermission($action);
+				
+				if($this->currentApiToken->allowsPermission($action)){
+					return true;
+				}
+				
+				return false;
 			}
 			return true;
 		}
