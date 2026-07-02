@@ -103,34 +103,34 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button" data-option="0.1" data-method="zoom"');
 		$btn->add_class("btn btn-primary avatar-btns");
-		$btn->add_cont_elem("","span");
-		$btn->add_class("fa fa-search-plus");
+		$icon=$btn->add_cont_elem("","span");
+		$icon->add_class("fa fa-search-plus");
 
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button" data-option="-0.1" data-method="zoom"');
 		$btn->add_class("btn btn-primary avatar-btns");
-		$btn->add_cont_elem("","span");
-		$btn->add_class("fa fa-search-minus");
+		$icon=$btn->add_cont_elem("","span");
+		$icon->add_class("fa fa-search-minus");
 		
 		
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-method="reset"');
 		$btn->add_class("btn btn-primary avatar-btns");
-		$btn->add_cont_elem("","span");
-		$btn->add_class("fa fa-redo");
+		$icon=$btn->add_cont_elem("","span");
+		$icon->add_class("fa fa-redo");
 		
 		
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-cmd="fullW"');
 		$btn->add_class("btn btn-primary avatar-btns");
-		$btn->add_cont_elem("","span");
-		$btn->add_class("fa fa-arrows-alt-h");
+		$icon=$btn->add_cont_elem("","span");
+		$icon->add_class("fa fa-arrows-alt-h");
 		
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-cmd="fullH"');
 		$btn->add_class("btn btn-primary avatar-btns");
-		$btn->add_cont_elem("","span");
-		$btn->add_class("fa fa-arrows-alt-v");
+		$icon=$btn->add_cont_elem("","span");
+		$icon->add_class("fa fa-arrows-alt-v");
 		
 		
 		

@@ -147,8 +147,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 			imagesavealpha($dest_img, true);
 		}
 		if(!imagecopyresampled($dest_img, $src_img, 0,0, round($crop["x"]), round($crop["y"]), round($crop["width"]), round($crop["height"]), round($crop["width"]), round($crop["height"]))){
-			imagedestroy($src_img);
-			imagedestroy($dest_img);
+			//imagedestroy($src_img);
+			//imagedestroy($dest_img);
 			return false;
 		}
 		if(!$namenoext=basename($namenoext)){
@@ -161,8 +161,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}elseif($mode=="jpg"){
 			$new_filename=$namenoext.".jpg";
 		}else{
-			imagedestroy($src_img);
-			imagedestroy($dest_img);
+			//imagedestroy($src_img);
+			//imagedestroy($dest_img);
 			return false;	
 		}
 		$fp_dest=$path."/".$new_filename;
@@ -184,8 +184,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 		
 		
-		imagedestroy($src_img);
-		imagedestroy($dest_img);
+		//imagedestroy($src_img);
+		//imagedestroy($dest_img);
 		return $new_filename;
 		
 	}
@@ -257,25 +257,140 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 		$this->delete();
 		return $this->create_new_img_file(basename($srcfile),$path);
-			
+
+	}
+
+	/**
+	 * Detect the image mode (jpg/png/gif) of a raw binary string, or false if
+	 * it is not a supported image. Pure helper, no filesystem access.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @return string|false  "jpg" | "png" | "gif" or false.
+	 */
+	public static function img_string_mode($binarystring){
+		if(!is_string($binarystring) || $binarystring===""){
+			return false;
+		}
+		$info=@getimagesizefromstring($binarystring);
+		if(!$info || !isset($info[2])){
+			return false;
+		}
+		switch((int)$info[2]){
+			case IMAGETYPE_JPEG: return "jpg";
+			case IMAGETYPE_PNG:  return "png";
+			case IMAGETYPE_GIF:  return "gif";
+		}
+		return false;
+	}
+
+	/**
+	 * Set the GD source image directly from a raw binary string, mirroring
+	 * set_src() but without any filesystem/temp file. Uses imagecreatefromstring
+	 * so it is immune to open_basedir / sys_get_temp_dir restrictions.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @return bool
+	 */
+	function set_src_from_string($binarystring){
+		$this->unset_src();
+		if(!$mode=self::img_string_mode($binarystring)){
+			return false;
+		}
+		$src=@imagecreatefromstring($binarystring);
+		if(!$src){
+			return false;
+		}
+		$transp=-1;
+		if($mode=="gif" || $mode=="png"){
+			$transp=@imagecolortransparent($src);
+		}
+		$this->_set_src($src,$mode,$transp);
+		return true;
+	}
+
+	/**
+	 * Populate the processing info (dimensions/mime) from a raw binary string,
+	 * mirroring set_proccess_info_from_file() but reading from the string via
+	 * getimagesizefromstring instead of a file on disk.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @return array|false
+	 */
+	function set_proccess_info_from_string($binarystring){
+		$this->unset_proccess_info();
+		if(!is_string($binarystring) || $binarystring===""){
+			return false;
+		}
+		if(!$info=@getimagesizefromstring($binarystring)){
+			return false;
+		}
+		$r=array(
+			"width"=>$info[0],
+			"height"=>$info[1],
+			"mime"=>$info["mime"]??""
+		);
+		return $this->set_proccess_info_from_array($r);
+	}
+
+	/**
+	 * Generate this dimension's optimized image from a raw binary string.
+	 * Mirrors copy_from_file() but the source is the string itself (decoded GD
+	 * image) instead of a file on disk. No temp file is created, so it works
+	 * regardless of open_basedir / sys temp dir restrictions (e.g. cPanel).
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name (extension is forced from the detected type).
+	 * @return string|false New stored filename, or false on failure.
+	 */
+	function copy_from_string($binarystring,$filename=false){
+		$this->debugLog=array();
+		$this->debugLog[]="copy_from_string";
+		if(!$this->set_src_from_string($binarystring)){
+			$this->debugLog[]="set_src_from_string failed (invalid or unsupported image)";
+			return false;
+		}
+		if(!$pinfo=$this->set_proccess_info_from_string($binarystring)){
+			$this->debugLog[]="set_proccess_info_from_string failed";
+			return false;
+		}
+		if(!$path=$this->img_path){
+			$this->debugLog[]="copy_from_string: no img_path";
+			return false;
+		}
+		$srcdata=$this->get_src_data();
+		$base="img".date("YmdHis");
+		if($filename){
+			$fn=preg_replace('/\.[^.]+$/','',basename((string)$filename));
+			$fn=preg_replace('/[^A-Za-z0-9_\-]+/','_',(string)$fn);
+			$fn=trim($fn,"_");
+			if($fn!==""){
+				$base=$fn;
+			}
+		}
+		$this->delete();
+		if(!$new=$this->create_new_img_file($base,$path)){
+			$this->debugLog[]="copy_from_string: create_new_img_file failed";
+			return false;
+		}
+		return $new;
 	}
 	/*
 	function move_from_uploaded_file_info($info,$newfilename=false,$replace=true,$urlsercurefilename=true){
-		
+
 		//mw_array2list_echo($info);
 		$deleteifexists=$this->current_filename;
 		if(!$path=$this->img_path){
-			return false;	
+			return false;
 		}
 		if(!$fm=$this->get_filemanager()){
-			return false;	
+			return false;
 		}
 		$isimg=true;
 		if(!$nf=$fm->move_from_uploaded_file_info($info,$path,$deleteifexists,$isimg,$newfilename,$replace,$urlsercurefilename)){
-			return false;	
+			return false;
 		}
 		return $this->transform_file($nf,$path);
-		
+
 	}
 	*/
 

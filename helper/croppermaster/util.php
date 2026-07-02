@@ -13,7 +13,7 @@ class mwmod_mw_helper_croppermaster_util extends mwmod_mw_html_manager_util{
 		if(!$jsman=$this->get_js_man($ui)){
 			return false;	
 		}
-		$item=new mwmod_mw_html_manager_item_jsexternal("cropperavatar","/res/cropper/avatar.js");
+		$item=new mwmod_mw_html_manager_item_jsexternal("cropperavatar","/res/thirdparty/cropper/avatar.js");
 		$jsman->add_item_by_item($item);
 		
 	}
@@ -23,7 +23,7 @@ class mwmod_mw_helper_croppermaster_util extends mwmod_mw_html_manager_util{
 			return false;	
 		}
 		if(!$cssmanager->item_exists("cropper")){
-			$item= new mwmod_mw_html_manager_item_css("cropper","/res/cropper/cropper.min.css");
+			$item= new mwmod_mw_html_manager_item_css("cropper","/res/thirdparty/cropper/cropper.min.css");
 			$cssmanager->add_item_by_item($item);
 		}
 	}
@@ -35,7 +35,7 @@ class mwmod_mw_helper_croppermaster_util extends mwmod_mw_html_manager_util{
 		if($jsman->item_exists("cropper")){
 			return true;
 		}
-		$item=new mwmod_mw_html_manager_item_jsexternal("cropper","/res/cropper/cropper.min.js");
+		$item=new mwmod_mw_html_manager_item_jsexternal("cropper","/res/thirdparty/cropper/cropper.min.js");
 		$jsman->add_item_by_item($item);
 	}
 	

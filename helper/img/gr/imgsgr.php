@@ -59,6 +59,58 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		return $r;
 	
 	}
+
+	/**
+	 * Regenerate all dimension variants from a raw image binary string.
+	 * Same pipeline as update_images_from_uploaded() but the source is a string
+	 * (e.g. base64 received by an MCP tool) instead of an HTTP-uploaded file.
+	 * Each configured dimension is produced via copy_from_string() (GD
+	 * imagecreatefromstring), so no temp file is written and it is immune to
+	 * open_basedir / sys temp dir restrictions.
+	 *
+	 * @param string $binarystring  Raw image bytes.
+	 * @param string|false $filename Optional desired base name.
+	 * @return string|false New stored filename, or false on failure.
+	 */
+	function update_images_from_string($binarystring,$filename=false){
+		$this->debugLog=array();
+		if(!is_string($binarystring) || $binarystring===""){
+			$this->debugLog[]="update_images_from_string: empty binary";
+			return false;
+		}
+		if(!@getimagesizefromstring($binarystring)){
+			$this->debugLog[]="update_images_from_string: invalid image (getimagesizefromstring failed)";
+			return false;
+		}
+		if($subpath_man=$this->get_sub_path_man()){
+			$subpath_man->delete();
+		}else{
+			$this->debugLog[]="update_images_from_string: no sub_path_man";
+		}
+		$r=false;
+		if($items=$this->get_items()){
+			foreach($items as $cod=>$item){
+				if(!$subman=$item->new_img_subman()){
+					$this->debugLog[]="$cod: no subman";
+					continue;
+				}
+				if($n=$subman->copy_from_string($binarystring,$filename)){
+					$this->debugLog[]="$cod: created $n";
+					$r=$n;
+				}else{
+					$this->debugLog[]="$cod: copy_from_string failed";
+					if(is_array($subman->debugLog)){
+						foreach($subman->debugLog as $line){
+							$this->debugLog[]="$cod:   $line";
+						}
+					}
+				}
+			}
+		}else{
+			$this->debugLog[]="update_images_from_string: no items (dimensions)";
+		}
+		return $r;
+	}
 	
 	function update_images_from_ref($refcod=false,$onlyMissing=true){
 		$this->debugLog=array();
@@ -228,6 +280,28 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		}
 			
 	}
+	function set_info_and_url_by_bucket($bucket,$pathMan,$filename,$title=false){
+		if(!$bucket){
+			return false;	
+		}
+		if(!$pathMan){
+			return false;	
+		}
+		if(!$items=$this->get_items()){
+			return false;	
+		}
+		foreach($items as $cod=>$item){
+			$bucketpath=$pathMan->get_bucket_path($cod);
+			$item->set_current_filename($filename);
+			
+			if($title){
+				$item->set_title($title);	
+			}
+			$item->setBucketMode($bucket,$bucketpath);
+			
+		}
+		
+	}
 	function set_info_and_url_by_public_path($publicpath,$filename=false,$title=false,$realpath=false){
 		if($realpath){
 			if(is_object($realpath)){
@@ -379,10 +453,13 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		if(!$cod=$this->check_str_key_alnum_underscore($cod)){
 			return false;	
 		}
+if(!isset($this->_items[$cod])){
+			return false;
+		}
 		if($this->_items[$cod]){
 			if($checkactive){
 				if(!$this->_items[$cod]->is_active()){
-					return false;	
+					return false;
 				}
 			}
 			return $this->_items[$cod];
@@ -393,6 +470,7 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 	final function add_item($item){
 		$cod=$item->cod;
 		$this->_items[$cod]=$item;
+		$item->setGroup($this);
 		return $item;
 	}
 	function get_items(){
@@ -416,7 +494,7 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 					}
 				}
 			}
-			//mainSrcImgItem
+			
 		}
 	}
 	

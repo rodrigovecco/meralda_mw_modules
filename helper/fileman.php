@@ -626,6 +626,30 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		
 	}
 
+	function delete_empty_dirs($path){
+		if(!$this->is_dir($path)){
+			return false;	
+		}
+		if(!$list=scandir($path)){
+			rmdir($path);
+			return true;	
+		}
+		foreach($list as $file){
+			$subpath=$path."/".$file;
+			if(($file!=".")and($file!="..")){
+				if($this->is_dir($subpath)){
+					$this->delete_empty_dirs($subpath);
+				}
+			}
+		}
+		if(!$list=scandir($path)){
+			rmdir($path);
+			return true;	
+		}
+		
+			
+	}
+
 	function delete_path($path){
 		if(is_link($path)){
 			return false;	

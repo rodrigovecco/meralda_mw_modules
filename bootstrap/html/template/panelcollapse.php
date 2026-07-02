@@ -138,38 +138,39 @@ class mwmod_mw_bootstrap_html_template_panelcollapse extends mwmod_mw_bootstrap_
 	}
 	
 	function create_cont($main){
+		// Auto-generate an ID for the collapse body if none was provided,
+		// so Bootstrap 5's data-bs-target can reference it explicitly.
+		if(!$this->collapse_body_id){
+			$this->collapse_body_id='pc-'.substr(md5(uniqid('',true)),0,8);
+		}
 		$this->set_main_elem($main);
 		$head=new mwmod_mw_bootstrap_html_def("card-header");
 		$this->panel_heading=$head;
 		$collaps_btn=new mwmod_mw_bootstrap_html_elem("div");
+		// Bootstrap 4 legacy attributes (kept for backward compatibility)
 		$collaps_btn->set_att("data-toggle","collapse");
 		if($this->collapse_dataparent_id){
 			$collaps_btn->set_att("data-parent","#".$this->collapse_dataparent_id);
 		}
-
-		if($this->collapse_body_id){
-			$collaps_btn->set_att("data-target","#".$this->collapse_body_id);
-		}else{
-			$collaps_btn->set_att("data-auto-target",".card-collapse");
-			$collaps_btn->set_att("data-auto-target-parent",".card");
-			$collaps_btn->set_att("href","#");
+		$collaps_btn->set_att("data-target","#".$this->collapse_body_id);
+		// Bootstrap 5 attributes
+		$collaps_btn->set_att("data-bs-toggle","collapse");
+		if($this->collapse_dataparent_id){
+			$collaps_btn->set_att("data-bs-parent","#".$this->collapse_dataparent_id);
 		}
-		
-		//$collaps_btn->set_att("href","#".$this->collapse_body_id);
+		$collaps_btn->set_att("data-bs-target","#".$this->collapse_body_id);
+		$collaps_btn->set_att("aria-controls",$this->collapse_body_id);
 		$collaps_btn->set_att("aria-expanded","true");
 		$collaps_btn->set_style("cursor","pointer");
 		$this->set_key_cont("collapsbtn",$collaps_btn);
 		$head->add_cont($collaps_btn);
 		$this->set_title_elem($collaps_btn);
 		$main->add_cont($head);
-		$bodycontainer=new mwmod_mw_bootstrap_html_def("card-collapse collapse in");
+		$bodycontainer=new mwmod_mw_bootstrap_html_def("card-collapse collapse show");
 		$bodycontainer->set_att("aria-expanded","true");
 		$this->panel_collapse=$bodycontainer;
-		if($this->collapse_body_id){
-			$bodycontainer->set_att("id",$this->collapse_body_id);
-		}
+		$bodycontainer->set_att("id",$this->collapse_body_id);
 		$this->collapsbtn=$collaps_btn;
-		//$bodycontainer->set_att("id",$this->collapse_body_id);
 		$this->set_key_cont("bodycontainer",$bodycontainer);
 		$body=new mwmod_mw_bootstrap_html_def("card-body");
 		$this->set_cont_elem($body);
