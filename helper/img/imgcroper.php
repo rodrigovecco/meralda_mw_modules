@@ -55,69 +55,9 @@ class mwmod_mw_helper_img_imgcroper extends mw_apsubbaseobj{
 		$this -> data=$data; 
 		return true;
 	  }
-	  /*
-	  if (!empty($data)) {
-        $this -> data = json_decode(stripslashes($data));
-      }
-	  */
+	  
     }
-	/*
-
-    private function setFile($file) {
-      $errorCode = $file['error'];
-
-      if ($errorCode === UPLOAD_ERR_OK) {
-        $type = exif_imagetype($file['tmp_name']);
-
-        if ($type) {
-          $dir = $this -> srcDir;
-
-          if (!file_exists($dir)) {
-            mkdir($dir, 0777);
-          }
-
-          $extension = image_type_to_extension($type);
-          $src = $dir . '/' . date('YmdHis') . $extension;
-
-          if ($type == IMAGETYPE_GIF || $type == IMAGETYPE_JPEG || $type == IMAGETYPE_PNG) {
-
-            if (file_exists($src)) {
-              unlink($src);
-            }
-
-            $result = move_uploaded_file($file['tmp_name'], $src);
-
-            if ($result) {
-              $this -> src = $src;
-              $this -> type = $type;
-              $this -> extension = $extension;
-              $this -> setDst();
-            } else {
-               $this -> msg = 'Failed to save file';
-            }
-          } else {
-            $this -> msg = 'Please upload image with the following types: JPG, PNG, GIF';
-          }
-        } else {
-          $this -> msg = 'Please upload image file';
-        }
-      } else {
-        $this -> msg = $this -> codeToMessage($errorCode);
-      }
-    }
-	*/
-	/*
-
-    private function setDst() {
-      $dir = $this -> dstDir;
-
-      if (!file_exists($dir)) {
-        mkdir($dir, 0777);
-      }
-
-      $this -> dst = $dir . '/' . date('YmdHis') . '.png';
-    }
-	*/
+	
 
     private function do_crop($src, $dst, $data) {
       if (!empty($src) && !empty($dst) && !empty($data)) {
@@ -154,7 +94,7 @@ class mwmod_mw_helper_img_imgcroper extends mw_apsubbaseobj{
           // PHP's degrees is opposite to CSS's degrees
           $new_img = imagerotate( $src_img, -$degrees, imagecolorallocatealpha($src_img, 0, 0, 0, 127) );
 
-          imagedestroy($src_img);
+          //imagedestroy($src_img);
           $src_img = $new_img;
 
           $deg = abs($degrees) % 180;

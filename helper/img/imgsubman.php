@@ -147,8 +147,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 			imagesavealpha($dest_img, true);
 		}
 		if(!imagecopyresampled($dest_img, $src_img, 0,0, round($crop["x"]), round($crop["y"]), round($crop["width"]), round($crop["height"]), round($crop["width"]), round($crop["height"]))){
-			imagedestroy($src_img);
-			imagedestroy($dest_img);
+			//imagedestroy($src_img);
+			//imagedestroy($dest_img);
 			return false;
 		}
 		if(!$namenoext=basename($namenoext)){
@@ -161,8 +161,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}elseif($mode=="jpg"){
 			$new_filename=$namenoext.".jpg";
 		}else{
-			imagedestroy($src_img);
-			imagedestroy($dest_img);
+			//imagedestroy($src_img);
+			//imagedestroy($dest_img);
 			return false;	
 		}
 		$fp_dest=$path."/".$new_filename;
@@ -184,8 +184,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 		
 		
-		imagedestroy($src_img);
-		imagedestroy($dest_img);
+		//imagedestroy($src_img);
+		//imagedestroy($dest_img);
 		return $new_filename;
 		
 	}
@@ -257,7 +257,7 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}
 		$this->delete();
 		return $this->create_new_img_file(basename($srcfile),$path);
-			
+
 	}
 
 	/**
@@ -376,21 +376,21 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 	}
 	/*
 	function move_from_uploaded_file_info($info,$newfilename=false,$replace=true,$urlsercurefilename=true){
-		
+
 		//mw_array2list_echo($info);
 		$deleteifexists=$this->current_filename;
 		if(!$path=$this->img_path){
-			return false;	
+			return false;
 		}
 		if(!$fm=$this->get_filemanager()){
-			return false;	
+			return false;
 		}
 		$isimg=true;
 		if(!$nf=$fm->move_from_uploaded_file_info($info,$path,$deleteifexists,$isimg,$newfilename,$replace,$urlsercurefilename)){
-			return false;	
+			return false;
 		}
 		return $this->transform_file($nf,$path);
-		
+
 	}
 	*/
 

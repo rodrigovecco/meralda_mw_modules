@@ -280,6 +280,28 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		}
 			
 	}
+	function set_info_and_url_by_bucket($bucket,$pathMan,$filename,$title=false){
+		if(!$bucket){
+			return false;	
+		}
+		if(!$pathMan){
+			return false;	
+		}
+		if(!$items=$this->get_items()){
+			return false;	
+		}
+		foreach($items as $cod=>$item){
+			$bucketpath=$pathMan->get_bucket_path($cod);
+			$item->set_current_filename($filename);
+			
+			if($title){
+				$item->set_title($title);	
+			}
+			$item->setBucketMode($bucket,$bucketpath);
+			
+		}
+		
+	}
 	function set_info_and_url_by_public_path($publicpath,$filename=false,$title=false,$realpath=false){
 		if($realpath){
 			if(is_object($realpath)){
@@ -431,16 +453,16 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 		if(!$cod=$this->check_str_key_alnum_underscore($cod)){
 			return false;	
 		}
-
-		if(isset($this->_items[$cod])){
-			if($this->_items[$cod]){
-				if($checkactive){
-					if(!$this->_items[$cod]->is_active()){
-						return false;	
-					}
+if(!isset($this->_items[$cod])){
+			return false;
+		}
+		if($this->_items[$cod]){
+			if($checkactive){
+				if(!$this->_items[$cod]->is_active()){
+					return false;
 				}
-				return $this->_items[$cod];
 			}
+			return $this->_items[$cod];
 		}
 		return false;
 	}
@@ -448,6 +470,7 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 	final function add_item($item){
 		$cod=$item->cod;
 		$this->_items[$cod]=$item;
+		$item->setGroup($this);
 		return $item;
 	}
 	function get_items(){
@@ -471,7 +494,7 @@ class mwmod_mw_helper_img_gr_imgsgr extends mwmod_mw_helper_img_abs{
 					}
 				}
 			}
-			//mainSrcImgItem
+			
 		}
 	}
 	

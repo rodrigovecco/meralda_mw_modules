@@ -11,6 +11,8 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 	public $publicMode=true;
 	public $updateDone=false;
 	public $debugLog=array();
+
+	private $bucket;
 	
 	
 	function upload_new_img_and_proc($input){
@@ -25,6 +27,29 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 		}
 		$this->saveFileName($new);
 		return $new;
+	}
+	final function setBucketMode($bucket){
+		if(!$bucket){
+			return false;	
+		}
+		if(!$bucket->isEnabled()){
+			return false;	
+		}
+		$this->bucket=$bucket;
+		return true;
+	}
+	final function __get_priv_bucket(){
+		if(isset($this->bucket)){
+			return $this->bucket;
+		}
+		return false;
+	}
+	function isBucketMode(){
+		if($this->__get_priv_bucket()){
+			return true;	
+		}
+		return false;
+
 	}
 	function checkUploaded($input){
 		if(!$input){
@@ -178,7 +203,9 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 		$this->updateImgs();
 		return true;
 	}
+
 	function updateImgs(){
+		//aca deberíamos crear metodo alternativo para actualizar info desde bucket!!!
 		if(!$this->imgsgr){
 			return false;	
 		}
@@ -186,7 +213,15 @@ abstract class mwmod_mw_helper_img_onitem_abs extends mw_apsubbaseobj{
 		$title=$this->getImagesTitle();
 		$url= $this->getGeneralUrl();
 		$pm=$this->newSubPathMan();//acá cambiar si no son publicas
-		$this->imgsgr->set_info_and_url_by_public_path($url,$filename,$title,$pm);
+		
+		if($this->isBucketMode()){
+			
+			$this->imgsgr->set_info_and_url_by_bucket($this->__get_priv_bucket(),$pm,$filename,$title);
+
+		}else{
+			$this->imgsgr->set_info_and_url_by_public_path($url,$filename,$title,$pm);
+		}
+		
 		$this->updateDone=true;
 			
 	}

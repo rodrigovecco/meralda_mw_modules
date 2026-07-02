@@ -477,7 +477,20 @@ class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 		if(!$fm=$this->get_file_man()){
 			return false;	
 		}
-		return $fm->delete_path($path);
+		$r=$fm->delete_path($path);
+		
+		return $r;
+
+	}
+	function deleteEmptyDirs(){
+		if(!$path=$this->get_path()){
+			return false;	
+		}
+		if(!$fm=$this->get_file_man()){
+			return false;	
+		}
+		$r=$fm->delete_empty_dirs($path);
+		return $r;
 	}
 
 	
@@ -504,7 +517,7 @@ class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 		return $this->pathman->get_file_man();	
 	}
 
-	/**
+/**
 	 * Upload a file to this subpath from a form file input.
 	 * Creates the directory if it doesn't exist.
 	 * 
@@ -549,6 +562,15 @@ class  mwmod_mw_ap_paths_subpath extends mw_apsubbaseobj{
 		}
 		$path = $this->get_sub_path($subpath) ?: "";
 		return $fm->check_process_upload_input($input, $path, false, false, false, true, true, false, $info, $invaliduploadattempt);
+	}
+
+	function get_bucket_path($subpath=false){
+		if(!$r=$this->get_rel_sub_path($subpath)){
+			return false;
+		}
+
+		return $this->pathman->mode."/".$r;
+
 	}
 	
 	/**

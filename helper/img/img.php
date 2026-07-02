@@ -11,10 +11,108 @@ class mwmod_mw_helper_img_img extends mwmod_mw_helper_img_abs{
 	public $isMainSrc=false;
 	public $group;
 	var $cfg=array();
+
+	private $bucket;
+	private $bucketPath;
 	
 	function __construct($cod=false){
 		$this->init($cod);	
 	}
+	final function setBucketMode($bucket,$bucketPath=false){
+		if(!$bucket){
+			return false;	
+		}
+		$this->bucket=$bucket;
+		if($bucketPath){
+			$this->bucketPath=$bucketPath;	
+		}
+		return true;
+	}
+	final function __get_priv_bucket(){
+		if(isset($this->bucket)){
+			return $this->bucket;
+		}
+		return false;
+	}
+	final function __get_priv_bucketPath(){
+		if(isset($this->bucketPath)){
+			return $this->bucketPath;
+		}
+		return false;
+	}
+
+	function isBucketMode(){
+		if($this->__get_priv_bucket()){
+			return true;	
+		}
+		return false;
+
+	}
+	function getBucketUrl($expires=300){
+		if(!$bucket=$this->__get_priv_bucket()){
+			return false;	
+		}
+		if(!$bucketPath=$this->__get_priv_bucketPath()){
+			return false;	
+		}
+		$filename=$this->current_filename;
+		
+		if(!$filename){
+			return false;	
+		}
+		if(!$filename=basename($filename)){
+			return false;
+		}
+		$ops=array();
+		$ops["inline"]=true;
+		$ops["filename"]=$filename;
+		$ops["contentType"]="image/jpeg";
+		if(!$url=$bucket->getObjectTempURL($bucketPath."/".$filename,$expires,$ops)){
+			return false;	
+		}
+		return $url;
+		
+	}
+	function outputBucketMode(){
+		//ob_end_flush();
+		//die("Bucket mode output not implemented yet");
+		ob_start();
+		$contet=$this->getBucketContent();
+		if(!$contet){
+			ob_end_clean();
+			return false;	
+		}
+		ob_end_clean();
+		header ('Content-length: ' .strlen($contet));
+		header ('Content-type: image/jpeg');
+		echo $contet;
+
+
+
+		return true;
+	}
+	function getBucketContent(){
+		if(!$bucket=$this->__get_priv_bucket()){
+			return false;	
+		}
+		if(!$bucketPath=$this->__get_priv_bucketPath()){
+			return false;	
+		}
+		$filename=$this->current_filename;
+		
+		if(!$filename){
+			return false;	
+		}
+		if(!$filename=basename($filename)){
+			return false;
+		}
+		if(!$content=$bucket->getObject($bucketPath."/".$filename)){
+			return false;	
+		}
+		return $content;
+	}
+
+
 	function getMainSrcImgItem(){
 		if($this->group){
 			if($this->group->mainSrcImgItem){
@@ -24,6 +122,7 @@ class mwmod_mw_helper_img_img extends mwmod_mw_helper_img_abs{
 			}
 		}
 	}
+
 	function fileExistsOrCanBeCreated(){
 		if($file=$this->get_file_full_path_if_ok()){
 			return true;
@@ -44,6 +143,31 @@ class mwmod_mw_helper_img_img extends mwmod_mw_helper_img_abs{
 			return $this->get_url($params);	
 		}
 	}
+	function createFileFromOtherSrc($cod){
+		if(!$cod){
+			return false;	
+		}
+		if($this->cod==$cod){
+			return false;	
+		}
+		
+		if(!$this->group){
+			
+			return false;	
+		}
+		if($src=$this->group->get_item($cod)){
+			
+			if($filesrc=$src->get_file_full_path_if_ok()){
+				
+				if($subman=$this->new_img_subman()){
+					if($n=$subman->copy_from_file($filesrc)){
+						$this->set_current_filename($n);
+						return 	$this->get_file_full_path_if_ok();
+					}
+				}
+			}
+		}
+	}
 	function createFileFromMainSrc(){
 		if(!$src=$this->getMainSrcImgItem()){
 			return false;	
@@ -59,7 +183,33 @@ class mwmod_mw_helper_img_img extends mwmod_mw_helper_img_abs{
 		}
 		
 	}
+
+	function getFullFileOrCreateFromMainSrc($otherCode=false){
+		
+		if(!$file=$this->get_file_full_path_if_ok()){
+			if(!$file=$this->createFileFromMainSrc()){
+				if($otherCode){
+					return $this->createFileFromOtherSrc($otherCode);	
+				}
+				return false;
+			}
+		}
+		
+			
+		if($file){
+			return $file;
+			
+
+		}	
+	}
+	
 	function output(){
+		if($this->isBucketMode()){
+			return $this->outputBucketMode();
+		
+		}
+		
+
 		if(!$file=$this->get_file_full_path_if_ok()){
 			$file=$this->createFileFromMainSrc();	
 		}
@@ -167,30 +317,6 @@ class mwmod_mw_helper_img_img extends mwmod_mw_helper_img_abs{
 
 	}
 
-	/*
-	function set_path_and_url_by_rel_path_public_userfile($relpath,$filename=false){
-		return false;
-		//$ap=$this->mainap;
-		if(!$pman=$this->mainap->get_sub_path_man($relpath,"userfilespublic")){
-			return false;	
-		}
-		if(!$path=$pman->get_path()){
-			return false;	
-		}
-		//echo $path."<br>";
-		$this->set_img_path($path);
-		$this->set_current_filename($filename);
-		if(!$filename){
-			return true;	
-		}
-		$url=$this->mainap->get_public_userfiles_url_path()."/".$relpath."/$filename";
-		$this->set_url($url);
-		return true;
-		//$url=
-		
-		
-	}
-	*/
 	
 	function get_debug_data(){
 		$r=array();
