@@ -64,6 +64,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 
 	private $jwtMan;
 	private $apitokenMan;
+	private $oauthMan;
 	/** @var mwmod_mw_users_apitoken_item|null Active API token for the current service request */
 	private $currentApiToken = null;
 	/**
@@ -84,6 +85,27 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	function createApitokenMan(){
 		return new mwmod_mw_users_apitoken_man($this);
 	}
+	/**
+	 * OAuth 2.1 authorization server manager. Disabled by default.
+	 *
+	 * To enable OAuth on an app, create a custom userman and override this
+	 * method to return the central OAuth manager, e.g.:
+	 *
+	 *     class myapp_users_usersman extends mwmod_mw_users2_def_usersman {
+	 *         function createOauthMan() {
+	 *             return new mwmod_mw_oauth_man($this);
+	 *         }
+	 *     }
+	 *
+	 * Then instantiate that userman in the app's create_submanager_user().
+	 * Consumers must reach it via $usersMan->getOauthMan() and treat a false
+	 * return as "OAuth not available on this site".
+	 *
+	 * @return mwmod_mw_oauth_man|false
+	 */
+	function createOauthMan(){
+		return false;
+	}
 	function createRolsAndPermissions(){
 		//create roles and permissions
 		//the default behavior is that this is run on the /managers/user.php script, but it your app initializes users man from the method create_submanager_user
@@ -102,6 +124,12 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		return $this->apitokenMan;
 	}
+	final function __get_priv_oauthMan(){
+		if(!isset($this->oauthMan)){
+			$this->oauthMan=$this->createOauthMan();
+		}
+		return $this->oauthMan;
+	}
 /** @return mwmod_mw_users_jwt_man|false */
 	final function getJwtMan(){
 			return $this->__get_priv_jwtMan();
@@ -109,6 +137,10 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	/** @return mwmod_mw_users_apitoken_man|false */
 	final function getApitokenMan(){
 		return $this->__get_priv_apitokenMan();
+	}
+	/** @return mwmod_mw_oauth_man|false */
+	final function getOauthMan(){
+		return $this->__get_priv_oauthMan();
 	}
 
 	// --------------------------------------------------------
