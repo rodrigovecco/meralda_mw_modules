@@ -228,6 +228,18 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	// --------------------------------------------------------
 
 	function doExecOk($path = false) {
+		// MCP Streamable HTTP is POST-only here. Clients (Claude) also try a GET
+		// to open a server-initiated SSE stream and may send DELETE to end a
+		// session. We do not keep server-initiated streams or sessions, so any
+		// non-POST method must get a clean 405 (with Allow: POST) instead of
+		// being parsed as a JSON-RPC body — otherwise the client sees a bogus
+		// parse error and aborts the connection.
+		$httpMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+		if ($httpMethod !== 'POST') {
+			$this->sendMethodNotAllowed();
+			return;
+		}
+
 		$raw = $this->getJsonRequestBody();
 		if (!$raw || !is_array($raw)) {
 			$this->sendError(null, -32700, "Parse error: invalid or empty JSON body");
@@ -350,6 +362,28 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			ob_end_clean();
 		}
 		http_response_code(202);
+		exit;
+	}
+
+	/**
+	 * Reject non-POST HTTP methods. This endpoint does not expose a
+	 * server-initiated SSE stream (GET) or session termination (DELETE), so we
+	 * answer with 405 and advertise POST as the only allowed method.
+	 */
+	private function sendMethodNotAllowed() {
+		while (ob_get_level() > 0) {
+			ob_end_clean();
+		}
+		http_response_code(405);
+		header('Allow: POST');
+		$this->outputJSON(array(
+			"jsonrpc" => "2.0",
+			"id"      => null,
+			"error"   => array(
+				"code"    => -32000,
+				"message" => "Method not allowed: use HTTP POST for JSON-RPC.",
+			),
+		));
 		exit;
 	}
 
