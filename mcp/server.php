@@ -39,7 +39,13 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	}
 
 	function __construct($baseurl = false) {
-		$this->initAsRoot($baseurl);
+		// Mounted directly as a service root when a base URL is given. When
+		// instantiated as a child of an MCP mount root (mwmod_mw_mcp_serverroot)
+		// no base URL is passed: the parent assigns the cod and wires the tree,
+		// so we must NOT flag this node as a root.
+		if ($baseurl !== false) {
+			$this->initAsRoot($baseurl);
+		}
 		$this->registerAllTools();
 	}
 
@@ -50,6 +56,17 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	 */
 	function isAllowed() {
 		return (bool) $this->get_current_user();
+	}
+
+	/**
+	 * When this server runs as a child of an MCP mount root, the framework calls
+	 * validateAllowedAsChild() (not ...AsRoot()), so the token login must also
+	 * happen here — otherwise no credential would be read and every request
+	 * would 401. Mirrors mwmod_mw_service_user_root::validateAllowedAsRoot().
+	 */
+	function validateAllowedAsChild() {
+		$this->loginUserByToken();
+		return $this->isAllowed();
 	}
 
 	/**
