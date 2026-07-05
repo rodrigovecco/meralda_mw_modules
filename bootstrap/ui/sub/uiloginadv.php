@@ -144,24 +144,31 @@ class mwmod_mw_bootstrap_ui_sub_uiloginadv extends mwmod_mw_bootstrap_ui_sub_uil
 		
 		
 		$frmcontainer=$this->set_ui_dom_elem_id("loginfrm");
-		
+
 		$frmcontainer->add_cont($this->get_login_frm_html());
 		if($this->allow_direct_mode){
 			if($this->login_direct_mode){
-				$frmcontainer->add_cont("<p>".$msg_man->get_msg_txt("direct_mode","Modo directo").".</p>");	
+				$frmcontainer->add_cont("<p>".$msg_man->get_msg_txt("direct_mode","Modo directo").".</p>");
 			}else{
 				$urldirect="index.php?dm=true";
-				$frmcontainer->add_cont("<p style='display:none'><a href='$urldirect'>".$msg_man->get_msg_txt("direct_mode","Modo directo").".</a></p>");		
+				$frmcontainer->add_cont("<p style='display:none'><a href='$urldirect'>".$msg_man->get_msg_txt("direct_mode","Modo directo").".</a></p>");
 			}
 		}
-		
-		
-		
+
+
+
 		$frmcontainer->set_style("display","none");
 		$panel_body->add_cont($frmcontainer);
 		$waitecontainer=$this->set_ui_dom_elem_id("waite");
 		$waitecontainer->set_style("display","none");
 		$panel_body->add_cont($waitecontainer);
+
+		// Container shown when the session security token has expired.
+		// Hidden by default; the JS reveals it and fills in the message.
+		$invalidsesscontainer=$this->set_ui_dom_elem_id("invalidsession");
+		$invalidsesscontainer->addClass("alert alert-warning mt-2");
+		$invalidsesscontainer->set_style("display","none");
+		$panel_body->add_cont($invalidsesscontainer);
 		
 		/*
 		if($msg=$this->get_login_fail_msg()){
@@ -201,6 +208,8 @@ class mwmod_mw_bootstrap_ui_sub_uiloginadv extends mwmod_mw_bootstrap_ui_sub_uil
 		$this->ui_js_init_params->set_prop("onokurl",$url);
 		$this->ui_js_init_params->set_prop("plase_wait",$this->lng_common_get_msg_txt("please_wait","Por favor, espere"));
 		$this->ui_js_init_params->set_prop("seconds",$this->lng_common_get_msg_txt("seconds_lc","segundos"));
+		$this->ui_js_init_params->set_prop("invalid_session_msg",$this->lng_get_msg_txt("invalid_session_reload_hint","El formulario de acceso ha expirado porque lleva demasiado tiempo abierto. Por favor, recarga la página e intenta iniciar sesión de nuevo."));
+		$this->ui_js_init_params->set_prop("invalid_session_reload_lbl",$this->lng_get_msg_txt("reload_page_lbl","Recargar página"));
 		
 		$var=$this->get_js_ui_man_name();
 		$js->add_cont($var.".init(".$this->ui_js_init_params->get_as_js_val().");\n");
