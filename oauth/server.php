@@ -28,6 +28,16 @@ class mwmod_mw_oauth_server extends mwmod_mw_service_base {
 	}
 
 	/**
+	 * Allow execAsRoot() to route to child endpoints (token, register).
+	 * The root itself is still blocked via isAllowed() = false, so a direct
+	 * request to /oauth/ with no child path falls through to execAsDefault()
+	 * → doExec() → isAllowed() → execNotAllowed() and exposes nothing.
+	 */
+	function validateAllowedAsRoot() {
+		return true;
+	}
+
+	/**
 	 * The server root itself exposes nothing; only its children are callable.
 	 * Children are reached via createChildByMethod_<cod>().
 	 */
