@@ -76,16 +76,16 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 		if ($clientName === '') {
 			$clientName = 'Unnamed Client';
 		}
-		// Reject empty redirect_uri list.
+
+		$this->beforeRegister();
+
 		$cleanUris = [];
 		foreach ($redirectUris as $uri) {
 			$uri = is_string($uri) ? trim($uri) : '';
 			if ($uri === '') continue;
-			// Only http/https are accepted; loopback/localhost allowed.
-			if (!filter_var($uri, FILTER_VALIDATE_URL)) continue;
-			$scheme = strtolower((string) parse_url($uri, PHP_URL_SCHEME));
-			if (!in_array($scheme, ['http', 'https'], true)) continue;
+			if (!$this->isValidRedirectUri($uri)) continue;
 			$cleanUris[$uri] = true;
+			if (count($cleanUris) >= mwmod_mw_oauth_helper::MAX_REDIRECT_URIS) break;
 		}
 		$cleanUris = array_keys($cleanUris);
 		if (empty($cleanUris)) {
@@ -96,14 +96,51 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 		for ($attempt = 0; $attempt < 3; $attempt++) {
 			$clientId = mwmod_mw_oauth_helper::generateClientId();
 			if ($this->findByClientId($clientId)) {
-				continue; // collision, retry
+				continue;
 			}
 			return $this->insert_item_strict([
-				'id'             => $clientId,
-				'client_name'    => mb_substr($clientName, 0, 200),
-				'redirect_uris'  => json_encode(array_values($cleanUris)),
+				'id'            => $clientId,
+				'client_name'   => mb_substr($clientName, 0, 200),
+				'redirect_uris' => json_encode(array_values($cleanUris)),
 			]);
 		}
 		return false;
+	}
+
+	/**
+	 * Microseconds to sleep before processing a DCR registration request.
+	 * Override in a subclass to enable throttling (e.g. 500000 = 0.5 s).
+	 * 0 = disabled (default).
+	 */
+	protected $registerThrottleUs = 0;
+
+	/**
+	 * Hook called at the start of registerClient(). Override to add logging
+	 * or other site-specific registration policies.
+	 */
+	protected function beforeRegister() {
+		if ($this->registerThrottleUs > 0) {
+			usleep($this->registerThrottleUs);
+		}
+	}
+
+	/**
+	 * Validate a redirect URI for DCR. Accepts http/https and custom URI schemes
+	 * (RFC 8252 §7.1 — native/desktop OAuth clients). Override to further restrict.
+	 *
+	 * @param string $uri
+	 * @return bool
+	 */
+	protected function isValidRedirectUri($uri) {
+		$scheme = strtolower((string) parse_url($uri, PHP_URL_SCHEME));
+		if ($scheme === '') return false;
+		// Block dangerous schemes unconditionally.
+		if (in_array($scheme, ['javascript', 'data', 'vbscript', 'file'], true)) return false;
+		// http/https: full URL validation.
+		if ($scheme === 'http' || $scheme === 'https') {
+			return (bool) filter_var($uri, FILTER_VALIDATE_URL);
+		}
+		// Custom scheme (e.g. claude://oauth/callback): require scheme://something.
+		return (bool) preg_match('#^[a-zA-Z][a-zA-Z0-9+\-.]*://.+#', $uri);
 	}
 }
