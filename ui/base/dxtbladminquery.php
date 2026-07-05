@@ -386,7 +386,7 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		}
 
 		$this->add_cols($datagrid);
-		
+		$this->setColsUserPrefs($datagrid);
 
 		$columns=$datagrid->columns->get_items();
 
