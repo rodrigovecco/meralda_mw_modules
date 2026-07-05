@@ -233,6 +233,86 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	private $_skippableErrNos = [1050, 1060, 1061, 1091];
 
 	/**
+	 * Find a specific migration by module code and number.
+	 * @param string $code
+	 * @param int    $num
+	 * @return array|false
+	 */
+	function getMigrationByNum($code, $num) {
+		foreach ($this->getAvailableMigrations($code) as $m) {
+			if ($m["num"] === (int)$num) {
+				return $m;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Parse a raw SQL string into individual statements.
+	 * Public wrapper used by the UI to preview statements before execution.
+	 * @param string $sql
+	 * @return string[]
+	 */
+	function parseSqlStatements($sql) {
+		return $this->_parseSqlStatements($sql);
+	}
+
+	/**
+	 * Execute a single raw SQL statement against the DB without advancing
+	 * any version counter. Used for manual step-by-step migration execution.
+	 * @param string $stmt
+	 * @return array [ "ok" => bool, "error" => string|null ]
+	 */
+	function executeSingleStatement($stmt) {
+		if (!$db = $this->mainap->get_submanager("db")) {
+			return ["ok" => false, "error" => "DB manager not available"];
+		}
+		if ($db->query($stmt) === false) {
+			return ["ok" => false, "error" => $db->get_error()];
+		}
+		return ["ok" => true, "error" => null];
+	}
+
+	// ---- Statement-level state tracking (for step-by-step execution) --------
+
+	private function _stmtStateKey($code, $num) {
+		return "stmt_state_" . $code . "_" . (int)$num;
+	}
+
+	/**
+	 * Returns the list of statement indices already executed for a migration.
+	 * @return int[]
+	 */
+	function getExecutedStatements($code, $num) {
+		if (!$item = $this->getJsonDataItem($this->_stmtStateKey($code, $num))) {
+			return [];
+		}
+		$v = $item->get_data("done");
+		return is_array($v) ? array_map('intval', $v) : [];
+	}
+
+	/** Mark a statement index as successfully executed. */
+	function markStatementExecuted($code, $num, $idx) {
+		if (!$item = $this->getJsonDataItem($this->_stmtStateKey($code, $num))) {
+			return false;
+		}
+		$done = $this->getExecutedStatements($code, $num);
+		if (!in_array((int)$idx, $done, true)) {
+			$done[] = (int)$idx;
+			sort($done);
+		}
+		return $item->set_data_and_save($done, "done");
+	}
+
+	/** Clear statement-level tracking when a migration is marked as applied. */
+	function clearStatementState($code, $num) {
+		if (!$item = $this->getJsonDataItem($this->_stmtStateKey($code, $num))) {
+			return;
+		}
+		$item->set_data_and_save([], "done");
+	}
+
+	/**
 	 * Apply a single migration.
 	 * @param  array $migration  Entry from getAvailableMigrations().
 	 * @return array             [ "ok" => bool, "error" => string|null, "warnings" => string[] ]

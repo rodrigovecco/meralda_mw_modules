@@ -3,8 +3,9 @@
  * DB migrations admin UI.
  *
  * Shows one section per registered module: version, available scripts,
- * pending status. A single "Apply all pending" button runs all modules
- * in registration order.
+ * pending status. Pending migrations display each parsed SQL statement
+ * individually. Statements must be executed in order; statements containing
+ * DROP or TRUNCATE require an explicit confirmation via a Bootstrap modal.
  */
 class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 
@@ -49,13 +50,102 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 		// Auto-migrate legacy single-module state key on first load.
 		$man->migrateLegacyStateKey();
 
-		// Process "apply all pending" POST action.
+		// ---- POST handlers --------------------------------------------------
+
 		$applyResult = null;
+		$stmtResult  = null;
+
+		// Apply all pending migrations at once.
 		if (isset($_POST['dbm_apply']) && $_POST['dbm_apply'] === '1') {
 			$applyResult = $man->applyAllPending();
 		}
 
-		// — Result alerts —
+		// Execute a single SQL statement from a specific pending migration.
+		if (isset($_POST['dbm_exec_stmt']) && $_POST['dbm_exec_stmt'] === '1') {
+			$code = (string)($_POST['dbm_module']   ?? '');
+			$num  = (int)   ($_POST['dbm_num']      ?? 0);
+			$idx  = (int)   ($_POST['dbm_stmt_idx'] ?? -1);
+
+			if ($migration = $man->getMigrationByNum($code, $num)) {
+				$rawSql = @file_get_contents($migration["path"]);
+				$stmts  = ($rawSql !== false) ? $man->parseSqlStatements($rawSql) : [];
+
+				if ($idx >= 0 && isset($stmts[$idx])) {
+					// Enforce order: all previous statements must be executed first.
+					$executed    = $man->getExecutedStatements($code, $num);
+					$allPrevDone = true;
+					for ($i = 0; $i < $idx; $i++) {
+						if (!in_array($i, $executed, true)) {
+							$allPrevDone = false;
+							break;
+						}
+					}
+
+					if (!$allPrevDone) {
+						$stmtResult = [
+							"module" => $code, "num" => $num, "idx" => $idx + 1,
+							"name"   => $migration["name"],
+							"ok"     => false,
+							"error"  => $this->lng_get_msg_txt("dbMigOrderError",
+								"Debe ejecutar las sentencias anteriores primero."),
+						];
+					} else {
+						$r = $man->executeSingleStatement($stmts[$idx]);
+						if ($r["ok"]) {
+							$man->markStatementExecuted($code, $num, $idx);
+						}
+						$stmtResult = [
+							"module" => $code, "num" => $num, "idx" => $idx + 1,
+							"name"   => $migration["name"],
+							"ok"     => $r["ok"],
+							"error"  => $r["error"],
+						];
+					}
+				}
+			}
+		}
+
+		// Mark a migration as applied without executing its SQL automatically.
+		if (isset($_POST['dbm_mark_applied']) && $_POST['dbm_mark_applied'] === '1') {
+			$code = (string)($_POST['dbm_module'] ?? '');
+			$num  = (int)   ($_POST['dbm_num']    ?? 0);
+			if ($migration = $man->getMigrationByNum($code, $num)) {
+				$man->saveCurrentVersion($num, $code);
+				$man->clearStatementState($code, $num);
+				$applyResult = [
+					"applied" => ["[" . $code . "] " . $num . " — " . $migration["name"] .
+					              " (" . $this->lng_get_msg_txt("dbMigMarkedManually", "marcada manualmente") . ")"],
+					"errors"  => [],
+					"views"   => null,
+				];
+			}
+		}
+
+		// ---- Result alerts --------------------------------------------------
+
+		if ($stmtResult !== null) {
+			$alert = $wrap->add_cont_elem();
+			$alert->set_att("role", "alert");
+			if ($stmtResult["ok"]) {
+				$alert->addClass("alert alert-success alert-dismissible fade show");
+				$alert->addCont(
+					"<strong><i class='fa fa-check me-1'></i>" .
+					$this->lng_get_msg_txt("dbMigStmtOk", "Sentencia ejecutada") .
+					"</strong> &mdash; [" . htmlspecialchars($stmtResult["module"]) . "] " .
+					"#" . htmlspecialchars($stmtResult["num"]) . " sentencia&nbsp;" . $stmtResult["idx"] .
+					'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>'
+				);
+			} else {
+				$alert->addClass("alert alert-danger alert-dismissible fade show");
+				$alert->addCont(
+					"<strong><i class='fa fa-times me-1'></i>" .
+					$this->lng_get_msg_txt("dbMigStmtError", "Error en sentencia %n%", ["n" => $stmtResult["idx"]]) .
+					":</strong> " . htmlspecialchars($stmtResult["error"] ?? "Error desconocido") .
+					'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>'
+				);
+			}
+		}
+
 		if ($applyResult !== null) {
 			if (!empty($applyResult["errors"])) {
 				$alert = $wrap->add_cont_elem();
@@ -228,7 +318,8 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 
 			$currentVersion = $man->getCurrentVersion($code);
 			$available      = $man->getAvailableMigrations($code);
-			$modulePending  = count($man->getPendingMigrations($code));
+			$pending        = $man->getPendingMigrations($code);
+			$modulePending  = count($pending);
 
 			// Status badge row
 			$statusRow = $cardBody->add_cont_elem();
@@ -254,6 +345,7 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 				continue;
 			}
 
+			// Overview table (all migrations)
 			$table = $cardBody->add_cont_elem(false, "table");
 			$table->addClass("table table-sm table-bordered mb-0");
 
@@ -279,6 +371,188 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 				} else {
 					$tdStatus->addCont("<span class='badge bg-secondary'>" .
 						$this->lng_get_msg_txt("dbMigPendingStatus", "Pendiente") . "</span>");
+				}
+			}
+
+			// Pending migrations: step-by-step SQL execution
+			if (!empty($pending)) {
+				$pendingHeader = $cardBody->add_cont_elem();
+				$pendingHeader->addClass("px-2 pt-3 pb-1 fw-bold small border-top mt-2");
+				$pendingHeader->addCont(
+					"<i class='fa fa-terminal me-1 text-warning'></i>" .
+					$this->lng_get_msg_txt("dbMigPendingSection", "Migraciones pendientes — ejecución paso a paso")
+				);
+
+				foreach ($pending as $m) {
+					$rawSql   = @file_get_contents($m["path"]);
+					$stmts    = ($rawSql !== false) ? $man->parseSqlStatements($rawSql) : [];
+					$executed = $man->getExecutedStatements($code, $m["num"]);
+					// Sanitised ID fragment for HTML attributes (no special chars)
+					$safeId   = preg_replace('/[^a-zA-Z0-9]/', '-', $code) . '-' . $m["num"];
+
+					$mCard = $cardBody->add_cont_elem();
+					$mCard->addClass("border rounded mx-2 mb-3");
+
+					$mCardHead = $mCard->add_cont_elem();
+					$mCardHead->addClass("px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2");
+					$mCardHead->addCont(
+						"<span class='badge bg-secondary me-1'>" . $m["num"] . "</span>" .
+						"<strong>" . htmlspecialchars($m["name"]) . "</strong>"
+					);
+
+					$mCardBody = $mCard->add_cont_elem();
+					$mCardBody->addClass("p-3");
+
+					if (empty($stmts)) {
+						$mCardBody->addCont(
+							"<span class='text-muted small'>" .
+							$this->lng_get_msg_txt("dbMigNoStmts", "Sin sentencias SQL.") .
+							"</span>"
+						);
+					} else {
+						foreach ($stmts as $idx => $stmt) {
+							$stmtNum     = $idx + 1;
+							$isDone      = in_array($idx, $executed, true);
+							$isUnlocked  = ($idx === 0) ||
+							               in_array($idx - 1, $executed, true);
+							$isDangerous = (bool) preg_match('/\b(drop|truncate)\b/i', $stmt);
+							$modalId     = "dbm-modal-" . $safeId . "-" . $idx;
+							$formId      = "dbm-form-"  . $safeId . "-" . $idx;
+							$pageUrl     = htmlspecialchars($this->get_url());
+
+							$stmtWrap = $mCardBody->add_cont_elem();
+							$stmtWrap->addClass("mb-3");
+
+							// Label row: "Sentencia N [✓ Ejecutada]"
+							$stmtLabel = $stmtWrap->add_cont_elem();
+							$stmtLabel->addClass("d-flex align-items-center gap-2 mb-1");
+							$labelHtml = "<span class='fw-bold small text-muted'>" .
+								$this->lng_get_msg_txt("dbMigStmtLabel", "Sentencia %n%", ["n" => $stmtNum]) .
+								"</span>";
+							if ($isDone) {
+								$labelHtml .= " <span class='badge bg-success'><i class='fa fa-check me-1'></i>" .
+									$this->lng_get_msg_txt("dbMigStmtDone", "Ejecutada") . "</span>";
+							} elseif ($isDangerous) {
+								$labelHtml .= " <span class='badge bg-danger'><i class='fa fa-exclamation-triangle me-1'></i>DROP</span>";
+							}
+							$stmtLabel->addCont($labelHtml);
+
+							// SQL code block
+							$pre = $stmtWrap->add_cont_elem(false, "pre");
+							$pre->addClass("bg-dark text-light p-2 rounded small mb-2");
+							$pre->set_att("style", "white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;");
+							$pre->addCont(htmlspecialchars($stmt));
+
+							if ($isDone) {
+								// Already executed — no button.
+								continue;
+							}
+
+							// Hidden form (always present; submitted by button or by modal confirm)
+							$formHtml =
+								"<form id='" . $formId . "' method='post' action='" . $pageUrl . "' style='display:none'>" .
+								"<input type='hidden' name='dbm_exec_stmt' value='1'>" .
+								"<input type='hidden' name='dbm_module' value='" . htmlspecialchars($code) . "'>" .
+								"<input type='hidden' name='dbm_num' value='" . $m["num"] . "'>" .
+								"<input type='hidden' name='dbm_stmt_idx' value='" . $idx . "'>" .
+								"</form>";
+							$stmtWrap->addCont($formHtml);
+
+							if (!$isUnlocked) {
+								// Locked: previous statement not yet executed.
+								$stmtWrap->addCont(
+									"<button class='btn btn-sm btn-secondary' disabled title='" .
+									htmlspecialchars($this->lng_get_msg_txt("dbMigStmtLocked",
+										"Ejecute la sentencia anterior primero.")) .
+									"'><i class='fa fa-lock me-1'></i>" .
+									$this->lng_get_msg_txt("dbMigExecStmt", "Ejecutar sentencia %n%", ["n" => $stmtNum]) .
+									"</button>"
+								);
+							} elseif ($isDangerous) {
+								// Dangerous: trigger modal for confirmation.
+								$stmtWrap->addCont(
+									"<button type='button' class='btn btn-sm btn-danger' " .
+									"data-bs-toggle='modal' data-bs-target='#" . $modalId . "'>" .
+									"<i class='fa fa-exclamation-triangle me-1'></i>" .
+									$this->lng_get_msg_txt("dbMigExecStmt", "Ejecutar sentencia %n%", ["n" => $stmtNum]) .
+									"</button>"
+								);
+
+								// Confirmation modal
+								$stmtWrap->addCont(
+									"<div class='modal fade' id='" . $modalId . "' tabindex='-1'>" .
+									"<div class='modal-dialog modal-dialog-centered'>" .
+									"<div class='modal-content border-danger'>" .
+
+									"<div class='modal-header bg-danger text-white'>" .
+									"<h5 class='modal-title'><i class='fa fa-exclamation-triangle me-2'></i>" .
+									htmlspecialchars($this->lng_get_msg_txt("dbMigDropWarningTitle",
+										"Advertencia: sentencia destructiva")) .
+									"</h5>" .
+									"<button type='button' class='btn-close btn-close-white' data-bs-dismiss='modal'></button>" .
+									"</div>" .
+
+									"<div class='modal-body'>" .
+									"<p>" .
+									htmlspecialchars($this->lng_get_msg_txt("dbMigDropWarningBody",
+										"Esta sentencia contiene DROP o TRUNCATE y puede eliminar datos permanentemente. Revísela antes de continuar.")) .
+									"</p>" .
+									"<pre class='bg-dark text-light p-2 rounded small' style='white-space:pre-wrap;word-break:break-all;max-height:150px;overflow-y:auto;'>" .
+									htmlspecialchars($stmt) .
+									"</pre>" .
+									"</div>" .
+
+									"<div class='modal-footer'>" .
+									"<button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>" .
+									htmlspecialchars($this->lng_get_msg_txt("cancel", "Cancelar")) .
+									"</button>" .
+									"<button type='button' class='btn btn-danger' " .
+									"onclick=\"document.getElementById('" . $formId . "').submit();\">" .
+									"<i class='fa fa-exclamation-triangle me-1'></i>" .
+									htmlspecialchars($this->lng_get_msg_txt("dbMigDropConfirm",
+										"Sí, ejecutar")) .
+									"</button>" .
+									"</div>" .
+
+									"</div></div></div>"
+								);
+							} else {
+								// Normal unlocked statement.
+								$stmtWrap->addCont(
+									"<button type='button' class='btn btn-sm btn-outline-primary' " .
+									"onclick=\"document.getElementById('" . $formId . "').submit();\">" .
+									"<i class='fa fa-play me-1'></i>" .
+									$this->lng_get_msg_txt("dbMigExecStmt", "Ejecutar sentencia %n%", ["n" => $stmtNum]) .
+									"</button>"
+								);
+							}
+						}
+					}
+
+					// "Mark as applied" — only shown once all statements are executed.
+					$allDone = (count($executed) >= count($stmts)) && !empty($stmts);
+					$markWrap = $mCardBody->add_cont_elem();
+					$markWrap->addClass("border-top pt-3 mt-1 d-flex gap-2 align-items-center flex-wrap");
+
+					if (!$allDone) {
+						$markWrap->addCont(
+							"<span class='text-muted small'>" .
+							$this->lng_get_msg_txt("dbMigMarkHint",
+								"Ejecute todas las sentencias y luego marque la migración como aplicada:") .
+							"</span>"
+						);
+					}
+					$markWrap->addCont(
+						"<form method='post' action='" . htmlspecialchars($this->get_url()) . "' style='display:inline'>" .
+						"<input type='hidden' name='dbm_mark_applied' value='1'>" .
+						"<input type='hidden' name='dbm_module' value='" . htmlspecialchars($code) . "'>" .
+						"<input type='hidden' name='dbm_num' value='" . $m["num"] . "'>" .
+						"<button type='submit' class='btn btn-sm " . ($allDone ? "btn-success" : "btn-outline-secondary") . "'>" .
+						"<i class='fa fa-check me-1'></i>" .
+						$this->lng_get_msg_txt("dbMigMarkApplied", "Marcar como aplicada") .
+						"</button>" .
+						"</form>"
+					);
 				}
 			}
 

@@ -2,10 +2,11 @@
 -- identifier to a dedicated client_id column.
 --
 -- Migration 000004 created oauth_clients with `id` VARCHAR(40) as the PK.
--- The Meralda convention is that `id` is always INT AUTO_INCREMENT. This
--- migration drops and recreates the table correctly. It is safe to do so
--- because DCR was non-functional until migration 000004's companion code fix
--- (validateAllowedAsRoot), so the table is guaranteed to be empty in production.
+-- The Meralda convention is that `id` is always INT AUTO_INCREMENT.
+-- DCR was non-functional until the validateAllowedAsRoot fix, so the table
+-- is empty in production — safe to recreate.
+--
+-- Requires: 000004_oauth_tables.sql
 
 SET NAMES utf8mb4;
 SET default_storage_engine = InnoDB;
