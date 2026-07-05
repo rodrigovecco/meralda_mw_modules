@@ -109,7 +109,7 @@ class mwmod_mw_oauth_endpoints_token extends mwmod_mw_service_base {
 			return;
 		}
 
-		$db = isset($this->mainap->db) ? $this->mainap->db : null;
+		$db = $this->mainap->getDBManager();
 		if (!$db) {
 			$this->sendError('server_error', 'Database unavailable', 500);
 			return;
