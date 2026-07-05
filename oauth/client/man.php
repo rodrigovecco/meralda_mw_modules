@@ -51,7 +51,7 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 	}
 
 	/**
-	 * Look up a client by its client_id (the table's primary key).
+	 * Look up a client by its OAuth client_id.
 	 *
 	 * @param string $clientId
 	 * @return mwmod_mw_oauth_client_item|false
@@ -61,7 +61,7 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 		if ($clientId === '') {
 			return false;
 		}
-		return $this->get_item_by_keys(['id' => $clientId]);
+		return $this->get_item_by_keys(['client_id' => $clientId]);
 	}
 
 	/**
@@ -99,7 +99,7 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 				continue;
 			}
 			return $this->insert_item_strict([
-				'id'            => $clientId,
+				'client_id'     => $clientId,
 				'client_name'   => mb_substr($clientName, 0, 200),
 				'redirect_uris' => json_encode(array_values($cleanUris)),
 			]);
@@ -109,10 +109,10 @@ class mwmod_mw_oauth_client_man extends mwmod_mw_manager_man {
 
 	/**
 	 * Microseconds to sleep before processing a DCR registration request.
-	 * Override in a subclass to enable throttling (e.g. 500000 = 0.5 s).
-	 * 0 = disabled (default).
+	 * Default: 500 ms — enough to deter flooding without affecting legitimate use.
+	 * Override in a subclass to adjust (0 = disabled).
 	 */
-	protected $registerThrottleUs = 0;
+	protected $registerThrottleUs = 500000;
 
 	/**
 	 * Hook called at the start of registerClient(). Override to add logging

@@ -424,18 +424,38 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	
 	/**
 	 * Insert item without IGNORE clause (strict mode)
-	 * @param array $data 
+	 * @param array $data
 	 * @return T|false
 	 */
 	function insert_item_strict($data){
 		if(!$man=$this->get_tblman()){
-			return false;	
+			return false;
 		}
-		
+
 		if(!$dbitem=$man->insert_item_strict($data)){
-			return false;	
+			return false;
 		}
-		
+
+		return $this->get_or_create_item($dbitem);
+	}
+
+	/**
+	 * Insert item preserving an app-generated primary key (e.g. VARCHAR id).
+	 * Unlike insert_item_strict(), does not rely on last_insert_id() after the
+	 * INSERT — the tblman re-reads the row by the provided id instead.
+	 * Use when the PK is not an AUTO_INCREMENT column.
+	 * @param array $data
+	 * @return T|false
+	 */
+	function insert_item_width_id($data){
+		if(!$man=$this->get_tblman()){
+			return false;
+		}
+
+		if(!$dbitem=$man->insert_item_width_id($data)){
+			return false;
+		}
+
 		return $this->get_or_create_item($dbitem);
 	}
 	

@@ -20,9 +20,9 @@ class mwmod_mw_oauth_client_item extends mwmod_mw_manager_item {
 		$this->init($tblitem, $man);
 	}
 
-	/** @return string Random hex client_id (primary key). */
+	/** @return string Random hex OAuth client identifier. */
 	function getClientId() {
-		return (string) $this->get_data('id');
+		return (string) $this->get_data('client_id');
 	}
 
 	/** @return string Human-readable name shown on the consent screen. */
