@@ -234,9 +234,20 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			return;
 		}
 
-		$id     = $raw["id"]     ?? null;
 		$method = $raw["method"] ?? null;
 		$params = $raw["params"] ?? array();
+
+		// A JSON-RPC notification carries no "id" and MUST NOT receive a response.
+		// The MCP Streamable HTTP transport expects a 202 with an empty body for
+		// these (e.g. notifications/initialized right after the handshake).
+		// Returning a JSON-RPC error here makes strict clients (Claude) treat the
+		// server as broken.
+		if (!array_key_exists("id", $raw)) {
+			$this->sendNotificationAck();
+			return;
+		}
+
+		$id = $raw["id"];
 
 		if (!$method) {
 			$this->sendError($id, -32600, "Invalid request: missing method");
@@ -265,9 +276,20 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	// Method handlers
 	// --------------------------------------------------------
 
+	/** Protocol versions this server can speak (newest first). */
+	protected $supportedProtocolVersions = array("2025-06-18", "2025-03-26", "2024-11-05");
+
 	private function handleInitialize($id, $params) {
+		// Echo the protocol version the client asked for when we support it, else
+		// fall back to our newest. This keeps modern clients (Claude) from
+		// rejecting the handshake over a version mismatch.
+		$requested = isset($params["protocolVersion"]) ? (string) $params["protocolVersion"] : "";
+		$version = in_array($requested, $this->supportedProtocolVersions, true)
+			? $requested
+			: $this->supportedProtocolVersions[0];
+
 		$this->sendResult($id, array(
-			"protocolVersion" => "2024-11-05",
+			"protocolVersion" => $version,
 			"serverInfo"      => $this->getServerInfo(),
 			"capabilities"    => array(
 				"tools" => new stdClass(),
@@ -318,6 +340,18 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	// --------------------------------------------------------
 	// JSON-RPC response helpers
 	// --------------------------------------------------------
+
+	/**
+	 * Acknowledge a JSON-RPC notification without a response body.
+	 * The MCP Streamable HTTP transport expects HTTP 202 Accepted here.
+	 */
+	private function sendNotificationAck() {
+		while (ob_get_level() > 0) {
+			ob_end_clean();
+		}
+		http_response_code(202);
+		exit;
+	}
 
 	private function sendResult($id, $result) {
 		$this->outputJSON(array(
