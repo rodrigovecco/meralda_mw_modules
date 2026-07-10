@@ -1481,6 +1481,10 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 	
 	}
+	/**
+	 * @param mixed $idname 
+	 * @return false|mwmod_mw_users_user|null 
+	 */
 	final function get_user_by_idname($idname){
 		if(!$this->check_user_name_loose($idname)){
 			return false;	
