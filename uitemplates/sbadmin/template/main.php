@@ -179,6 +179,7 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 
 			}
 			echo "</div>\n";
+			echo "</div>\n";
 		}
 		echo $col->get_html_close_full();
 		echo $row->get_html_close_full();
