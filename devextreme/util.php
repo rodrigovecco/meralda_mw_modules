@@ -130,6 +130,7 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 		$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs","/res/dx/js/dx.all.js");
 		//$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs","/res/devextreme/js/dx.webappjs.debug.js");
 		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_dialog_helper.js");
+		$jsman->add_item_by_cod_def_path("mwdevextreme/mw_overlay_fix.js");
 		//$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs","/res/devextreme/js/dx.webappjs.debug.js");
 		$jsman->add_item_by_item($item);
 		if($lng=$jsman->mainap->get_current_lng_man()){
