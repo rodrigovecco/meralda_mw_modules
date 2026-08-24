@@ -170,32 +170,13 @@ class mwmod_mw_devextreme_widget_datagrid_column extends mwmod_mw_devextreme_ele
 	/**
 	 * Converts the column to an HTML column: renders the value as HTML and
 	 * edits it with a DevExtreme HtmlEditor restricted to bold/italic.
+	 * Rendering/editing is implemented on the JS side by
+	 * mw_devextreme_datagrid_column_html.
 	 * @return $this
 	 */
 	function setHtmlMode(){
-		$this->set_html_cell_template();
-		$this->set_html_edit_cell_template();
+		$this->set_mw_js_colum_class("mw_devextreme_datagrid_column_html");
 		return $this;
-	}
-	function set_html_cell_template(){
-		$tpl=new mwmod_mw_jsobj_functionext();
-		$tpl->add_fnc_arg("container");
-		$tpl->add_fnc_arg("options");
-		$tpl->add_cont("$('<div>'+options.value+'</div>').appendTo(container);");
-		$this->js_data->set_prop("cellTemplate",$tpl);
-	}
-	function set_html_edit_cell_template(){
-		$tpl=new mwmod_mw_jsobj_functionext();
-		$tpl->add_fnc_arg("container");
-		$tpl->add_fnc_arg("options");
-		$tpl->add_cont("var div=document.createElement('div');");
-		$tpl->add_cont("container.append(div);");
-		$tpl->add_cont("$(div).dxHtmlEditor({");
-		$tpl->add_cont("toolbar:{items:['bold','italic']},");
-		$tpl->add_cont("value:options.value,");
-		$tpl->add_cont("onValueChanged:function(e){options.setValue(e.value);}");
-		$tpl->add_cont("});");
-		$this->js_data->set_prop("editCellTemplate",$tpl);
 	}
 	function isDate(){
 		return false;
