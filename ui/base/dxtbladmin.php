@@ -113,6 +113,16 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	 * @var bool
 	 */
 	public $toolbarItemsExportButtonAdded=false;
+
+	/**
+	 * Comma-separated list of column codes that may contain HTML.
+	 *
+	 * On create/update, the input validator strips tags from incoming values by default.
+	 * Columns declared here are excluded from that stripping so their HTML is preserved.
+	 *
+	 * @var string
+	 */
+	public $htmlCols="";
 	
 	/**
 	 * Enables user filter remembering mode.
@@ -786,6 +796,42 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	function setNotificationError($message){
 		return $this->setNotification($message,"error");
 	}
+
+	/**
+	 * Returns the list of column codes that may contain HTML.
+	 *
+	 * Defaults to the comma-separated $htmlCols property. Override in child classes
+	 * to return a dynamic list when needed.
+	 *
+	 * @return array
+	 */
+	function getHtmlColsCods(){
+		if(!$this->htmlCols){
+			return array();
+		}
+		return explode(",",$this->htmlCols."");
+	}
+
+	/**
+	 * Marks the declared HTML columns on the input validator so their tags are kept on save.
+	 *
+	 * The validator strips HTML tags from string values by default; setting
+	 * dont_strip_tags on a column preserves the tags for that column only.
+	 *
+	 * @param mwmod_mw_helper_inputvalidator_abs $input
+	 * @return void
+	 */
+	function set_html_cols_dont_strip_tags($input){
+		foreach($this->getHtmlColsCods() as $cod){
+			$cod=trim($cod);
+			if(!$cod){
+				continue;
+			}
+			if($item=$input->get_item_by_dot_cod($cod,false)){
+				$item->dont_strip_tags=true;
+			}
+		}
+	}
 	
 	/**
 	 * AJAX endpoint to create a new item.
@@ -814,6 +860,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 			return false;	
 		}
 		$input=new mwmod_mw_helper_inputvalidator_request("nd");
+		$this->set_html_cols_dont_strip_tags($input);
 		if(!$input->is_req_input_ok()){
 			$xml->root_do_all_output();
 			return false;	
@@ -993,6 +1040,7 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 				
 		}
 		$input=new mwmod_mw_helper_inputvalidator_request("nd");
+		$this->set_html_cols_dont_strip_tags($input);
 		if(!$input->is_req_input_ok()){
 			$xml->root_do_all_output();
 			return false;	
