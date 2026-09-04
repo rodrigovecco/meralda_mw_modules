@@ -103,8 +103,14 @@ class mwmod_mw_oauth_endpoints_token extends mwmod_mw_service_base {
 	// ------------------------------------------------------------------
 
 	private function handleRefreshToken() {
+		// TEMP DEBUG - remove after diagnosing refresh bug
+		$this->logOauthRefreshDebug('received',
+			isset($_POST['refresh_token']) ? (string) $_POST['refresh_token'] : '');
+
 		$refreshToken = isset($_POST['refresh_token']) ? (string) $_POST['refresh_token'] : '';
 		if ($refreshToken === '') {
+			// TEMP DEBUG - remove after diagnosing refresh bug
+			$this->logOauthRefreshDebug('invalid_request', '');
 			$this->sendError('invalid_request', 'refresh_token is required');
 			return;
 		}
@@ -119,9 +125,14 @@ class mwmod_mw_oauth_endpoints_token extends mwmod_mw_service_base {
 		$result = mwmod_mw_oauth_tokenhelper::verify(
 			$refreshToken, mwmod_mw_oauth_tokenhelper::REFRESH_PREFIX, $db);
 		if (!$result) {
+			// TEMP DEBUG - remove after diagnosing refresh bug
+			$this->logOauthRefreshDebug('invalid_grant', $refreshToken);
 			$this->sendError('invalid_grant', 'Refresh token invalid, expired or revoked');
 			return;
 		}
+
+		// TEMP DEBUG - remove after diagnosing refresh bug
+		$this->logOauthRefreshDebug('success', $refreshToken);
 
 		$this->issueTokensForApiToken($result['token_id']);
 	}
@@ -242,5 +253,22 @@ class mwmod_mw_oauth_endpoints_token extends mwmod_mw_service_base {
 	private function getAuthCodeMan() {
 		$oauthMan = $this->getOauthMan();
 		return $oauthMan ? $oauthMan->getAuthCodeMan() : false;
+	}
+
+	// TEMP DEBUG - remove after diagnosing refresh bug
+	private function logOauthRefreshDebug($result, $refreshToken) {
+		$path = $this->mainap->get_path("root") . "/logs/oauth_refresh_debug.log";
+		if (!is_dir(dirname($path))) {
+			@mkdir(dirname($path), 0775, true);
+		}
+		$ip      = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+		$ua      = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+		$has     = ($refreshToken !== '');
+		$preview = $has ? substr($refreshToken, 0, 8) . '...' : '';
+		$line = sprintf(
+			"[%s] ip=%s ua=%s refresh_token=%s preview=%s result=%s\n",
+			date('c'), $ip, $ua, $has ? 'yes' : 'no', $preview, $result
+		);
+		@file_put_contents($path, $line, FILE_APPEND);
 	}
 }
