@@ -115,18 +115,17 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		$transp=-1;
 		$src_img=false;
 		$mode=$ext;
-		if($ext=="jpg"){
-			$src_img=@imagecreatefromjpeg($fp);
-		}elseif($ext=="gif"){
-			$src_img=@imagecreatefromgif($fp);
-		}elseif($ext=="png"){
-			$src_img=@imagecreatefrompng($fp);
-		}else{
+		if($ext!="jpg" && $ext!="gif" && $ext!="png"){
 			return false;
 		}
+		// Decode by real content, not the filename extension: some files are
+		// misnamed (e.g. a JPEG saved as .png), which breaks imagecreatefrompng().
+		if($bin=@file_get_contents($fp)){
+			$src_img=@imagecreatefromstring($bin);
+		}
 		if(!$src_img){
-			// GD failed: corrupt image OR not enough memory to decode it.
-			error_log("imgsubman::crop imagecreatefrom$ext failed fp=$fp size=".$width."x".$height." mem_limit=".ini_get("memory_limit")." peak=".round(memory_get_peak_usage(true)/1048576,1)."MB");
+			// GD failed: corrupt image, unsupported format, or not enough memory.
+			error_log("imgsubman::crop imagecreatefromstring failed fp=$fp ext=$ext mime=$mime size=".$width."x".$height." mem_limit=".ini_get("memory_limit")." peak=".round(memory_get_peak_usage(true)/1048576,1)."MB");
 			return false;
 		}
 		if($ext=="gif" || $ext=="png"){
@@ -537,18 +536,15 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		if(!$ext=$fm->get_ext($fn)){
 			return false;
 		}
-		$src=false;
-		if($ext=="jpg"){
-			$mode="jpg";
-			$src=@imagecreatefromjpeg($file);
-		}elseif($ext=="gif"){
-			$mode="gif";
-			$src=@imagecreatefromgif($file);
-		}elseif($ext=="png"){
-			$mode="png";
-			$src=@imagecreatefrompng($file);
-		}else{
+		if($ext!="jpg" && $ext!="gif" && $ext!="png"){
 			return false;
+		}
+		$mode=$ext;
+		$src=false;
+		// Decode by real content, not the filename extension: some files are
+		// misnamed (e.g. a JPEG saved as .png), which breaks imagecreatefrompng().
+		if($bin=@file_get_contents($file)){
+			$src=@imagecreatefromstring($bin);
 		}
 		if(!$src){
 			return false;
