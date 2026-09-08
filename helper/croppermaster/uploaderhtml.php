@@ -6,7 +6,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 	var $input_data_name="avatar_data";
 	var $input_file_name="avatar_file";
 	var $input_file_id="avatarInput";
-	
+
 	public $frm;
 	function __construct($upload_url=false){
 		$this->init_croppermaster($upload_url);
@@ -20,12 +20,12 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		//$r["cropoptions"]=$this->crop_data_to_array($_REQUEST[$this->input_data_name]);
 		$r["cropoptions"]=$_REQUEST[$this->input_data_name]??null;
 		return $r;
-		
+
 	}
 	/*
 	function crop_data_to_array($input){
 		if(!$input=trim($input)){
-			return false;	
+			return false;
 		}
 		$pairs=explode("|",$input);
 		$r=array();
@@ -33,7 +33,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 			if($pair=trim($pair)){
 				$pair_a=explode(":",$pair);
 				if($cod=trim($pair_a[0])){
-					$r[$cod]=$pair_a[1]+0;	
+					$r[$cod]=$pair_a[1]+0;
 				}
 			}
 		}
@@ -51,32 +51,32 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		$upload_elem=new mwmod_mw_bootstrap_html_def("avatar-upload");
 		$this->set_key_cont("uploadcontainer",$upload_elem);
 		$form->add_cont($upload_elem);
-		
+
 		$c=$upload_elem;
-		
+
 		//<div class="avatar-upload">
 		$input=new mwmod_mw_bootstrap_html_def("avatar-src","input");//
 		$input->set_att("type","hidden");
 		$this->set_key_cont("input_src",$input);
 		$c->add_cont($input);
-		
+
 		$input=new mwmod_mw_bootstrap_html_def("avatar-data","input");//avatar-data
 		$input->set_att("type","hidden");
 		$this->set_key_cont("input_data",$input);
 		$c->add_cont($input);
-		
+
 		// Max upload size derived from php.ini (upload_max_filesize / post_max_size).
 		$fm=new mwmod_mw_helper_fileman();
 		$maxbytes=(int)$fm->get_max_upload_size_bytes();
 		$maxlabel=$maxbytes>0?$fm->format_bytes($maxbytes):"";
-		
+
 		// Standard HTML hint for the browser: MAX_FILE_SIZE must appear before the file input.
 		$maxinput=new mwmod_mw_bootstrap_html_def(false,"input");
 		$maxinput->set_att("type","hidden");
 		$maxinput->set_att("name","MAX_FILE_SIZE");
 		$maxinput->set_att("value",(string)$maxbytes);
 		$c->add_cont($maxinput);
-		
+
 		$lbl=new mwmod_mw_bootstrap_html_def(false,"label");
 		$lbltxt=$this->lng_get_msg_txt("select_file","Seleccionar archivo");
 		if($maxlabel){
@@ -85,7 +85,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		$lbl->add_cont($lbltxt);
 		$this->set_key_cont("select_file_lbl",$lbl);
 		$c->add_cont($lbl);
-		
+
 		$input=new mwmod_mw_bootstrap_html_def("avatar-input","input");//avatar-input
 		$input->set_att("type","file");
 		if($maxbytes>0){
@@ -95,10 +95,10 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		}
 		$this->set_key_cont("input_file",$input);
 		$c->add_cont($input);
-		
-		
+
+
 		// <div class="avatar-wrapper"></div>
-		
+
 		$elem=new mwmod_mw_bootstrap_html_def("avatar-wrapper");
 		$this->set_key_cont("wrapper",$elem);
 		// 🧩 Estilos de seguridad para evitar el problema visual:
@@ -117,7 +117,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 
 
 		$form->add_cont($elem);
-		
+
 		////other btns
 		$btnsgr=$form->add_cont_elem();
 		$btnsgr->setAtts('class="btn-group" role="group"');
@@ -132,53 +132,53 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		$btn->add_class("btn btn-primary avatar-btns");
 		$icon=$btn->add_cont_elem("","span");
 		$icon->add_class("fa fa-search-minus");
-		
-		
+
+
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-method="reset"');
 		$btn->add_class("btn btn-primary avatar-btns");
 		$icon=$btn->add_cont_elem("","span");
 		$icon->add_class("fa fa-redo");
-		
-		
+
+
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-cmd="fullW"');
 		$btn->add_class("btn btn-primary avatar-btns");
 		$icon=$btn->add_cont_elem("","span");
 		$icon->add_class("fa fa-arrows-alt-h");
-		
+
 		$btn=$btnsgr->add_cont_elem("","button");
 		$btn->setAtts('type="button"  data-cmd="fullH"');
 		$btn->add_class("btn btn-primary avatar-btns");
 		$icon=$btn->add_cont_elem("","span");
 		$icon->add_class("fa fa-arrows-alt-v");
-		
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
 		$elem=new mwmod_mw_bootstrap_html_specialelem_btn($this->lng_get_msg_txt("done","Listo"));
 		$elem->add_additional_class("btn-block");
 		$elem->add_additional_class("avatar-save");
 		$elem->add_additional_class("mx-2");
 
-		
+
 		$this->set_key_cont("submit_btn",$elem);
 		$form->add_cont($elem);
 		//<button class="btn btn-primary btn-block avatar-save" type="submit">Done</button>
-		
+
 		$elem=new mwmod_mw_bootstrap_html_def("loading");
 		$elem->set_att("aria-label","Loading");
 		$elem->set_att("role","img");
 		$elem->set_att("tabindex","-1");
 		$this->set_key_cont("loading",$elem);
 		$form->add_cont($elem);
-		
-				
-		
+
+
+
 		$this->update_other_elems();
 		//extender
 	}
@@ -206,7 +206,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 			$elem->set_att("name",$this->input_file_name);
 			$elem->set_att("id",$this->input_file_id);
 		}
-		
+
 		/*
 		if($elem=$this->main_elem){
 			if($this->id){
@@ -221,7 +221,7 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 			}
 		}
 		*/
-		
+
 	}
 
 	function init_croppermaster($upload_url=false){
