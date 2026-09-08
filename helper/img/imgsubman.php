@@ -125,6 +125,8 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 			return false;
 		}
 		if(!$src_img){
+			// GD failed: corrupt image OR not enough memory to decode it.
+			error_log("imgsubman::crop imagecreatefrom$ext failed fp=$fp size=".$width."x".$height." mem_limit=".ini_get("memory_limit")." peak=".round(memory_get_peak_usage(true)/1048576,1)."MB");
 			return false;
 		}
 		if($ext=="gif" || $ext=="png"){
