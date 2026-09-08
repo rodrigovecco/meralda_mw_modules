@@ -116,19 +116,19 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		$src_img=false;
 		$mode=$ext;
 		if($ext=="jpg"){
-			$src_img=imagecreatefromjpeg($fp);
+			$src_img=@imagecreatefromjpeg($fp);
 		}elseif($ext=="gif"){
-			$src_img=imagecreatefromgif($fp);
-			$transp=imagecolortransparent($src_img);
-		
+			$src_img=@imagecreatefromgif($fp);
 		}elseif($ext=="png"){
-			$src_img=imagecreatefrompng($fp);
-			$transp=imagecolortransparent($src_img);
+			$src_img=@imagecreatefrompng($fp);
 		}else{
 			return false;	
 		}
 		if(!$src_img){
 			return false;	
+		}
+		if($ext=="gif" || $ext=="png"){
+			$transp=imagecolortransparent($src_img);
 		}
 		if($mode=="gif"){
 			$dest_img=imagecreate(round($crop["width"]), round($crop["height"]));
@@ -538,22 +538,21 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		$src=false;
 		if($ext=="jpg"){
 			$mode="jpg";
-			$src=imagecreatefromjpeg($file);
+			$src=@imagecreatefromjpeg($file);
 		}elseif($ext=="gif"){
 			$mode="gif";
-			$src=imagecreatefromgif($file);
-			$transp=imagecolortransparent($src);
-		
+			$src=@imagecreatefromgif($file);
 		}elseif($ext=="png"){
 			$mode="png";
-			$src=imagecreatefrompng($file);
-			$transp=imagecolortransparent($src);
-		
+			$src=@imagecreatefrompng($file);
 		}else{
 			return false;	
 		}
 		if(!$src){
 			return false;	
+		}
+		if($ext=="gif" || $ext=="png"){
+			$transp=imagecolortransparent($src);
 		}
 		$this->_set_src($src,$mode,$transp);
 		

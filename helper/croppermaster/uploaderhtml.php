@@ -65,13 +65,34 @@ class mwmod_mw_helper_croppermaster_uploaderhtml extends mwmod_mw_bootstrap_html
 		$this->set_key_cont("input_data",$input);
 		$c->add_cont($input);
 		
+		// Max upload size derived from php.ini (upload_max_filesize / post_max_size).
+		$fm=new mwmod_mw_helper_fileman();
+		$maxbytes=(int)$fm->get_max_upload_size_bytes();
+		$maxlabel=$maxbytes>0?$fm->format_bytes($maxbytes):"";
+		
+		// Standard HTML hint for the browser: MAX_FILE_SIZE must appear before the file input.
+		$maxinput=new mwmod_mw_bootstrap_html_def(false,"input");
+		$maxinput->set_att("type","hidden");
+		$maxinput->set_att("name","MAX_FILE_SIZE");
+		$maxinput->set_att("value",(string)$maxbytes);
+		$c->add_cont($maxinput);
+		
 		$lbl=new mwmod_mw_bootstrap_html_def(false,"label");
-		$lbl->add_cont($this->lng_get_msg_txt("select_file","Seleccionar archivo"));
+		$lbltxt=$this->lng_get_msg_txt("select_file","Seleccionar archivo");
+		if($maxlabel){
+			$lbltxt.=" (".$this->lng_get_msg_txt("max_short","máx.")." ".$maxlabel.")";
+		}
+		$lbl->add_cont($lbltxt);
 		$this->set_key_cont("select_file_lbl",$lbl);
 		$c->add_cont($lbl);
 		
 		$input=new mwmod_mw_bootstrap_html_def("avatar-input","input");//avatar-input
 		$input->set_att("type","file");
+		if($maxbytes>0){
+			// Read client-side by avatar.js to reject oversized files before upload.
+			$input->set_att("data-max-file-size",(string)$maxbytes);
+			$input->set_att("data-max-file-size-label",$maxlabel);
+		}
 		$this->set_key_cont("input_file",$input);
 		$c->add_cont($input);
 		
