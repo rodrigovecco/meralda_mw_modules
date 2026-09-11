@@ -37,6 +37,17 @@ abstract class mwmod_mw_db_migrations_moduleabs extends mw_apsubbaseobj {
 	}
 
 	/**
+	 * Optional views subfolder path relative to the mwap system root. PHP
+	 * modules have no migrations directory, so if they keep views under a
+	 * subfolder they must declare it here. Return false/empty when unused.
+	 *
+	 * @return string|false
+	 */
+	function get_views_relpath() {
+		return false;
+	}
+
+	/**
 	 * Declare migration items. Subclasses either add items in the constructor
 	 * via add_item() or override this method.
 	 */

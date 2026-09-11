@@ -472,10 +472,22 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	 */
 	function getModuleViewsAbsPath($code) {
 		$base = $this->getModuleAbsPath($code);
-		if (!$base) {
-			return false;
+		if ($base) {
+			return $base . "/views";
 		}
-		return $base . "/views";
+		// PHP module handlers have no migrations directory; allow them to
+		// declare their own views subfolder via get_views_relpath().
+		$phpModules = $this->getPhpModules();
+		if (isset($phpModules[$code])) {
+			$handler = $phpModules[$code];
+			if (method_exists($handler, "get_views_relpath")) {
+				$rel = $handler->get_views_relpath();
+				if ($rel) {
+					return $this->getMwapAbsPath() . "/" . ltrim($rel, "/");
+				}
+			}
+		}
+		return false;
 	}
 
 	function moduleViewsDirectoryExists($code) {
