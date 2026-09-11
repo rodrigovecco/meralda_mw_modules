@@ -354,6 +354,13 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	protected $supportedProtocolVersions = array("2026-07-28", "2025-06-18", "2025-03-26", "2024-11-05");
 
 	/**
+	 * Legacy-era versions still offered through the `initialize` handshake. The
+	 * modern version (2026-07-28) is intentionally NOT here: it is only spoken
+	 * via per-request `_meta`, never through the legacy `initialize` handshake.
+	 */
+	protected $legacyProtocolVersions = array("2025-06-18", "2025-03-26", "2024-11-05");
+
+	/**
 	 * Read the protocol version a modern request declares in `_meta`.
 	 * @param  mixed $params JSON-RPC params (assoc array expected).
 	 * @return string|null   Null when no `_meta` protocolVersion is present.
@@ -411,12 +418,13 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
 	private function handleInitialize($id, $params) {
 		// Echo the protocol version the client asked for when we support it, else
-		// fall back to our newest. This keeps legacy clients from rejecting the
-		// handshake over a version mismatch.
+		// fall back to our newest *legacy* version. This keeps legacy clients from
+		// rejecting the handshake over a version mismatch. The modern version is
+		// never offered here: it is spoken only via per-request `_meta`.
 		$requested = isset($params["protocolVersion"]) ? (string) $params["protocolVersion"] : "";
-		$version = in_array($requested, $this->supportedProtocolVersions, true)
+		$version = in_array($requested, $this->legacyProtocolVersions, true)
 			? $requested
-			: $this->supportedProtocolVersions[0];
+			: $this->legacyProtocolVersions[0];
 		$this->responseProtocolVersion = $version;
 
 		// Legacy handshake result is emitted directly (no resultType/_meta, which
