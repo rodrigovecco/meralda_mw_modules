@@ -121,6 +121,20 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 			}
 		}
 
+		// Apply a single PHP migration item (runs check() + apply()).
+		if (isset($_POST['dbm_apply_php']) && $_POST['dbm_apply_php'] === '1') {
+			$code = (string)($_POST['dbm_module'] ?? '');
+			$num  = (int)   ($_POST['dbm_num']    ?? 0);
+			if ($migration = $man->getMigrationByNum($code, $num)) {
+				$r = $man->applyMigration($migration);
+				$applyResult = [
+					"applied" => $r["ok"] ? ["[" . $code . "] " . $num . " — " . $migration["name"]] : [],
+					"errors"  => $r["ok"] ? [] : [$r["error"] ?? "Error desconocido"],
+					"views"   => null,
+				];
+			}
+		}
+
 		// ---- Result alerts --------------------------------------------------
 
 		if ($stmtResult !== null) {
@@ -206,6 +220,22 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 		$totalPending      = $man->getTotalPendingCount();
 		$totalPendingViews = $man->getTotalPendingViewsCount();
 
+		// — Legacy SQL warning — encourage porting to PHP migration objects.
+		$legacySqlPending = $man->getPendingLegacySqlCount();
+		if ($legacySqlPending > 0) {
+			$legacy = $wrap->add_cont_elem();
+			$legacy->addClass("alert alert-warning");
+			$legacy->set_att("role", "alert");
+			$legacy->addCont(
+				"<i class='fa fa-exclamation-triangle me-1'></i><strong>" .
+				$this->lng_get_msg_txt("dbMigLegacyTitle", "Migraciones SQL heredadas pendientes") .
+				":</strong> " .
+				$this->lng_get_msg_txt("dbMigLegacyBody",
+					"Hay %n% script(s) SQL heredados sin aplicar. Considere convertirlos a objetos PHP (mwmod_mw_db_migrations_itemabs) para mantener el esquema nuevo.",
+					["n" => $legacySqlPending])
+			);
+		}
+
 		// — Global apply button —
 		if ($totalPending > 0 || $totalPendingViews > 0) {
 			$modalId = "dbm-confirm-modal";
@@ -290,7 +320,12 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 		}
 
 		// — One section per module —
-		foreach ($man->getModules() as $code => $relPath) {
+		$phpModules = $man->getPhpModules();
+		$sqlModules = $man->getModules();
+		foreach ($man->getAllModuleCodes() as $code) {
+			$isPhpModule = isset($phpModules[$code]);
+			$relPath     = $isPhpModule ? "PHP" : ($sqlModules[$code] ?? "");
+
 			$section = $wrap->add_cont_elem();
 			$section->addClass("card mb-3");
 
@@ -354,6 +389,7 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 			foreach ([
 				$this->lng_get_msg_txt("dbMigColNum",    "#"),
 				$this->lng_get_msg_txt("dbMigColDesc",   "Descripción"),
+				$this->lng_get_msg_txt("dbMigColType",   "Tipo"),
 				$this->lng_get_msg_txt("dbMigColStatus", "Estado"),
 			] as $thTxt) {
 				$trHead->add_cont_elem($thTxt, "th");
@@ -364,6 +400,12 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 				$tr = $tbody->add_cont_elem(false, "tr");
 				$tr->add_cont_elem((string)$m["num"], "td");
 				$tr->add_cont_elem(htmlspecialchars($m["name"]), "td");
+				$tdType = $tr->add_cont_elem(false, "td");
+				if (($m["type"] ?? "sql") === "php") {
+					$tdType->addCont("<span class='badge bg-info text-dark'>PHP</span>");
+				} else {
+					$tdType->addCont("<span class='badge bg-light text-dark border'>SQL</span>");
+				}
 				$tdStatus = $tr->add_cont_elem(false, "td");
 				if ($m["num"] <= $currentVersion) {
 					$tdStatus->addCont("<span class='badge bg-success'>" .
@@ -374,16 +416,20 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 				}
 			}
 
-			// Pending migrations: step-by-step SQL execution
+			// Pending migrations
 			if (!empty($pending)) {
 				$pendingHeader = $cardBody->add_cont_elem();
 				$pendingHeader->addClass("px-2 pt-3 pb-1 fw-bold small border-top mt-2");
 				$pendingHeader->addCont(
 					"<i class='fa fa-terminal me-1 text-warning'></i>" .
-					$this->lng_get_msg_txt("dbMigPendingSection", "Migraciones pendientes — ejecución paso a paso")
+					$this->lng_get_msg_txt("dbMigPendingSection", "Migraciones pendientes")
 				);
 
 				foreach ($pending as $m) {
+					if (($m["type"] ?? "sql") === "php") {
+						$this->_renderPhpPendingMigration($cardBody, $code, $m);
+						continue;
+					}
 					$rawSql   = @file_get_contents($m["path"]);
 					$stmts    = ($rawSql !== false) ? $man->parseSqlStatements($rawSql) : [];
 					$executed = $man->getExecutedStatements($code, $m["num"]);
@@ -612,6 +658,70 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 		}
 
 		echo $MainContainer->get_as_html();
+	}
+
+	/**
+	 * Render a pending PHP migration item (no SQL preview; shows check() state
+	 * and an "apply" button that runs check() + apply()).
+	 */
+	private function _renderPhpPendingMigration($cardBody, $code, $m) {
+		$item      = $m["item"];
+		$needsApply = true;
+		try {
+			$needsApply = (bool)$item->check();
+		} catch (\Throwable $e) {
+			$needsApply = true;
+		}
+
+		$mCard = $cardBody->add_cont_elem();
+		$mCard->addClass("border rounded mx-2 mb-3");
+
+		$mCardHead = $mCard->add_cont_elem();
+		$mCardHead->addClass("px-3 py-2 bg-light border-bottom d-flex align-items-center gap-2");
+		$mCardHead->addCont(
+			"<span class='badge bg-secondary me-1'>" . $m["num"] . "</span>" .
+			"<strong>" . htmlspecialchars($m["name"]) . "</strong>" .
+			"<span class='badge bg-info text-dark ms-1'>PHP</span>"
+		);
+
+		$mCardBody = $mCard->add_cont_elem();
+		$mCardBody->addClass("p-3");
+
+		$classBadge = $mCardBody->add_cont_elem();
+		$classBadge->addClass("text-muted small mb-2");
+		$classBadge->addCont("<code>" . htmlspecialchars($m["file"]) . "</code>");
+
+		$stateWrap = $mCardBody->add_cont_elem();
+		$stateWrap->addClass("mb-3");
+		if ($needsApply) {
+			$stateWrap->addCont(
+				"<span class='badge bg-secondary'><i class='fa fa-clock me-1'></i>" .
+				$this->lng_get_msg_txt("dbMigPendingStatus", "Pendiente") . "</span> " .
+				"<span class='text-muted small'>" .
+				$this->lng_get_msg_txt("dbMigPhpCheckTrue", "check() indica que falta aplicar el cambio.") .
+				"</span>"
+			);
+		} else {
+			$stateWrap->addCont(
+				"<span class='badge bg-success'><i class='fa fa-check me-1'></i>" .
+				$this->lng_get_msg_txt("dbMigApplied", "Aplicada") . "</span> " .
+				"<span class='text-muted small'>" .
+				$this->lng_get_msg_txt("dbMigPhpCheckFalse", "check() indica que el cambio ya existe.") .
+				"</span>"
+			);
+		}
+
+		$mCardBody->addCont(
+			"<form method='post' action='" . htmlspecialchars($this->get_url()) . "' style='display:inline'>" .
+			"<input type='hidden' name='dbm_apply_php' value='1'>" .
+			"<input type='hidden' name='dbm_module' value='" . htmlspecialchars($code) . "'>" .
+			"<input type='hidden' name='dbm_num' value='" . $m["num"] . "'>" .
+			"<button type='submit' class='btn btn-sm btn-outline-primary'>" .
+			"<i class='fa fa-play me-1'></i>" .
+			$this->lng_get_msg_txt("dbMigApplyPhpItem", "Aplicar migración") .
+			"</button>" .
+			"</form>"
+		);
 	}
 
 	// -------------------------------------------------------------------------

@@ -2,8 +2,12 @@
 /**
  * Multi-module DB migration manager.
  *
- * Each module declares its migrations folder as a path relative to the mwap
- * system root (resolved via $mainap->get_path("system")).
+ * Two module styles are supported:
+ *   - Legacy SQL: a module declares a migrations folder as a path relative to
+ *     the mwap system root. Migrations are NNNNNN_description.sql files.
+ *   - PHP objects: a module registers a mwmod_mw_db_migrations_moduleabs
+ *     handler whose items extend mwmod_mw_db_migrations_itemabs and are
+ *     declared as plain "new" instances (no prefix or path required).
  *
  * The core Meralda module ("meralda") is always registered first.
  * App-level and submodule migrations are added via registerModule().
@@ -11,32 +15,41 @@
  * Version state is tracked independently per module using JSON data items
  * keyed as "state_{code}".
  *
- * Migration file naming: NNNNNN_description.sql  (zero-padded integer prefix).
+ * Legacy SQL migration file naming: NNNNNN_description.sql
+ * (zero-padded integer prefix).
  */
 class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 
-	/** @var array<string,string>  code => path relative to mwap system root */
-	private $modules = [];
-	/** @var bool  Whether app modules have been injected via registerDBMigrationModules(). */
+	/** @var array<string,string>  code => path relative to mwap system root (legacy SQL modules). */
+	private $modules;
+	/** @var array<string,mwmod_mw_db_migrations_moduleabs>  code => PHP module handler. */
+	private $phpModules;
+	/** @var string[]  Registration order of all module codes (SQL + PHP). */
+	private $moduleOrder;
+	/** @var bool  Whether modules have been bootstrapped. */
 	private $_modulesBootstrapped = false;
 
 	function __construct($ap) {
 		$this->set_mainap($ap);
 		$this->setManCode("dbmigrations");
 		$this->enable_jsondata(true);
-		// Core Meralda module — always registered first.
-		$this->modules["meralda"] = "modules/mw/db/migrations";
 	}
 
 	/**
-	 * Trigger app-level module registration exactly once.
-	 * The app overrides registerDBMigrationModules() to add its modules.
+	 * Bootstrap the module list exactly once, lazily.
+	 * Declares the storage, registers the core Meralda module first (PHP
+	 * migration objects under modules/mw/dbcore/, keeping the "meralda" state
+	 * key), then lets the app add its own modules via the overridable hook.
 	 */
 	private function _ensureModulesBootstrapped() {
 		if ($this->_modulesBootstrapped) {
 			return;
 		}
 		$this->_modulesBootstrapped = true;
+		$this->modules     = [];
+		$this->phpModules  = [];
+		$this->moduleOrder = [];
+		$this->registerModule(new mwmod_mw_dbcore_module());
 		$this->mainap->registerDBMigrationModules($this);
 	}
 
@@ -45,22 +58,52 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Register a module with its migrations folder.
+	 * Register a module.
 	 *
-	 * @param string $code     Short identifier used as display label and state key.
-	 * @param string $relPath  Path relative to the mwap system root (forward slashes).
+	 * Two forms are supported:
+	 *   - Legacy SQL: registerModule($code, $relPath) — $relPath is relative to
+	 *     the mwap system root (forward slashes). Migrations are *.sql files.
+	 *   - PHP handler: registerModule($handler) — $handler is a
+	 *     mwmod_mw_db_migrations_moduleabs instance that declares its items as
+	 *     plain "new" objects. No prefix or path is required.
+	 *
+	 * @param string|mwmod_mw_db_migrations_moduleabs $arg1
+	 * @param string|null $arg2
 	 */
-	function registerModule($code, $relPath) {
-		$code = trim($code . "");
-		if ($code) {
-			$this->modules[$code] = $relPath;
+	function registerModule($arg1, $arg2 = null) {
+		if ($arg1 instanceof mwmod_mw_db_migrations_moduleabs) {
+			$arg1->set_mainap($this->mainap);
+			$arg1->set_migration_man($this);
+			$code = trim($arg1->get_code() . "");
+			if ($code && !isset($this->phpModules[$code])) {
+				$this->phpModules[$code] = $arg1;
+				$this->moduleOrder[] = $code;
+			}
+			return;
+		}
+		$code = trim($arg1 . "");
+		if ($code && !isset($this->modules[$code])) {
+			$this->modules[$code] = $arg2;
+			$this->moduleOrder[] = $code;
 		}
 	}
 
-	/** @return array<string,string> All registered modules (code => relPath). */
+	/** @return array<string,string> Legacy SQL modules (code => relPath). */
 	function getModules() {
 		$this->_ensureModulesBootstrapped();
 		return $this->modules;
+	}
+
+	/** @return array<string,mwmod_mw_db_migrations_moduleabs> PHP module handlers. */
+	function getPhpModules() {
+		$this->_ensureModulesBootstrapped();
+		return $this->phpModules;
+	}
+
+	/** @return string[] All module codes (SQL + PHP) in registration order. */
+	function getAllModuleCodes() {
+		$this->_ensureModulesBootstrapped();
+		return $this->moduleOrder;
 	}
 
 	// -------------------------------------------------------------------------
@@ -85,13 +128,16 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	}
 
 	function moduleDirectoryExists($code) {
+		if (isset($this->getPhpModules()[$code])) {
+			return true;
+		}
 		$p = $this->getModuleAbsPath($code);
 		return $p && is_dir($p);
 	}
 
-	/** True if at least one registered module has a migrations directory. */
+	/** True if at least one registered module has migrations to apply. */
 	function anyModuleDirectoryExists() {
-		foreach (array_keys($this->getModules()) as $code) {
+		foreach ($this->getAllModuleCodes() as $code) {
 			if ($this->moduleDirectoryExists($code)) {
 				return true;
 			}
@@ -154,10 +200,19 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * All migration files for a module, sorted numerically.
-	 * Each entry: [ "module"=>, "num"=>, "name"=>, "file"=>, "path"=> ]
+	 * All migrations for a module, sorted numerically.
+	 * Each entry: [ "module"=>, "num"=>, "name"=>, "file"=>, "path"=>, "type"=> ]
+	 * ("type" is "sql" or "php"; PHP entries also carry "item" => the object).
 	 */
 	function getAvailableMigrations($code) {
+		if (isset($this->getPhpModules()[$code])) {
+			return $this->_getPhpAvailableMigrations($code);
+		}
+		return $this->_getSqlAvailableMigrations($code);
+	}
+
+	/** Legacy *.sql migrations for a module. */
+	private function _getSqlAvailableMigrations($code) {
 		$dir = $this->getModuleAbsPath($code);
 		if (!$dir || !is_dir($dir)) {
 			return [];
@@ -176,10 +231,31 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 					"name"   => str_replace("_", " ", $m[2]),
 					"file"   => $base . ".sql",
 					"path"   => $f,
+					"type"   => "sql",
 				];
 			}
 		}
 		usort($result, function ($a, $b) { return $a["num"] - $b["num"]; });
+		return $result;
+	}
+
+	/** PHP-defined migrations for a module (declared by its handler). */
+	private function _getPhpAvailableMigrations($code) {
+		$handler = $this->phpModules[$code];
+		$result  = [];
+		$num     = 0;
+		foreach ($handler->get_items() as $item) {
+			$num++; // Sequence number = declaration order (1-based).
+			$result[] = [
+				"module" => $code,
+				"num"    => $num,
+				"name"   => $item->get_description(),
+				"file"   => get_class($item),
+				"path"   => null,
+				"type"   => "php",
+				"item"   => $item,
+			];
+		}
 		return $result;
 	}
 
@@ -194,7 +270,7 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	/** Total pending count across all modules. */
 	function getTotalPendingCount() {
 		$n = 0;
-		foreach (array_keys($this->getModules()) as $code) {
+		foreach ($this->getAllModuleCodes() as $code) {
 			$n += count($this->getPendingMigrations($code));
 		}
 		return $n;
@@ -203,7 +279,7 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	/** Number of view files whose declared version differs from the last applied version. */
 	function getTotalPendingViewsCount() {
 		$n = 0;
-		foreach (array_keys($this->getModules()) as $code) {
+		foreach ($this->getAllModuleCodes() as $code) {
 			if (!$this->moduleViewsDirectoryExists($code)) {
 				continue;
 			}
@@ -313,11 +389,19 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	}
 
 	/**
-	 * Apply a single migration.
+	 * Apply a single migration (SQL or PHP).
 	 * @param  array $migration  Entry from getAvailableMigrations().
 	 * @return array             [ "ok" => bool, "error" => string|null, "warnings" => string[] ]
 	 */
 	function applyMigration($migration) {
+		if (($migration["type"] ?? "sql") === "php") {
+			return $this->_applyPhpMigration($migration);
+		}
+		return $this->_applySqlMigration($migration);
+	}
+
+	/** Apply a legacy *.sql migration. */
+	private function _applySqlMigration($migration) {
 		$sql = @file_get_contents($migration["path"]);
 		if ($sql === false) {
 			return ["ok" => false, "error" => "Cannot read file: " . $migration["file"], "warnings" => []];
@@ -348,6 +432,31 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 		}
 		$this->saveCurrentVersion($migration["num"], $migration["module"]);
 		return ["ok" => true, "warnings" => $warnings];
+	}
+
+	/** Apply a PHP-defined migration item. */
+	private function _applyPhpMigration($migration) {
+		$item = $migration["item"];
+		try {
+			if (!$item->check()) {
+				// Already applied manually — record version and move on.
+				$this->saveCurrentVersion($migration["num"], $migration["module"]);
+				return ["ok" => true, "warnings" => ["check() returned false — already applied"]];
+			}
+			$r = $item->apply();
+			if (!is_array($r)) {
+				$r = ["ok" => (bool)$r, "warnings" => []];
+			}
+			$ok       = !empty($r["ok"]);
+			$warnings = is_array($r["warnings"] ?? null) ? $r["warnings"] : [];
+			if (!$ok) {
+				return ["ok" => false, "error" => ($r["error"] ?? "Migration failed"), "warnings" => $warnings];
+			}
+			$this->saveCurrentVersion($migration["num"], $migration["module"]);
+			return ["ok" => true, "warnings" => $warnings];
+		} catch (\Throwable $e) {
+			return ["ok" => false, "error" => $e->getMessage(), "warnings" => []];
+		}
 	}
 
 	// -------------------------------------------------------------------------
@@ -456,7 +565,7 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	function applyAllViews() {
 		$applied = [];
 		$errors  = [];
-		foreach (array_keys($this->getModules()) as $code) {
+		foreach ($this->getAllModuleCodes() as $code) {
 			if (!$this->moduleViewsDirectoryExists($code)) {
 				continue;
 			}
@@ -477,7 +586,7 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 	function applyAllPending() {
 		$applied = [];
 		$errors  = [];
-		foreach (array_keys($this->getModules()) as $code) {
+		foreach ($this->getAllModuleCodes() as $code) {
 			foreach ($this->getPendingMigrations($code) as $m) {
 				$r = $this->applyMigration($m);
 				if ($r["ok"]) {
@@ -490,6 +599,22 @@ class mwmod_mw_db_migrations_man extends mwmod_mw_manager_basemanabs {
 		}
 		$views = $this->applyAllViews();
 		return ["applied" => $applied, "errors" => $errors, "views" => $views];
+	}
+
+	/**
+	 * Number of unapplied legacy *.sql migrations across all modules.
+	 * Used by the UI to warn that legacy SQL should be ported to PHP objects.
+	 */
+	function getPendingLegacySqlCount() {
+		$n = 0;
+		foreach ($this->getAllModuleCodes() as $code) {
+			foreach ($this->getPendingMigrations($code) as $m) {
+				if (($m["type"] ?? "sql") === "sql") {
+					$n++;
+				}
+			}
+		}
+		return $n;
 	}
 
 	// -------------------------------------------------------------------------

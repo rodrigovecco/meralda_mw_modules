@@ -6,18 +6,22 @@ Multi-module DB migration manager for Meralda.
 
 ## How it works
 
-- Each **module** registers a folder of numbered `.sql` files (e.g. `000001_…sql`).
+- Each **module** declares its migrations either as a folder of numbered `.sql`
+  files (legacy) or as a PHP **handler object** whose items are plain `new`
+  instances of migration classes (new scheme).
 - The manager tracks the highest applied number per module in a JSON data item
   (`state_{code}`).
-- On `applyAllPending()`, it applies every file whose number is greater than the
-  stored version, in registration order. After all migrations succeed it runs
+- On `applyAllPending()`, it applies every migration whose number is greater than
+  the stored version, in registration order. After all migrations succeed it runs
   the **views** pass.
 
 ---
 
 ## Registering modules
 
-The app overrides `registerDBMigrationModules($man)` on the main app object:
+The app overrides `registerDBMigrationModules($man)` on the main app object.
+
+**Legacy SQL** — pass a code + relative path:
 
 ```php
 function registerDBMigrationModules($man) {
@@ -26,11 +30,63 @@ function registerDBMigrationModules($man) {
 }
 ```
 
-The built-in `meralda` module (`modules/mw/db/migrations`) is always registered first.
+**PHP objects** — pass a handler instance (no prefix or path required):
+
+```php
+function registerDBMigrationModules($man) {
+    $man->registerModule(new mwap_myapp_db_migrations_module());
+}
+```
+
+The built-in `meralda` core module is always registered first, lazily. It is a
+PHP module whose handler and items live under `modules/mw/dbcore/` (separate
+from the migration engine in `modules/mw/db/migrations/`).
 
 ---
 
-## Numbered migration files
+## PHP migration objects
+
+Preferred style for new work. A module handler extends
+`mwmod_mw_db_migrations_moduleabs` and declares its items via `add_item()`. Each
+item extends `mwmod_mw_db_migrations_itemabs` and implements:
+
+- `get_description()` — short label shown in the UI.
+- `check()` — return `true` if the change still needs applying, `false` otherwise.
+- `apply()` — perform the change; return `["ok" => bool, "error" => ?string, "warnings" => []]`.
+
+```php
+class mwap_myapp_db_migrations_module extends mwmod_mw_db_migrations_moduleabs {
+    function get_code() { return "myapp"; }
+    function load_items() {
+        $this->add_item(new mwap_myapp_db_migrations_m000001initial());
+    }
+}
+
+class mwap_myapp_db_migrations_m000001initial extends mwmod_mw_db_migrations_itemabs {
+    function get_description() { return "Create myapp_items table"; }
+    function check() { return !$this->table_exists("myapp_items"); }
+    function apply() {
+        return $this->run_sql("CREATE TABLE IF NOT EXISTS `myapp_items` (`id` int(11) NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`))");
+    }
+}
+```
+
+- Items are applied **in the order they are declared** (the order of the
+  `add_item()` calls). Any number in the class/file name is only a human-readable
+  reference and is not used by the manager.
+- Item files live under the module's `db/migrations/` folder, named
+  `mNNNNNNdescription.php` (starts with a letter, no underscores in the final
+  segment).
+- `mwmod_mw_db_migrations_itemabs` extends `mw_apsubbaseobj` and provides helpers:
+  `db()`, `run_sql()`, `query()`, `fetch_assoc()`, `table_exists()`,
+  `column_exists()`, `index_exists()`.
+
+The admin UI shows a warning banner when unapplied legacy `*.sql` migrations
+remain, suggesting they be ported to PHP objects.
+
+---
+
+## Numbered migration files (legacy)
 
 **Naming:** `NNNNNN_description.sql` — zero-padded integer prefix.
 
