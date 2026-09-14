@@ -67,6 +67,12 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 	public $addColCodsToExcel=false;
 
 	/**
+	 * Whether to add cell borders to Excel export.
+	 * @var bool
+	 */
+	public $excelExportBorders=false;
+
+	/**
 	 * Whether to remember column order in user preferences.
 	 * @var bool
 	 */
@@ -1191,6 +1197,9 @@ abstract class mwmod_mw_ui_base_dxtbladmin extends mwmod_mw_ui_base_basesubui{
 
 		if($this->addColCodsToExcel){
 			$gridhelper->set_prop("addColCodsToExcel",true);
+		}
+		if($this->excelExportBorders){
+			$gridhelper->set_prop("excelExportBorders",true);
 		}
 
 

@@ -384,6 +384,9 @@ abstract class mwmod_mw_ui_base_dxtbladminquery extends mwmod_mw_ui_base_dxtblad
 		if($this->addColCodsToExcel){
 			$gridhelper->set_prop("addColCodsToExcel",true);	
 		}
+		if($this->excelExportBorders){
+			$gridhelper->set_prop("excelExportBorders",true);
+		}
 
 		$this->add_cols($datagrid);
 		$this->setColsUserPrefs($datagrid);
