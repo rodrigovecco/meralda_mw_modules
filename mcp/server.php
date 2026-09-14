@@ -7,8 +7,15 @@
  * token is validated by the framework before doExecOk() runs, so any request
  * (initialize, tools/list, tools/call) requires a valid API token.
  *
- * Supported MCP methods (single-endpoint JSON-RPC):
- *  - initialize         → server capabilities handshake
+ * Dual-era MCP server (single-endpoint JSON-RPC over Streamable HTTP):
+ *  - Modern era (2026-07-28): stateless, per-request `_meta.protocolVersion`
+ *    + `MCP-Protocol-Version` HTTP header. `server/discover` probe first.
+ *  - Legacy era (<=2025-11-25): `initialize` handshake + `tools/list` +
+ *    `tools/call`. Still supported for older clients.
+ *
+ * Supported MCP methods:
+ *  - server/discover    → modern-era probe (DiscoverResult)
+ *  - initialize         → legacy-era handshake (serverInfo + capabilities)
  *  - tools/list         → enumerate registered tools
  *  - tools/call         → invoke a named tool
  *
@@ -19,6 +26,8 @@
  *  -32602  Invalid params
  *  -32000  Server error (tool exception)
  *  -32003  Permission denied
+ *  -32020  Header mismatch (MCP-Protocol-Version != _meta.protocolVersion)
+ *  -32022  Unsupported protocol version
  */
 abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 
@@ -29,12 +38,21 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	private $tools = array();
 
 	/**
+	 * Protocol version to advertise on the response (MCP-Protocol-Version
+	 * header). Null = no header (legacy responses that never negotiated).
+	 */
+	protected $responseProtocolVersion = null;
+
+	/**
 	 * Emit a JSON body for MCP. Overrides the base helper so every MCP response
 	 * (including the 401 challenge) carries an explicit UTF-8 charset.
 	 */
 	function outputJSON($data) {
 		ob_end_clean();
 		header('Content-Type: application/json; charset=utf-8');
+		if ($this->responseProtocolVersion !== null) {
+			header('MCP-Protocol-Version: ' . $this->responseProtocolVersion);
+		}
 		echo json_encode($data);
 	}
 
@@ -283,6 +301,33 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			return;
 		}
 
+		// server/discover (spec 2026-07-28) is a stateless probe the client sends
+		// before anything else. It MUST be answered regardless of era so modern
+		// clients can detect the server. No version negotiation here: the answer
+		// simply reports every version we can speak.
+		if ($method === "server/discover") {
+			$this->handleServerDiscover($id, $params);
+			return;
+		}
+
+		// Modern-era (2026-07-28) requests carry the protocol version inline in
+		// `_meta` and MUST echo it in the MCP-Protocol-Version HTTP header. The
+		// legacy `initialize` handshake declares the version in params instead, so
+		// it is skipped here (dual-era fallback). Requests without `_meta` are
+		// treated as legacy and dispatched as before.
+		$requestedVersion = $this->extractRequestedVersion($params);
+		if ($method !== "initialize" && $requestedVersion !== null) {
+			if (!$this->validateProtocolVersionHeader($requestedVersion)) {
+				$this->sendError($id, -32020, "Header mismatch: MCP-Protocol-Version does not match _meta.protocolVersion", 400);
+				return;
+			}
+			if (!$this->isSupportedProtocolVersion($requestedVersion)) {
+				$this->sendUnsupportedVersionError($id, $requestedVersion);
+				return;
+			}
+			$this->responseProtocolVersion = $requestedVersion;
+		}
+
 		switch ($method) {
 			case "initialize":
 				$this->handleInitialize($id, $params);
@@ -306,24 +351,96 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	// --------------------------------------------------------
 
 	/** Protocol versions this server can speak (newest first). */
-	protected $supportedProtocolVersions = array("2025-06-18", "2025-03-26", "2024-11-05");
+	protected $supportedProtocolVersions = array("2026-07-28", "2025-06-18", "2025-03-26", "2024-11-05");
+
+	/**
+	 * Legacy-era versions still offered through the `initialize` handshake. The
+	 * modern version (2026-07-28) is intentionally NOT here: it is only spoken
+	 * via per-request `_meta`, never through the legacy `initialize` handshake.
+	 */
+	protected $legacyProtocolVersions = array("2025-06-18", "2025-03-26", "2024-11-05");
+
+	/**
+	 * Read the protocol version a modern request declares in `_meta`.
+	 * @param  mixed $params JSON-RPC params (assoc array expected).
+	 * @return string|null   Null when no `_meta` protocolVersion is present.
+	 */
+	protected function extractRequestedVersion($params) {
+		if (!is_array($params)) {
+			return null;
+		}
+		$meta = $params["_meta"] ?? null;
+		if (!is_array($meta)) {
+			return null;
+		}
+		$version = $meta["io.modelcontextprotocol/protocolVersion"] ?? null;
+		return $version !== null ? (string) $version : null;
+	}
+
+	/**
+	 * True when the given version is one this server can speak.
+	 */
+	protected function isSupportedProtocolVersion($version) {
+		return in_array($version, $this->supportedProtocolVersions, true);
+	}
+
+	/**
+	 * Validate that the MCP-Protocol-Version HTTP header (when present) matches
+	 * the version declared in the request body. On Streamable HTTP the two MUST
+	 * agree; a mismatch is a 400 HeaderMismatchError (-32020).
+	 *
+	 * The header is optional here so legacy clients that never send it are not
+	 * rejected — those are dispatched through the legacy path instead.
+	 */
+	protected function validateProtocolVersionHeader($version) {
+		$header = $this->getHeaderInsensitive('MCP-Protocol-Version');
+		if ($header === null || $header === '') {
+			return true; // Legacy client: no header to validate.
+		}
+		return trim($header) === $version;
+	}
+
+	/**
+	 * Answer the modern-era `server/discover` probe (spec 2026-07-28).
+	 */
+	private function handleServerDiscover($id, $params) {
+		$newest = $this->supportedProtocolVersions[0];
+		$this->responseProtocolVersion = $newest;
+		$this->sendResult($id, array(
+			"resultType"        => "complete",
+			"supportedVersions" => $this->supportedProtocolVersions,
+			"capabilities"      => array("tools" => new stdClass()),
+			"instructions"      => "",
+			"ttlMs"             => 0,
+			"cacheScope"        => "public",
+		));
+	}
 
 	private function handleInitialize($id, $params) {
 		// Echo the protocol version the client asked for when we support it, else
-		// fall back to our newest. This keeps modern clients (Claude) from
-		// rejecting the handshake over a version mismatch.
+		// fall back to our newest *legacy* version. This keeps legacy clients from
+		// rejecting the handshake over a version mismatch. The modern version is
+		// never offered here: it is spoken only via per-request `_meta`.
 		$requested = isset($params["protocolVersion"]) ? (string) $params["protocolVersion"] : "";
-		$version = in_array($requested, $this->supportedProtocolVersions, true)
+		$version = in_array($requested, $this->legacyProtocolVersions, true)
 			? $requested
-			: $this->supportedProtocolVersions[0];
+			: $this->legacyProtocolVersions[0];
+		$this->responseProtocolVersion = $version;
 
-		$this->sendResult($id, array(
-			"protocolVersion" => $version,
-			"serverInfo"      => $this->getServerInfo(),
-			"capabilities"    => array(
-				"tools" => new stdClass(),
+		// Legacy handshake result is emitted directly (no resultType/_meta, which
+		// are modern-era fields).
+		$this->outputJSON(array(
+			"jsonrpc" => "2.0",
+			"id"      => $id,
+			"result"  => array(
+				"protocolVersion" => $version,
+				"serverInfo"      => $this->getServerInfo(),
+				"capabilities"    => array(
+					"tools" => new stdClass(),
+				),
 			),
 		));
+		exit;
 	}
 
 	private function handleToolsList($id, $params) {
@@ -331,7 +448,11 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 		foreach ($this->tools as $tool) {
 			$definitions[] = $tool->getDefinition();
 		}
-		$this->sendResult($id, array("tools" => $definitions));
+		$this->sendResult($id, array(
+			"tools"      => $definitions,
+			"ttlMs"      => 0,
+			"cacheScope" => "public",
+		));
 	}
 
 	private function handleToolsCall($id, $params) {
@@ -405,6 +526,21 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	}
 
 	private function sendResult($id, $result) {
+		if (!is_array($result)) {
+			$result = array("value" => $result);
+		}
+		// Modern era (2026-07-28) requires every result to carry resultType; if
+		// the handler already set one (e.g. "input_required"), keep it.
+		if (!array_key_exists("resultType", $result)) {
+			$result["resultType"] = "complete";
+		}
+		// Attach server identity metadata. Harmless to legacy clients, which
+		// ignore unknown fields.
+		if (!array_key_exists("_meta", $result)) {
+			$result["_meta"] = array(
+				"io.modelcontextprotocol/serverInfo" => $this->getServerInfo(),
+			);
+		}
 		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
 			"id"      => $id,
@@ -413,16 +549,28 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 		exit;
 	}
 
-	private function sendError($id, $code, $message) {
+	private function sendError($id, $code, $message, $statusCode = 200, $data = null) {
+		http_response_code($statusCode);
+		$error = array(
+			"code"    => $code,
+			"message" => $message,
+		);
+		if ($data !== null) {
+			$error["data"] = $data;
+		}
 		$this->outputJSON(array(
 			"jsonrpc" => "2.0",
 			"id"      => $id,
-			"error"   => array(
-				"code"    => $code,
-				"message" => $message,
-			),
+			"error"   => $error,
 		));
 		exit;
+	}
+
+	private function sendUnsupportedVersionError($id, $requested) {
+		$this->sendError($id, -32022, "Unsupported protocol version", 400, array(
+			"supported" => $this->supportedProtocolVersions,
+			"requested" => $requested,
+		));
 	}
 }
 ?>
