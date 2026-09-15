@@ -20,6 +20,7 @@
  * @property string|null $excelExportName Name for Excel export file (without extension).
  * @property bool $columnsChooserEnabled Whether to enable the column chooser feature.
  * @property bool $addColCodsToExcel Whether to add column codes to Excel export.
+ * @property bool $excelExportBorders Whether to add cell borders to Excel export.
  * @property bool $userColsOrderRememberEnabled Whether to remember column order in user preferences.
  * @property bool $userColsSelectedRememberEnabled Whether to remember column selection (visibility) in user preferences.
  * @property bool $userColsSelectedRememberEnabledVisible Whether to remember visible index of columns in user preferences.
