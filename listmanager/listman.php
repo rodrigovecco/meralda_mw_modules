@@ -2,6 +2,7 @@
 class mwmod_mw_listmanager_listman extends mw_apsubbaseobj{
 	public $has_null=true;
 	public $items=array();
+	public $item_others;
 	public $items_by_value=array();
 	function __construct($options=false){
 		if($options){

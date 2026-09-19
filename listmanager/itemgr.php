@@ -47,7 +47,7 @@ class mwmod_mw_listmanager_itemgr extends mwmod_mw_listmanager_item{
 		if(!sizeof($this->items)){
 			return false;
 		}
-		$r.="<optgroup label='".$this->get_lbl()."'>\n";
+		$r="<optgroup label='".$this->get_lbl()."'>\n";
 		foreach ($this->items as $item){
 			$r.=$item->get_options_html($value);
 		}

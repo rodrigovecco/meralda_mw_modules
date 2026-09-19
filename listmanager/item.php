@@ -61,7 +61,7 @@ class mwmod_mw_listmanager_item extends mw_apsubbaseobj{
 		$this->lbl=$lbl;
 		$this->relateditem=$relateditem;
 		if(!is_array($data)){
-			$data=array("id"=>$id,"lbl"=>$lbl);	
+			$data=array("id"=>$value,"lbl"=>$lbl);	
 		}
 		$this->data=$data;
 		$this->set_mainap();
