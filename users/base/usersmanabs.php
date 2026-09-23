@@ -868,7 +868,12 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 				$this->after_user_changed();
 				return false;
 			}
-			if($_COOKIE[$cookie_name]!=$token){
+			// La cookie puede faltar sin que nada esté roto: vive en el cliente y
+			// caduca por su cuenta, mientras que la sesión del servidor la
+			// sobrevive. Sin el ??null, PHP 8 emite "Undefined array key" en cada
+			// petición así. Una cookie ausente compara como null, de modo que la
+			// comprobación sigue fallando igual: esto solo silencia el aviso.
+			if(($_COOKIE[$cookie_name]??null)!=$token){
 				$this->after_user_changed();
 				return false;
 			}
