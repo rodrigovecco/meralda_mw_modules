@@ -285,7 +285,14 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		if(!is_array($crit)){
 			return false;
 		}
-		$tblman=$this->get_tblman();
+		// get_tblman() es false cuando la tabla no existe en la base:
+		// dbman::create_tbl_managers() solo crea managers de las tablas que
+		// devuelve SHOW TABLES. Sin este guard la linea siguiente muere con
+		// "Call to a member function new_query() on false" (p.ej. un modulo
+		// cuyas migraciones todavia no se aplicaron).
+		if(!$tblman=$this->get_tblman()){
+			return false;
+		}
 		$query=$tblman->new_query();
 		foreach($crit as $c=>$v){
 			if($f=$tblman->getField($c)){

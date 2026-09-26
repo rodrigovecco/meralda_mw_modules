@@ -12,7 +12,13 @@ class mwmod_mw_tempitems_man extends mwmod_mw_manager_man{
 	}
 	function deleteExpiredItems(){
 		$n=0;
-		$query=$this->get_tblman()->new_query();
+		// false cuando la tabla de items temporales todavia no existe:
+		// no hay nada que purgar. Sin el guard, new_query() sobre false mata
+		// el proceso.
+		if(!$tblman=$this->get_tblman()){
+			return $n;
+		}
+		$query=$tblman->new_query();
 		$query->where->add_date_cond("exp_date",date("Y-m-d H:i:s"),"<");
 		$query->limit->set_limit($this->deleteExpiredItemsLimit);
 		if($items=$this->get_items_by_query($query)){
