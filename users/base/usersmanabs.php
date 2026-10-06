@@ -196,7 +196,11 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 
 
 	function usersListCreate($list){
-		$tblman=$this->get_tblman();
+		// Sin tabla de usuarios (o inalcanzable) se deja la lista vacia en vez
+		// de llamar new_query() sobre false.
+		if(!$tblman=$this->get_tblman()){
+			return;
+		}
 		$query=$tblman->new_query();
 		$query->select->add_select("id");
 		$query->select->add_select("name");

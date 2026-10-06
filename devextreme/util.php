@@ -136,6 +136,12 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 		//$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs","/res/devextreme/js/dx.webappjs.debug.js");
 		$jsman->add_item_by_item($item);
 		if($lng=$jsman->mainap->get_current_lng_man()){
+			// 1) Diccionario COMPLETO del idioma: debe cargarse SIEMPRE. Es el que
+			//    trae las claves base de DevExtreme (Yes, No, Cancel, OK, DataGrid,
+			//    Scheduler, etc.). Sin él, `DevExpress.localization.locale()` queda
+			//    activo pero el diccionario sólo tiene las claves del override y
+			//    todo lo demás cae al inglés por defecto (p.ej. los botones del
+			//    diálogo de confirmación salían como "Yes" / "No").
 			if($r=$lng->get_ini_cfg_value("dxwebappjs_locale_src_full")){
 				$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs_local","$r");
 				$jsman->add_item_by_item($item);
@@ -143,6 +149,16 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 				$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs_local","/res/dx/js/localization/$r");
 				$jsman->add_item_by_item($item);
 
+			}
+			// 2) Override del proyecto: va DESPUÉS del diccionario completo y
+			//    sólo aporta claves suplementarias. localization.loadMessages()
+			//    hace merge (deep extend) sobre el diccionario ya cargado, así que
+			//    no pisa lo anterior. El código del item es distinto de
+			//    "dxwebappjs_local" porque el manager no admite dos items con el
+			//    mismo código.
+			if($r=$lng->get_ini_cfg_value("dxwebappjs_locale_override_src")){
+				$item=new mwmod_mw_html_manager_item_jsexternal("dxwebappjs_local_override","$r");
+				$jsman->add_item_by_item($item);
 			}
 			if($r=$lng->get_ini_cfg_value("dxwebappjs_locale_code")){
 				$item=new mwmod_mw_html_manager_item_jscus("dxinit");
