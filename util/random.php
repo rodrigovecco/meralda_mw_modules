@@ -50,6 +50,28 @@ class mwmod_mw_util_random {
 	}
 
 	/**
+	 * Generates an opaque URL-safe token from raw entropy.
+	 *
+	 * base64url of N random bytes, with the padding stripped: no '+', '/' or '='
+	 * so the value survives a query string, a JSON body and a CSV cell
+	 * untouched. 32 bytes (the default) give 256 bits of entropy in 43 chars.
+	 *
+	 * Prefer this over string() for credentials: it carries a known amount of
+	 * entropy per character, while string() with a reduced alphabet does not.
+	 *
+	 * @param int $bytes Entropy size. Defaults to 32 (256 bits).
+	 * @return string
+	 */
+	static function token(int $bytes = 32): string {
+		$bytes = $bytes + 0;
+		if ($bytes < 1) {
+			return '';
+		}
+
+		return rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', '-_'), '=');
+	}
+
+	/**
 	 * Generates a random password that always mixes the three character
 	 * classes required by the default password policy (lowercase, uppercase
 	 * and digits), so it passes mwmod_mw_users_passpolicy::check_new_pass().
