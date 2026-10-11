@@ -601,7 +601,7 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	
 	final function load_item($id){
 
-		if(!$id=mw_get_number($id)){
+		if(!$id=mwmod_mw_util_text::get_number($id)){
 			return false;
 		}
 		
@@ -611,7 +611,7 @@ class  mwmod_mw_db_tbl extends mw_apsubbaseobj{
 	}
 	final function get_item_if_loaded($id){
 		
-		if(!$id=mw_get_number($id)){
+		if(!$id=mwmod_mw_util_text::get_number($id)){
 			return false;
 		}
 		if(!$id=$id+0){

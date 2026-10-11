@@ -9,7 +9,7 @@ class mwmod_mw_jsobj_str extends mwmod_mw_jsobj_obj{
 		$this->str=$str;
 	}
 	function get_as_js_val(){
-		return "'".mw_text_nl_js($this->str)."'";	
+		return "'".mwmod_mw_util_text::js_escape($this->str)."'";	
 		
 	}
 

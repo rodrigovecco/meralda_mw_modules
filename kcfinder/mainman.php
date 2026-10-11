@@ -45,7 +45,7 @@ class  mwmod_mw_kcfinder_mainman extends mw_apsubbaseobj implements mwmod_mw_kcf
 		if($upload){
 			$url="/kcfinder/upload.php";	
 		}
-		if($q=mw_array2urlquery($urlparams)){
+		if($q=mwmod_mw_util_array::to_url_query($urlparams)){
 			$url.="?".$q;	
 		}
 		return $url;

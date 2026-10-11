@@ -24,7 +24,7 @@ class mwmod_mw_data_var_man extends mwmod_mw_data_session_man{
 		if(!$key){
 			return $this->data;
 		}
-		return mw_array_get_sub_key($this->data,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->data,$key);	
 			
 	}
 	final function _set_data($data,$key=false){
@@ -35,7 +35,7 @@ class mwmod_mw_data_var_man extends mwmod_mw_data_session_man{
 		if(!is_array($this->data)){
 			$this->data=array();
 		}
-		mw_array_set_sub_key($key,$data,$this->data);
+		mwmod_mw_util_array::set_sub_key($key,$data,$this->data);
 			
 	}
 	

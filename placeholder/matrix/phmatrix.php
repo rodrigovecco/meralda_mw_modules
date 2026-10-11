@@ -90,13 +90,13 @@ class mwmod_mw_placeholder_matrix_phmatrix extends mw_apsubbaseobj{
 	}
 	final function set_debug_info($cod,$val){
 		if($cod){
-			mw_array_set_sub_key($cod,$val,$this->_debug_info);
+			mwmod_mw_util_array::set_sub_key($cod,$val,$this->_debug_info);
 			return true;
 		}
 	}
 	final function get_debug_info($cod=false){
 		if($cod){
-			return mw_array_get_sub_key($this->_debug_info,$cod);
+			return mwmod_mw_util_array::get_sub_key($this->_debug_info,$cod);
 		}
 		return $this->_debug_info;
 	}

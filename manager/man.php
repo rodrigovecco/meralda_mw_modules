@@ -143,7 +143,7 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 		$listok=array();
 		foreach($list as $id){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				$listok[$id]=$id;
 				$this->add_to_preload($id);
 			}

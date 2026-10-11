@@ -49,8 +49,6 @@ class mwmod_mw_data_xml_js extends mwmod_mw_data_xml{
 	
 	function get_xml_open(){
 		$r=$this->get_margin_tabs();
-		//$val=$this->get_value();
-		//$dtype=mw_array2xml_str_data_type($val);
 		$r.="<item id='".$this->id."' dataType='JSObject'>";
 		return $r;
 	}

@@ -1024,7 +1024,7 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}else{
 			$key="height.dim";
 		}
-		$m=mw_array_get_sub_key($this->cfg,$key)+0;
+		$m=mwmod_mw_util_array::get_sub_key($this->cfg,$key)+0;
 		if($m<=0){
 			return 0;
 		}
@@ -1069,7 +1069,7 @@ class mwmod_mw_helper_img_imgsubman extends mw_apsubbaseobj{
 		}else{
 			$key="height.mode";
 		}
-		$m=mw_array_get_sub_key($this->cfg,$key)+0;
+		$m=mwmod_mw_util_array::get_sub_key($this->cfg,$key)+0;
 		if($m<0){
 			return 0;
 		}

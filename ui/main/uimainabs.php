@@ -581,7 +581,7 @@ abstract class mwmod_mw_ui_main_uimainabs extends mw_apsubbaseobj{
 		$url=$this->get_url_base($file);
 		if($args){
 			if(is_array($args)){
-				if($q=mw_array2urlquery($args)){
+				if($q=mwmod_mw_util_array::to_url_query($args)){
 					$url.="?".$q;	
 				}
 			}

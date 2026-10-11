@@ -1,6 +1,6 @@
 <?php
 
-class mwmod_mw_jsobj_obj extends mw_object_as_array{
+class mwmod_mw_jsobj_obj extends mwmod_mw_util_objectasarray{
 	private $_array_props=array();
 	var $fnc_name;
 	var $xml_parent;
@@ -148,7 +148,7 @@ class mwmod_mw_jsobj_obj extends mw_object_as_array{
 		return $this->_array_props[$cod];	
 	}
 	function get_txt($txt){
-		return mw_text_nl_js($txt);
+		return mwmod_mw_util_text::js_escape($txt);
 	}
 	function get_prop($cod=false){
 		return $this->get_prop_from_key_dot($cod);	
@@ -268,19 +268,19 @@ class mwmod_mw_jsobj_obj extends mw_object_as_array{
 		if((is_numeric($val))and($val==($val+0))){
 			if(is_string($val)){
 				if((strpos($val,"0") === 0)and(strlen($val)>1)){
-					return "'".mw_text_nl_js($val."")."'";	
+					return "'".mwmod_mw_util_text::js_escape($val."")."'";	
 				}
 				if(strpos($val,"E") !== false){
-					return "'".mw_text_nl_js($val."")."'";	
+					return "'".mwmod_mw_util_text::js_escape($val."")."'";	
 				}
 				if(strpos($val,"e") !== false){
-					return "'".mw_text_nl_js($val."")."'";	
+					return "'".mwmod_mw_util_text::js_escape($val."")."'";	
 				}
 			}
 			return ($val+0)."";	
 		}
 		if(is_string($val)){
-			return "'".mw_text_nl_js($val)."'";	
+			return "'".mwmod_mw_util_text::js_escape($val)."'";	
 		}
 		return "null";
 		

@@ -105,7 +105,7 @@ class mwmod_mw_html_elem extends mwmod_mw_html_abselem implements mwmod_mw_html_
 		
 	}
 	function get_as_js_val(){
-		return "'".mw_text_nl_js($this->get_as_html())."'";		
+		return "'".mwmod_mw_util_text::js_escape($this->get_as_html())."'";		
 	}
 	function is_visible(){
 		if(!$this->visible){

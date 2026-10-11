@@ -148,7 +148,7 @@ abstract class mwmod_mw_mail_mailer_man_abs extends mw_apsubbaseobj{
 		if(!$cod){
 			return $this->_cfg_data;	
 		}else{
-			return mw_array_get_sub_key($this->_cfg_data,$cod);
+			return mwmod_mw_util_array::get_sub_key($this->_cfg_data,$cod);
 		}
 		
 	}

@@ -360,7 +360,7 @@ class mwmod_mw_helper_fileman extends mw_apsubbaseobj{
 		if(!$file=basename($file)){
 			return false;
 		}
-		$file=mw_text_replace_lngchars($file);
+		$file=mwmod_mw_util_text::replace_lng_chars($file);
 		
 		
 		$file=strtolower($file);

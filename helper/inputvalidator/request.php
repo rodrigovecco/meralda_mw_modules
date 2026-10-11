@@ -55,7 +55,7 @@ class mwmod_mw_helper_inputvalidator_request extends mwmod_mw_helper_inputvalida
 	}
 	function get_value_from_root_input_array($varname=false){
 		$v=$this->get_root_input_array();
-		return mw_array_get_sub_key($v,$varname);
+		return mwmod_mw_util_array::get_sub_key($v,$varname);
 	}
 	function get_root_input_array(){
 		if($this->req_mode==1){

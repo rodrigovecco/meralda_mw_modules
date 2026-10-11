@@ -1124,7 +1124,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!is_array($args)){
 			return $def;	
 		}
-		return  mw_array_bydefault($args,$def);
+		return  mwmod_mw_util_array::by_default($args,$def);
 	}
 
 	/**
@@ -1148,7 +1148,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!$key){
 			return 	$this->cmdparams;
 		}
-		return mw_array_get_sub_key($this->cmdparams,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->cmdparams,$key);	
 	}
 	
 	/**
@@ -1178,7 +1178,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 */
 	final function set_cmd_param($key,$val){
 
-		mw_array_set_sub_key($key,$val,$this->cmdparams);
+		mwmod_mw_util_array::set_sub_key($key,$val,$this->cmdparams);
 		
 	}
 
@@ -1520,7 +1520,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function get_url($args=false,$file=false){
 		$url=$this->get_url_base($file);
 		if($args1=$this->get_url_params($args)){
-			if($q=mw_array2urlquery($args1)){
+			if($q=mwmod_mw_util_array::to_url_query($args1)){
 				$url.="?".$q;	
 			}
 		}
@@ -1539,7 +1539,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!is_array($args)){
 			return $def;	
 		}
-		return  mw_array_bydefault($args,$def);
+		return  mwmod_mw_util_array::by_default($args,$def);
 	}
 	
 	/**
@@ -1636,7 +1636,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 * @return void
 	 */
 	final function set_url_param($key,$val){
-		mw_array_set_sub_key($key,$val,$this->urlparams);	
+		mwmod_mw_util_array::set_sub_key($key,$val,$this->urlparams);	
 	}
 	
 	/**
@@ -1650,7 +1650,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!$key){
 			return 	$this->urlparams;
 		}
-		return mw_array_get_sub_key($this->urlparams,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->urlparams,$key);	
 	}
 	
 	/**

@@ -1,5 +1,5 @@
 <?php
-class mwmod_mw_data_xml extends mw_object_as_array{
+class mwmod_mw_data_xml extends mwmod_mw_util_objectasarray{
 	var $id;
 	
 	private $_items=array();
@@ -173,7 +173,7 @@ class mwmod_mw_data_xml extends mw_object_as_array{
 		}
 		if(is_object($val)){
 			$obj=$val;
-			if($obj instanceof mw_object_as_array and $obj->__mw_array_allow_use_this_object()){
+			if(mwmod_mw_util_array::is_obj_array_allowed($obj)){
 				$val=$obj->get_props_as_array_or_str();
 			}elseif(method_exists($obj,'__toString')){
 				$val=$obj."";

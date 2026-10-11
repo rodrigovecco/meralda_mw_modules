@@ -77,7 +77,7 @@ class  mwmod_mw_lng_lngitem extends mw_apsubbaseobj{
 	}
 	final function get_cfg_data($key=false){
 		$this->_init_cfg_data();
-		return mw_array_get_sub_key($this->cfgdata,$key);
+		return mwmod_mw_util_array::get_sub_key($this->cfgdata,$key);
 			
 	}
 	final function get_path(){

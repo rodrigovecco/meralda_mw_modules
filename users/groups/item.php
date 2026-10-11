@@ -17,7 +17,7 @@ class mwmod_mw_users_groups_item extends mwmod_mw_manager_item{
 		}
 		$list=array();
 		foreach($input as $id=>$v){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				if($v){
 					$list[$id]=$id;	
 				}
@@ -95,7 +95,7 @@ class mwmod_mw_users_groups_item extends mwmod_mw_manager_item{
 		}
 		$list=explode(",",$str);
 		foreach($list as $id){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				$this->_users_ids[$id]=$id;	
 			}
 		}

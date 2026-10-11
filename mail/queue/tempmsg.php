@@ -246,7 +246,7 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 			return false;	
 		}
 		$address=strtolower($address);
-		if(!mw_checkemail($address,false)){
+		if(!mwmod_mw_util_text::check_email($address,false)){
 			return false;	
 		}
 		return $address;

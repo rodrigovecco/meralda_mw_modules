@@ -1,5 +1,5 @@
 <?php
-class mwmod_mw_html_atts extends mw_object_as_array{
+class mwmod_mw_html_atts extends mwmod_mw_util_objectasarray{
 	function __construct($atts=false){
 		$this->set_props_init($atts);
 		
