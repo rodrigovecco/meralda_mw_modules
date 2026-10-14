@@ -17,6 +17,24 @@
  * @method array<int, T>|false get_items_by_simple_crit(array $crit)
  * @method T|null get_available_item(int $id)
  * @method array<int, T>|false get_available_items_from_list(array $items)
+ *
+ * WHY THE TEN DECLARATIONS ABOVE ARE LOAD-BEARING, AND WHAT TO DO WHEN ADDING ONE
+ *
+ * Most of the methods declared above have no docblock of their own, and this list is what
+ * types them: an analyser reads `@method T|null get_item(int $id)` and resolves the T through
+ * its bound (mwmod_mw_manager_item), so a caller can write $man->get_item($id)->get_name().
+ *
+ * A method that hands back an item is therefore in one of TWO states, and only these:
+ *   - it is declared here, or
+ *   - it carries its own `@return T|false`.
+ *
+ * A method in NEITHER state (create_new_item() and create_new_item_from_full_input() were,
+ * until 2026-10-14) gets its type INFERRED from the body instead, and the inference yields a
+ * bare `T` — which is not an object. Every caller in every project is then flagged at its
+ * first `$item->get_id()` with "Expected type 'object'. Found 'T'", although the code is
+ * correct. Prefer `@return T|false` on the method: it is stated where the method is read, and
+ * unlike `@method` it is also honoured by PHPStan and Psalm, which treat `@method` as a
+ * declaration of a magic method and IGNORE it when the method really exists.
  */
 abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	private $tblman;
