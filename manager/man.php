@@ -392,6 +392,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		
 	}
 	
+	/**
+	 * @param array $data
+	 * @return T|false
+	 */
 	function create_new_item_from_full_input($data){
 		if(!is_array($data)){
 			return false;
@@ -402,6 +406,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		$item->after_created($data);
 		return $item;
 	}
+	/**
+	 * @param array $data
+	 * @return T|false
+	 */
 	function create_new_item($data){
 		if(!$nd=$this->validate_new_item_data($data)){
 			return false;	
