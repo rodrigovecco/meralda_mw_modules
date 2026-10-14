@@ -155,7 +155,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 			return $this->get_items_from_array_id_list(array($str));
 		}
 	}
+	/**
+	 * @param array $list
+	 * @return array<int, T>|false
+	 */
 	function get_items_from_array_id_list($list){
+		$r=array();
 		if(!is_array($list)){
 			return false;	
 		}
@@ -194,7 +199,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	function get_all_items_ccb(){
 		return $this->get_items_ccb($this->get_all_items());
 	}
+	/**
+	 * @param array $items
+	 * @return array<int|string, mixed>|false
+	 */
 	function get_items_ccb($items){
+		$r=array();
 		if(!is_array($items)){
 			return false;	
 		}
@@ -350,7 +360,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	}
 	
 	
+	/**
+	 * @param array $list
+	 * @return array<int, T>|false
+	 */
 	function get_available_items_from_list($list){
+		$r=array();
 		if(!is_array($list)){
 			return false;
 		}
@@ -372,7 +387,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 	}
 
+	/**
+	 * @param string $sql
+	 * @return array<int, T>|false
+	 */
 	function get_items_by_sql_extra_data_mode($sql){
+		$r=array();
 		//todo: paramquery mode!
 		if(!$man=$this->get_tblman()){
 			return false;	
@@ -392,7 +412,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		
 	}
 	
+	/**
+	 * @param string $sql
+	 * @return array<int, T>|false
+	 */
 	function get_items_by_sql($sql){
+		$r=array();
 		if(!$man=$this->get_tblman()){
 			return false;	
 		}
