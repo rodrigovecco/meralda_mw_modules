@@ -78,6 +78,62 @@ abstract class mwmod_mw_db_migrations_itemabs extends mw_apsubbaseobj {
 		return ["ok" => true, "warnings" => []];
 	}
 
+	/**
+	 * Whether a run_sql() result reports a FAILURE.
+	 *
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * WHY THIS METHOD EXISTS, AND WHY THE OBVIOUS CHECK IS WRONG
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * `run_sql()` returns an ARRAY, and an array is always truthy in PHP — an empty one
+	 * included. So this reads as a failure check and never fires:
+	 *
+	 *     $ok = $this->run_sql("CREATE TABLE ...");
+	 *     if (!$ok) { return false; }        // DEAD CODE, whatever happened
+	 *
+	 * The statement fails, the guard is skipped, the migration carries on to its next
+	 * statement, and if THAT one succeeds the migration reports success and the version
+	 * is recorded. The schema is left half-built and marked as done, which is the worst
+	 * shape of failure there is: the damage is invisible, and re-running is refused
+	 * because the migration is already recorded as applied.
+	 *
+	 * It is not a hypothetical. Every migration item written in this module before
+	 * 2026-10-16 had this shape — thirty-five guards that could not fire — because the
+	 * array return is what the framework documents and a boolean check is what it looks
+	 * like from the outside.
+	 *
+	 * The reading here is IDENTICAL to the runner's own, deliberately: it is what
+	 * `mwmod_mw_db_migrations_man::_applyPhpMigration()` does with what `apply()` returns
+	 * (`!empty($r["ok"])`, with a scalar understood as shorthand). One rule, one reader —
+	 * a helper that disagreed with the runner would let a migration report success while
+	 * the runner recorded a failure, or the reverse.
+	 *
+	 * @param  mixed $result  what run_sql() or apply() returned
+	 * @return bool
+	 */
+	final protected function sql_failed($result) {
+		if (is_array($result)) {
+			return empty($result["ok"]);
+		}
+		return !$result;
+	}
+
+	/**
+	 * The sentence to show for a failed run_sql(), or "" when it succeeded.
+	 *
+	 * For the rare caller that has to compose its own failure instead of passing the
+	 * result straight through. The result already carries the driver's message, so an
+	 * operator reads "Unknown column 'x' in 'field list'" rather than "Migration failed".
+	 *
+	 * @param  mixed $result
+	 * @return string
+	 */
+	final protected function sql_error($result) {
+		if (is_array($result)) {
+			return isset($result["error"]) ? (string) $result["error"] : "";
+		}
+		return "";
+	}
+
 	/** Execute a single SQL query and return the result resource (or false). */
 	final protected function query($sql) {
 		if (!$db = $this->db()) {
