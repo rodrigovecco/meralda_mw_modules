@@ -212,10 +212,20 @@ class mwmod_mw_users_permissions_permission extends mw_apsubbaseobj{
 		if(!is_array($params)){
 			$params=array();	
 		}
-		if(!is_array($params["_other_permissions_chain"])){
+		/*
+		 * `??` ON BOTH READS, and it is a defect rather than a tidy-up. `$params` starts as `false`
+		 * for every ordinary call and is turned into an empty array just above, so this key does not
+		 * exist the first time a chain is walked — and reading it raised "Undefined array key
+		 * "_other_permissions_chain"" EVERY TIME a permission with parents was asked for a user who
+		 * does not hold it directly. With the parent chain in this project that is every screen
+		 * load of every narrow role, and a warning per check is how a log stops being read.
+		 *
+		 * The behaviour is unchanged: a missing chain is an empty chain.
+		 */
+		if(!is_array($params["_other_permissions_chain"]??null)){
 			$params["_other_permissions_chain"]=array();	
 		}
-		if($params["_other_permissions_chain"][$codthis]){
+		if($params["_other_permissions_chain"][$codthis]??false){
 			
 			return false;
 		}
