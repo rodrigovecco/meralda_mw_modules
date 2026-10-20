@@ -88,6 +88,86 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	}
 
 	/**
+	 * Accept an OAuth-derived access token as a second credential form.
+	 *
+	 * THE TWO CREDENTIALS IN THIS FLOW ARE NOT THE SAME STRING, AND ONLY ONE OF THEM
+	 * EXISTED HERE. An API token created in the panel is a SIGNED JWT, verified by
+	 * `findActiveByJwt()` with no database round trip beyond the primary key. What the
+	 * OAuth flow hands a connector is NOT that JWT: `/oauth/token` mints a STATELESS
+	 * DERIVED token (`oa1.<payload>.<hmac>`) whose signing key is the master token's
+	 * `token_hash`, per mwmod_mw_oauth_tokenhelper. A client that completes the whole
+	 * consent flow therefore arrives holding a token this endpoint does not know how
+	 * to read — and the visible result is the worst kind: the token exchange answers
+	 * `200` with a real access token, every subsequent MCP request answers `401`, and
+	 * the connector reports "authorization failed" while both halves are working.
+	 *
+	 * WHY THE SAME LOGIN IS USED. `login_user_api_token_mode()` is what makes a
+	 * request's permissions the INTERSECTION of the account's and the master token's
+	 * declared scope; verifying the derived token only establishes WHICH master token
+	 * signed it, so handing that item to the same method keeps one permission model.
+	 * A hand-rolled session here would be a second one.
+	 *
+	 * WHY REFRESH TOKENS ARE NOT ACCEPTED: `verify()` is given ACCESS_PREFIX, so an
+	 * `or1.*` string fails the prefix check. A refresh token is for `/oauth/token`
+	 * only; accepting it here would make a 30-day credential usable as a bearer token
+	 * without ever being exchanged.
+	 *
+	 * @return bool
+	 */
+	function loginUserByToken() {
+		if (parent::loginUserByToken()) {
+			return true;
+		}
+		return $this->loginUserByOauthAccessToken();
+	}
+
+	/**
+	 * Log in from an `oa1.*` access token, or describe why it was refused.
+	 *
+	 * Every refusal returns false and the caller answers 401: the challenge already
+	 * tells a client how to obtain a credential, and naming WHICH check failed would
+	 * confirm to a scanner that a token exists.
+	 *
+	 * @return bool
+	 */
+	protected function loginUserByOauthAccessToken() {
+		if (!$token = $this->getRequestTokenBearer()) {
+			return false;
+		}
+		// Cheap shape test before touching the database: the prefix is signed, so a
+		// token of another type cannot be replayed as this one.
+		$prefix = mwmod_mw_oauth_tokenhelper::ACCESS_PREFIX . '.';
+		if (strpos($token, $prefix) !== 0) {
+			return false;
+		}
+		if (!$uman = $this->get_user_manager()) {
+			return false;
+		}
+		// The framework accessor, not `$this->mainap->db`: the latter is null in a
+		// service context, which is the same mistake that broke the refresh grant.
+		$db = $this->mainap->getDBManager();
+		if (!$db) {
+			return false;
+		}
+		$verified = mwmod_mw_oauth_tokenhelper::verify(
+			$token, mwmod_mw_oauth_tokenhelper::ACCESS_PREFIX, $db);
+		if (!$verified) {
+			return false;
+		}
+		if (!$apitokenMan = $uman->getApitokenMan()) {
+			return false;
+		}
+		$tokenItem = $apitokenMan->get_item((int) $verified['token_id']);
+		if (!$tokenItem || !$tokenItem->isActive()) {
+			return false;
+		}
+		if (!$user = $uman->get_user((int) $verified['user_id'])) {
+			return false;
+		}
+		return $uman->login_user_api_token_mode($user, $tokenItem);
+	}
+
+	/**
 	 * Subclasses must register their tools here.
 	 */
 	abstract protected function registerAllTools();
