@@ -526,13 +526,48 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	private function handleToolsList($id, $params) {
 		$definitions = array();
 		foreach ($this->tools as $tool) {
-			$definitions[] = $tool->getDefinition();
+			/*
+			 * ONE BROKEN TOOL MUST NOT COST THE WHOLE CATALOGUE.
+			 *
+			 * A definition is built from the tool's own description and schema, and a mistake in
+			 * either (a method that does not exist, a value that cannot be encoded) used to throw
+			 * out of this loop and take the request with it: the client received a 500 instead of
+			 * a tool list, so EVERY tool looked broken because one was.
+			 *
+			 * The tool is still listed, with the failure as its description, so it stays visible
+			 * and calling it answers with the same sentence — an absent tool would leave a caller
+			 * unable to tell "not installed" from "installed and broken", which are different
+			 * problems with different fixes.
+			 */
+			try {
+				$definitions[] = $tool->getDefinition();
+			} catch (Throwable $e) {
+				$definitions[] = array(
+					"name"        => $this->safeToolName($tool),
+					"description" => "This tool is registered but its definition could not be built: "
+						. $e->getMessage(),
+					"inputSchema" => array(
+						"type"       => "object",
+						"properties" => new stdClass(),
+						"required"   => array(),
+					),
+				);
+			}
 		}
 		$this->sendResult($id, array(
 			"tools"      => $definitions,
 			"ttlMs"      => 0,
 			"cacheScope" => "public",
 		));
+	}
+
+	/** A tool's name for a failure message, or "?" when even that cannot be asked. */
+	private function safeToolName($tool) {
+		try {
+			return (string) $tool->getName();
+		} catch (Throwable $e) {
+			return "?";
+		}
 	}
 
 	private function handleToolsCall($id, $params) {
@@ -559,10 +594,27 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			return;
 		}
 
+		/*
+		 * `Throwable`, NOT `Exception` — AND THAT WORD WAS A DEFECT.
+		 *
+		 * In PHP 7+ a runtime fault such as calling a method on `false` (a `TypeError`) or using
+		 * an undefined class is an `Error`, which does NOT extend `Exception`. So `catch
+		 * (Exception $e)` let exactly the failures a tool is most likely to have escape this
+		 * block entirely: the answer was not a JSON-RPC error, it was a PHP fatal — the response
+		 * died half-written and the connector reported the whole server as unreachable.
+		 *
+		 * Measured: a list tool did `(array) $man->get_all_items()` on an empty table, which is
+		 * `[false]`, and the next line's `get_code()` killed the request with a 502 while the
+		 * same call answered perfectly on a machine that had fixtures.
+		 *
+		 * A tool's mistake is the TOOL's failure and belongs in its answer. Nothing a single tool
+		 * does should be able to take the endpoint down, which is also what makes a partially
+		 * broken deployment usable instead of opaque.
+		 */
 		try {
 			$result = $tool->execute($args, $this->mainap);
 			$this->sendResult($id, $result);
-		} catch (Exception $e) {
+		} catch (Throwable $e) {
 			$this->sendError($id, -32000, "Internal error: " . $e->getMessage());
 		}
 	}
