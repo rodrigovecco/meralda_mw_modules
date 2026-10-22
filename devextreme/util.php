@@ -22,10 +22,10 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 		$jsman->remove_item("dxwebappjs");
 		$jsman->remove_item("dxinit");
 		$jsman->remove_item("dxwebappjs_local");
-		// El override de localizacion tambien depende de que dx.all.js ya este
-		// cargado (usa DevExpress.localization). Si no se saca aca, queda en su
-		// posicion original (antes de dx.all.js, que mas abajo se vuelve a
-		// agregar al final) y el navegador falla con
+		// The locale override also depends on dx.all.js being loaded already
+		// (it uses DevExpress.localization). If it is not removed here it keeps
+		// its original position -- before dx.all.js, which is re-added at the
+		// end below -- and the browser fails with
 		// "Cannot read properties of undefined (reading 'loadMessages')".
 		$jsman->remove_item("dxwebappjs_local_override");
 
@@ -48,8 +48,8 @@ class mwmod_mw_devextreme_util extends mwmod_mw_html_manager_util{
 		$jsman->remove_item("dxwebappjs");
 		$jsman->remove_item("dxinit");
 		$jsman->remove_item("dxwebappjs_local");
-		// Mismo motivo que en preapare_ui_exportExcel(): el override necesita
-		// dx.all.js cargado, asi que debe volver a agregarse despues de el.
+		// Same reason as in preapare_ui_exportExcel(): the override needs
+		// dx.all.js loaded, so it has to be re-added after it.
 		$jsman->remove_item("dxwebappjs_local_override");
 
 
