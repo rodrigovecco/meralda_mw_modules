@@ -114,6 +114,25 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 	const MIN_PHP_VERSION = "8.2.0";
 
 	/**
+	 * Size above which the error log is reported as needing rotation.
+	 * @var int
+	 */
+	const LOG_SIZE_LIMIT_BYTES = 104857600;
+
+	/**
+	 * Display form of LOG_SIZE_LIMIT_BYTES.
+	 * @var string
+	 */
+	const LOG_SIZE_LIMIT_LABEL = "100M";
+
+	/**
+	 * Hard cap for the line count of a log file. Beyond this, lines are counted
+	 * only up to the cap and the value is marked with a trailing "+".
+	 * @var int
+	 */
+	const LINE_COUNT_MAX_BYTES = 134217728;
+
+	/**
 	 * Functions that give the process direct access to the operating system.
 	 * @var array<int,string>
 	 */
@@ -697,6 +716,90 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-log"
 		);
+
+		// Actual state of the log file: location, size and line count.
+		if ($errorLog === "") {
+			$checks[] = self::new_check(
+				"error_log_file", "errors",
+				$this->t("error_log_file_label", "Archivo de registro: tamaño, líneas y ubicación"),
+				self::STATUS_NA,
+				$this->t("error_log_file_not_set", "(sin archivo: el destino lo define el SAPI)"),
+				$this->t("error_log_file_expected", "Rotación periódica; por debajo de %limit%", array("limit" => self::LOG_SIZE_LIMIT_LABEL)),
+				$this->t(
+					"error_log_file_help_not_set",
+					"Con error_log vacío no hay un archivo que medir. Si el servidor escribe a stderr, el tamaño lo controla el gestor de logs del sistema."
+				),
+				"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-log"
+			);
+		} elseif (strtolower($errorLog) === "syslog") {
+			$checks[] = self::new_check(
+				"error_log_file", "errors",
+				$this->t("error_log_file_label", "Archivo de registro: tamaño, líneas y ubicación"),
+				self::STATUS_NA,
+				$this->t("error_log_file_syslog", "syslog (lo gestiona el sistema operativo)"),
+				$this->t("error_log_file_expected", "Rotación periódica; por debajo de %limit%", array("limit" => self::LOG_SIZE_LIMIT_LABEL)),
+				$this->t(
+					"error_log_file_help_syslog",
+					"El destino es syslog: el archivo y su tamaño quedan fuera de PHP y se consultan con las herramientas del sistema (journalctl, /var/log/syslog)."
+				),
+				"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-log"
+			);
+		} else {
+			$stats = self::get_file_stats($errorLog);
+			$help  = $this->t(
+				"error_log_file_help",
+				"php.net: sin límite de tamaño el archivo crece sin control y puede agotar el disco. Rota el archivo (logrotate o equivalente) y comprueba que la ruta quede fuera del directorio público."
+			);
+			if ($stats["mtime"]) {
+				$help .= " " . $this->t(
+					"error_log_file_modified",
+					"Última escritura: %date%.",
+					array("date" => date("Y-m-d H:i:s", $stats["mtime"]))
+				);
+			}
+
+			if (!$stats["exists"]) {
+				$status  = self::STATUS_OK;
+				$current = $this->t(
+					"error_log_file_missing",
+					"no existe todavía | %path%",
+					array("path" => $stats["path"])
+				);
+			} elseif (!$stats["readable"]) {
+				$status  = self::STATUS_WARN;
+				$current = $this->t(
+					"error_log_file_unreadable",
+					"sin permiso de lectura | %size% | %path%",
+					array("size" => $this->describe_ini_bytes($stats["size"]), "path" => $stats["path"])
+				);
+			} else {
+				$lines = ($stats["lines"] === null)
+					? $this->t("not_available", "(no disponible)")
+					: number_format((int) $stats["lines"], 0, ",", ".")
+						. ($stats["lines_truncated"] ? "+" : "");
+				$current = $this->t(
+					"error_log_file_stat",
+					"%size% | %lines% líneas | %path%",
+					array(
+						"size"  => $this->describe_ini_bytes($stats["size"]),
+						"lines" => $lines,
+						"path"  => $stats["path"],
+					)
+				);
+				$status = ($stats["size"] !== null and $stats["size"] > self::LOG_SIZE_LIMIT_BYTES)
+					? self::STATUS_WARN
+					: self::STATUS_OK;
+			}
+			$checks[] = self::new_check(
+				"error_log_file", "errors",
+				$this->t("error_log_file_label", "Archivo de registro: tamaño, líneas y ubicación"),
+				$status,
+				$current,
+				$this->t("error_log_file_expected", "Rotación periódica; por debajo de %limit%", array("limit" => self::LOG_SIZE_LIMIT_LABEL)),
+				$help,
+				"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-log"
+			);
+		}
 
 		$errorReporting = (int) ini_get("error_reporting");
 		$allErrors = (($errorReporting & E_ALL) === E_ALL);
@@ -1702,6 +1805,99 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 			}
 		}
 		return $missing;
+	}
+
+	/**
+	 * Reads the current state of a file on disk.
+	 *
+	 * Used for the error log. The relative path is resolved with realpath() when
+	 * the file exists, so the report shows the directory the process really
+	 * writes to. Nothing here throws: a missing or unreadable file is reported
+	 * through the returned flags.
+	 *
+	 * @param string $path File path as written in php.ini.
+	 *
+	 * @return array<string,mixed> path, exists, readable, size, mtime, lines,
+	 *                             lines_truncated.
+	 */
+	static function get_file_stats($path) {
+		$r = array(
+			"path"            => (string) $path,
+			"exists"          => false,
+			"readable"        => false,
+			"size"            => null,
+			"mtime"           => false,
+			"lines"           => null,
+			"lines_truncated" => false,
+		);
+		if ($path === "") {
+			return $r;
+		}
+		$real = @realpath($path);
+		if ($real) {
+			$r["path"] = $real;
+		}
+		if (!@file_exists($r["path"])) {
+			return $r;
+		}
+		$r["exists"]   = true;
+		$r["readable"] = @is_readable($r["path"]);
+
+		$size = @filesize($r["path"]);
+		if ($size !== false) {
+			$r["size"] = (int) $size;
+		}
+		$mtime = @filemtime($r["path"]);
+		if ($mtime !== false) {
+			$r["mtime"] = (int) $mtime;
+		}
+		if ($r["readable"] and $r["size"] !== null) {
+			$count = self::count_file_lines($r["path"], self::LINE_COUNT_MAX_BYTES);
+			$r["lines"]           = $count["lines"];
+			$r["lines_truncated"] = $count["truncated"];
+		}
+		return $r;
+	}
+
+	/**
+	 * Counts the lines of a file without loading it into memory.
+	 *
+	 * Reads in 1M chunks and counts "\n". When the file does not end with a
+	 * newline the last partial line is counted too. Files larger than
+	 * $maxBytes are counted up to that cap and flagged as truncated.
+	 *
+	 * @param string $path File to count.
+	 * @param int $maxBytes Byte cap (0 = no cap).
+	 *
+	 * @return array<string,mixed> lines (int|null) and truncated (bool).
+	 */
+	static function count_file_lines($path, $maxBytes = 0) {
+		$r = array("lines" => null, "truncated" => false);
+		$handle = @fopen($path, "rb");
+		if (!$handle) {
+			return $r;
+		}
+		$r["lines"]  = 0;
+		$read        = 0;
+		$lastByte    = "";
+		while (!feof($handle)) {
+			$chunk = fread($handle, 1048576);
+			if ($chunk === false or $chunk === "") {
+				break;
+			}
+			$r["lines"] += substr_count($chunk, "\n");
+			$lastByte    = substr($chunk, -1);
+			$read       += strlen($chunk);
+			if ($maxBytes > 0 and $read >= $maxBytes and !feof($handle)) {
+				$r["truncated"] = true;
+				break;
+			}
+		}
+		fclose($handle);
+		if (!$r["truncated"] and $lastByte !== "" and $lastByte !== "\n") {
+			$r["lines"]++;
+		}
+		return $r;
 	}
 }
 ?>
