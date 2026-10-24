@@ -19,10 +19,34 @@
  *
  * Class name -> file: mwmod_mw_util_phphealth -> modules/mw/util/phphealth.php
  *
+ * Translatable text
+ * -----------------
+ * Every user-facing string (group titles, check labels, expected values and
+ * help texts) goes through lng_get_msg_txt() with its Spanish text as the
+ * fallback, so the class still works with no translation file.
+ *
+ * The class declares its own language code (LNG_COD, "phphealth") instead of
+ * inheriting "def": that gives it a dedicated messages file
+ * (lngmsgs/def/phphealth.txt, one "code message" per line) that translators can
+ * edit without touching the shared dictionary.
+ *
+ * Message codes follow "<topic>_label", "<topic>_expected" and "<topic>_help";
+ * shared UI words (bool values, "not available", "empty") use their own codes.
+ * Placeholders use the framework format: %name%.
+ *
  * @property string $version Ruleset version.
  * @property string $date Ruleset date (ISO 8601).
  */
-class mwmod_mw_util_phphealth {
+class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
+
+	/**
+	 * Language messages manager code.
+	 *
+	 * Own code (= own file) so the strings of this page are not mixed into the
+	 * shared "def" dictionary.
+	 * @var string
+	 */
+	const LNG_COD = "phphealth";
 
 	/** Ruleset version. @var string */
 	const VERSION = "1.0";
@@ -114,18 +138,43 @@ class mwmod_mw_util_phphealth {
 	);
 
 	/**
+	 * Language messages manager code.
+	 *
+	 * Declared here (instead of inheriting the shared "def") so every string of
+	 * this page lives in its own file: lngmsgs/def/phphealth.txt.
+	 *
+	 * @return string
+	 */
+	function get_lngmsgsmancod() {
+		return self::LNG_COD;
+	}
+
+	/**
+	 * Shortcut for lng_get_msg_txt().
+	 *
+	 * @param string $cod Message code.
+	 * @param string $def Default text, used when the message file has no entry.
+	 * @param array<string,string>|false $params Placeholder replacements.
+	 *
+	 * @return string
+	 */
+	private function t($cod, $def, $params = false) {
+		return $this->lng_get_msg_txt($cod, $def, $params);
+	}
+
+	/**
 	 * Returns the localized title of every check group.
 	 *
 	 * @return array<string,string> Group code => title.
 	 */
-	static function get_groups() {
+	function get_groups() {
 		return array(
-			"version" => "Versión y parches",
-			"errors" => "Errores y exposición de información",
-			"execution" => "Ejecución y sistema de archivos",
-			"session" => "Sesiones y cookies",
-			"runtime" => "Límites y entorno de ejecución",
-			"extensions" => "Extensiones y rendimiento",
+			"version" => $this->t("groups_version", "Versión y parches"),
+			"errors" => $this->t("groups_errors", "Errores y exposición de información"),
+			"execution" => $this->t("groups_execution", "Ejecución y sistema de archivos"),
+			"session" => $this->t("groups_session", "Sesiones y cookies"),
+			"runtime" => $this->t("groups_runtime", "Límites y entorno de ejecución"),
+			"extensions" => $this->t("groups_extensions", "Extensiones y rendimiento"),
 		);
 	}
 
@@ -149,7 +198,7 @@ class mwmod_mw_util_phphealth {
 			"environment"     => self::get_environment(),
 			"version_support" => self::get_version_support(),
 			"branch_table"    => self::get_branch_table(),
-			"groups"          => self::get_groups(),
+			"groups"          => $this->get_groups(),
 			"checks"          => $checks,
 			"summary"         => self::get_summary($checks),
 		);
@@ -356,34 +405,54 @@ class mwmod_mw_util_phphealth {
 			(version_compare(PHP_VERSION, self::MIN_PHP_VERSION, ">=") ? self::STATUS_OK : self::STATUS_FAIL),
 			PHP_VERSION,
 			">= " . self::MIN_PHP_VERSION,
-			"Las dependencias incluidas (PhpSpreadsheet / Composer platform check) exigen PHP " . self::MIN_PHP_VERSION . " o superior.",
+			$this->t(
+				"php_requirement_help",
+				"Las dependencias incluidas (PhpSpreadsheet / Composer platform check) exigen PHP %min% o superior.",
+				array("min" => self::MIN_PHP_VERSION)
+			),
 			"https://www.php.net/supported-versions.php"
 		);
 
 		switch ($support["status"]) {
 			case "active":
 				$status = self::STATUS_OK;
-				$help = "La rama " . $support["branch"] . " recibe correcciones de errores y de seguridad hasta el " . $support["active_end"] . ".";
+				$help = $this->t(
+					"help_branch_active",
+					"La rama %branch% recibe correcciones de errores y de seguridad hasta el %active_end%.",
+					array("branch" => $support["branch"], "active_end" => $support["active_end"])
+				);
 				break;
 			case "security":
 				$status = self::STATUS_WARN;
-				$help = "La rama " . $support["branch"] . " solo recibe correcciones de seguridad (soporte activo vencido el " . $support["active_end"] . "). Planifica la actualización antes del " . $support["security_end"] . ".";
+				$help = $this->t(
+					"help_branch_security",
+					"La rama %branch% solo recibe correcciones de seguridad (soporte activo vencido el %active_end%). Planifica la actualización antes del %security_end%.",
+					array("branch" => $support["branch"], "active_end" => $support["active_end"], "security_end" => $support["security_end"])
+				);
 				break;
 			case "eol":
 				$status = self::STATUS_FAIL;
-				$help = "La rama " . $support["branch"] . " está fuera de soporte desde el " . $support["security_end"] . ": puede haber vulnerabilidades sin corregir. Actualiza lo antes posible.";
+				$help = $this->t(
+					"help_branch_eol",
+					"La rama %branch% está fuera de soporte desde el %security_end%: puede haber vulnerabilidades sin corregir. Actualiza lo antes posible.",
+					array("branch" => $support["branch"], "security_end" => $support["security_end"])
+				);
 				break;
 			default:
 				$status = self::STATUS_WARN;
-				$help = "El conjunto de reglas no conoce la rama " . ($support["branch"] ? $support["branch"] : "detectada") . ". Actualiza mwmod_mw_util_phphealth con los datos vigentes de php.net.";
+				$help = $this->t(
+					"help_branch_unknown",
+					"El conjunto de reglas no conoce la rama %branch%. Actualiza mwmod_mw_util_phphealth con los datos vigentes de php.net.",
+					array("branch" => ($support["branch"] ? $support["branch"] : $this->t("branch_detected", "detectada")))
+				);
 				break;
 		}
 		$checks[] = self::new_check(
 			"php_branch_support", "version",
-			"Rama de PHP con soporte del proyecto PHP",
+			$this->t("php_branch_support_label", "Rama de PHP con soporte del proyecto PHP"),
 			$status,
-			PHP_VERSION . " (rama " . ($support["branch"] ? $support["branch"] : "?") . ")",
-			"Rama activa o con parches de seguridad",
+			PHP_VERSION . " (" . $this->t("branch_with_code", "rama %b%", array("b" => ($support["branch"] ? $support["branch"] : "?"))) . ")",
+			$this->t("php_branch_support_expected", "Rama activa o con parches de seguridad"),
 			$help,
 			"https://www.php.net/supported-versions.php"
 		);
@@ -391,22 +460,30 @@ class mwmod_mw_util_phphealth {
 		$patchOk = ($support["min_patch_cve"] and $support["patch_ok"]);
 		$checks[] = self::new_check(
 			"php_security_patch", "version",
-			"Parche de seguridad del 21/10/2026 (CVE-2026-109618, CVE-2026-109619)",
+			$this->t("php_security_patch_label", "Parche de seguridad del 21/10/2026 (CVE-2026-109618, CVE-2026-109619)"),
 			$patchOk ? self::STATUS_OK : ($support["min_patch_cve"] ? self::STATUS_FAIL : self::STATUS_NA),
 			PHP_VERSION,
-			$support["min_patch_cve"] ? ">= " . $support["min_patch_cve"] : "rama sin soporte",
-			"Estas versiones corrigen dos vulnerabilidades críticas que permiten ejecución remota de código sin autenticación (una de ellas a través del manejo de memoria agotada).",
+			$support["min_patch_cve"] ? (">= " . $support["min_patch_cve"]) : $this->t("php_security_patch_no_branch", "rama sin soporte"),
+			$this->t(
+				"php_security_patch_help",
+				"Estas versiones corrigen dos vulnerabilidades críticas que permiten ejecución remota de código sin autenticación (una de ellas a través del manejo de memoria agotada)."
+			),
 			"https://www.php.net/archive/2026.php#2026-10-21-5"
 		);
 
 		$directive = ini_get("memory_hard_limit_percent");
 		$checks[] = self::new_check(
 			"php_memory_hard_limit", "version",
-			"Directiva memory_hard_limit_percent disponible",
+			$this->t("php_memory_hard_limit_label", "Directiva memory_hard_limit_percent disponible"),
 			($directive !== false && $patchOk) ? self::STATUS_OK : self::STATUS_FAIL,
-			($directive === false) ? "no reconocida" : ("reconocida (" . self::describe_ini_raw($directive) . ")"),
-			"Reconocida por el motor",
-			"php.net: si la directiva no se reconoce, la versión en uso está afectada por CVE-2026-109618 y CVE-2026-109619 y debe actualizarse de inmediato.",
+			($directive === false)
+				? $this->t("php_memory_hard_limit_unrecognized", "no reconocida")
+				: $this->t("php_memory_hard_limit_recognized", "reconocida (%value%)", array("value" => $this->describe_ini_raw($directive))),
+			$this->t("php_memory_hard_limit_expected", "Reconocida por el motor"),
+			$this->t(
+				"php_memory_hard_limit_help",
+				"php.net: si la directiva no se reconoce, la versión en uso está afectada por CVE-2026-109618 y CVE-2026-109619 y debe actualizarse de inmediato."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.memory-hard-limit-percent"
 		);
 
@@ -418,11 +495,15 @@ class mwmod_mw_util_phphealth {
 		$isLatest = ($support["branch"] === $latestBranch);
 		$checks[] = self::new_check(
 			"php_latest_branch", "version",
-			"Última rama estable de PHP",
+			$this->t("php_latest_branch_label", "Última rama estable de PHP"),
 			$isLatest ? self::STATUS_OK : self::STATUS_INFO,
-			"rama " . ($support["branch"] ? $support["branch"] : "?"),
-			"rama " . $latestBranch,
-			"Solo informativo: la rama más reciente recibe las novedades de seguridad y las funciones nuevas. " . $latestBranch . " es la última publicada según el conjunto de reglas.",
+			$this->t("branch_with_code", "rama %b%", array("b" => ($support["branch"] ? $support["branch"] : "?"))),
+			$this->t("branch_with_code", "rama %b%", array("b" => $latestBranch)),
+			$this->t(
+				"php_latest_branch_help",
+				"Solo informativo: la rama más reciente recibe las novedades de seguridad y las funciones nuevas. %branch% es la última publicada según el conjunto de reglas.",
+				array("branch" => $latestBranch)
+			),
 			"https://www.php.net/supported-versions.php"
 		);
 
@@ -430,55 +511,70 @@ class mwmod_mw_util_phphealth {
 		$exposePhp = self::ini_bool("expose_php");
 		$checks[] = self::new_check(
 			"expose_php", "errors",
-			"expose_php",
+			$this->t("expose_php_label", "expose_php"),
 			($exposePhp === false) ? self::STATUS_OK : self::STATUS_FAIL,
-			self::describe_bool($exposePhp),
+			$this->describe_bool($exposePhp),
 			"Off",
-			"Publica en la cabecera X-Powered-By que el sitio usa PHP y su número de versión, lo que facilita dirigir ataques a un build vulnerable.",
+			$this->t(
+				"expose_php_help",
+				"Publica en la cabecera X-Powered-By que el sitio usa PHP y su número de versión, lo que facilita dirigir ataques a un build vulnerable."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.expose-php"
 		);
 
 		$displayErrors = self::ini_bool("display_errors");
 		$checks[] = self::new_check(
 			"display_errors", "errors",
-			"display_errors",
+			$this->t("display_errors_label", "display_errors"),
 			($displayErrors === false) ? self::STATUS_OK : self::STATUS_FAIL,
-			self::describe_bool($displayErrors),
+			$this->describe_bool($displayErrors),
 			"Off",
-			"Con display_errors en On el mensaje de error se envía al navegador: revela rutas internas, consultas SQL y datos de configuración.",
+			$this->t(
+				"display_errors_help",
+				"Con display_errors en On el mensaje de error se envía al navegador: revela rutas internas, consultas SQL y datos de configuración."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.display-errors"
 		);
 
 		$displayStartup = self::ini_bool("display_startup_errors");
 		$checks[] = self::new_check(
 			"display_startup_errors", "errors",
-			"display_startup_errors",
+			$this->t("display_startup_errors_label", "display_startup_errors"),
 			($displayStartup === false) ? self::STATUS_OK : self::STATUS_WARN,
-			self::describe_bool($displayStartup),
+			$this->describe_bool($displayStartup),
 			"Off",
-			"Los errores de arranque (extensiones, directivas) también terminan en la salida HTML cuando esta opción está activa.",
+			$this->t(
+				"display_startup_errors_help",
+				"Los errores de arranque (extensiones, directivas) también terminan en la salida HTML cuando esta opción está activa."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.display-startup-errors"
 		);
 
 		$logErrors = self::ini_bool("log_errors");
 		$checks[] = self::new_check(
 			"log_errors", "errors",
-			"log_errors",
+			$this->t("log_errors_label", "log_errors"),
 			($logErrors === true) ? self::STATUS_OK : self::STATUS_FAIL,
-			self::describe_bool($logErrors),
+			$this->describe_bool($logErrors),
 			"On",
-			"Sin registro de errores no hay rastro de intentos de explotación ni de fallos en producción.",
+			$this->t(
+				"log_errors_help",
+				"Sin registro de errores no hay rastro de intentos de explotación ni de fallos en producción."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.log-errors"
 		);
 
 		$errorLog = trim((string) ini_get("error_log"));
 		$checks[] = self::new_check(
 			"error_log", "errors",
-			"error_log",
+			$this->t("error_log_label", "error_log"),
 			($errorLog !== "") ? self::STATUS_OK : self::STATUS_WARN,
-			($errorLog !== "") ? $errorLog : "(vacío: stderr del SAPI)",
-			"Ruta de archivo de registro",
-			"Con log_errors en On y error_log vacío, el destino depende del SAPI (stderr del servidor). Conviene fijar una ruta explícita y fuera del directorio público.",
+			($errorLog !== "") ? $errorLog : $this->t("error_log_empty", "(vacío: stderr del SAPI)"),
+			$this->t("error_log_expected", "Ruta de archivo de registro"),
+			$this->t(
+				"error_log_help",
+				"Con log_errors en On y error_log vacío, el destino depende del SAPI (stderr del servidor). Conviene fijar una ruta explícita y fuera del directorio público."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-log"
 		);
 
@@ -486,22 +582,28 @@ class mwmod_mw_util_phphealth {
 		$allErrors = (($errorReporting & E_ALL) === E_ALL);
 		$checks[] = self::new_check(
 			"error_reporting", "errors",
-			"error_reporting",
+			$this->t("error_reporting_label", "error_reporting"),
 			$allErrors ? self::STATUS_OK : self::STATUS_WARN,
-			(string) $errorReporting . ($allErrors ? " (E_ALL)" : " (faltan niveles)"),
+			(string) $errorReporting . ($allErrors ? " (E_ALL)" : $this->t("error_reporting_missing_levels", " (faltan niveles)")),
 			(string) E_ALL . " (E_ALL)",
-			"Un error_reporting reducido oculta avisos que suelen ser el primer indicio de un fallo explotable.",
+			$this->t(
+				"error_reporting_help",
+				"Un error_reporting reducido oculta avisos que suelen ser el primer indicio de un fallo explotable."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.error-reporting"
 		);
 
 		$htmlErrors = self::ini_bool("html_errors");
 		$checks[] = self::new_check(
 			"html_errors", "errors",
-			"html_errors",
+			$this->t("html_errors_label", "html_errors"),
 			($htmlErrors === false) ? self::STATUS_OK : (($displayErrors === false) ? self::STATUS_INFO : self::STATUS_WARN),
-			self::describe_bool($htmlErrors),
+			$this->describe_bool($htmlErrors),
 			"Off",
-			"Enriquece los mensajes con enlaces e información de depuración. Inofensivo con display_errors en Off; riesgoso si los errores se muestran.",
+			$this->t(
+				"html_errors_help",
+				"Enriquece los mensajes con enlaces e información de depuración. Inofensivo con display_errors en Off; riesgoso si los errores se muestran."
+			),
 			"https://www.php.net/manual/en/errorfunc.configuration.php#ini.html-errors"
 		);
 
@@ -510,21 +612,27 @@ class mwmod_mw_util_phphealth {
 		if ($allowUrlInclude === false) {
 			$checks[] = self::new_check(
 				"allow_url_include", "execution",
-				"allow_url_include",
+				$this->t("allow_url_include_label", "allow_url_include"),
 				self::STATUS_NA,
-				"(eliminada)",
+				$this->t("allow_url_include_removed", "(eliminada)"),
 				"Off",
-				"La directiva fue eliminada en PHP 8.0.0: en esta versión no existe el riesgo de incluir archivos remotos por esta vía.",
+				$this->t(
+					"allow_url_include_help_removed",
+					"La directiva fue eliminada en PHP 8.0.0: en esta versión no existe el riesgo de incluir archivos remotos por esta vía."
+				),
 				"https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-include"
 			);
 		} else {
 			$checks[] = self::new_check(
 				"allow_url_include", "execution",
-				"allow_url_include",
+				$this->t("allow_url_include_label", "allow_url_include"),
 				(self::to_bool($allowUrlInclude) === false) ? self::STATUS_OK : self::STATUS_FAIL,
-				self::describe_bool(self::to_bool($allowUrlInclude)),
+				$this->describe_bool(self::to_bool($allowUrlInclude)),
 				"Off",
-				"Permite incluir código remoto como si fuera local: es una vía directa de ejecución remota de código.",
+				$this->t(
+					"allow_url_include_help",
+					"Permite incluir código remoto como si fuera local: es una vía directa de ejecución remota de código."
+				),
 				"https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-include"
 			);
 		}
@@ -534,9 +642,12 @@ class mwmod_mw_util_phphealth {
 			"allow_url_fopen", "execution",
 			"allow_url_fopen",
 			($allowUrlFopen === false) ? self::STATUS_OK : self::STATUS_WARN,
-			self::describe_bool($allowUrlFopen),
-			"Off (si no se usa)",
-			"php.net no lo exige, pero habilitarlo amplía la superficie de SSRF y de lectura remota. Desactívalo si ninguna función lo necesita.",
+			$this->describe_bool($allowUrlFopen),
+			$this->t("allow_url_fopen_expected", "Off (si no se usa)"),
+			$this->t(
+				"allow_url_fopen_help",
+				"php.net no lo exige, pero habilitarlo amplía la superficie de SSRF y de lectura remota. Desactívalo si ninguna función lo necesita."
+			),
 			"https://www.php.net/manual/en/filesystem.configuration.php#ini.allow-url-fopen"
 		);
 
@@ -544,12 +655,20 @@ class mwmod_mw_util_phphealth {
 		$missingDisabled = array_values(array_diff(self::$dangerous_functions, $disabled));
 		$checks[] = self::new_check(
 			"disable_functions", "execution",
-			"disable_functions (funciones de sistema)",
+			$this->t("disable_functions_label", "disable_functions (funciones de sistema)"),
 			empty($missingDisabled) ? self::STATUS_OK : self::STATUS_WARN,
-			empty($disabled) ? "(vacío)" : implode(", ", $disabled),
-			"exec, shell_exec, system, passthru, popen, proc_open",
-			"php.net advierte que disable_functions se puede eludir y no basta como única medida en hosting compartido, pero bloquea la vía más directa de ejecución de comandos."
-				. (empty($missingDisabled) ? "" : " Faltan: " . implode(", ", $missingDisabled) . "."),
+			empty($disabled) ? $this->t("value_empty", "(vacío)") : implode(", ", $disabled),
+			$this->t("disable_functions_expected", "exec, shell_exec, system, passthru, popen, proc_open"),
+			empty($missingDisabled)
+				? $this->t(
+					"disable_functions_help",
+					"php.net advierte que disable_functions se puede eludir y no basta como única medida en hosting compartido, pero bloquea la vía más directa de ejecución de comandos."
+				)
+				: $this->t(
+					"disable_functions_help_missing",
+					"php.net advierte que disable_functions se puede eludir y no basta como única medida en hosting compartido, pero bloquea la vía más directa de ejecución de comandos. Faltan: %items%.",
+					array("items" => implode(", ", $missingDisabled))
+				),
 			"https://www.php.net/manual/en/ini.core.php#ini.disable-functions"
 		);
 
@@ -558,9 +677,12 @@ class mwmod_mw_util_phphealth {
 			"open_basedir", "execution",
 			"open_basedir",
 			($openBasedir !== "") ? self::STATUS_OK : self::STATUS_WARN,
-			($openBasedir !== "") ? $openBasedir : "(sin restricción)",
-			"Ruta(s) del proyecto",
-			"Limita los archivos accesibles por PHP. php.net lo describe como una red de seguridad adicional, no exhaustiva, pero frena la lectura de archivos fuera del proyecto.",
+			($openBasedir !== "") ? $openBasedir : $this->t("open_basedir_unrestricted", "(sin restricción)"),
+			$this->t("open_basedir_expected", "Ruta(s) del proyecto"),
+			$this->t(
+				"open_basedir_help",
+				"Limita los archivos accesibles por PHP. php.net lo describe como una red de seguridad adicional, no exhaustiva, pero frena la lectura de archivos fuera del proyecto."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.open-basedir"
 		);
 
@@ -571,9 +693,9 @@ class mwmod_mw_util_phphealth {
 				"cgi_fix_pathinfo", "execution",
 				"cgi.fix_pathinfo",
 				self::STATUS_NA,
-				self::describe_bool($fixPathinfo),
+				$this->describe_bool($fixPathinfo),
 				"0",
-				"Solo aplica a SAPI CGI/FastCGI. El SAPI actual es " . PHP_SAPI . ".",
+				$this->t("cgi_fix_pathinfo_help_na", "Solo aplica a SAPI CGI/FastCGI. El SAPI actual es %sapi%.", array("sapi" => PHP_SAPI)),
 				"https://www.php.net/manual/en/ini.core.php#ini.cgi.fix-pathinfo"
 			);
 		} else {
@@ -581,9 +703,12 @@ class mwmod_mw_util_phphealth {
 				"cgi_fix_pathinfo", "execution",
 				"cgi.fix_pathinfo",
 				($fixPathinfo === false) ? self::STATUS_OK : self::STATUS_WARN,
-				self::describe_bool($fixPathinfo),
+				$this->describe_bool($fixPathinfo),
 				"0",
-				"Con el valor por defecto (1) una URL como /imagen.jpg/x.php puede hacer que el servidor ejecute un archivo subido. Es el vector clásico de ejecución de código en Nginx + PHP-FPM.",
+				$this->t(
+					"cgi_fix_pathinfo_help",
+					"Con el valor por defecto (1) una URL como /imagen.jpg/x.php puede hacer que el servidor ejecute un archivo subido. Es el vector clásico de ejecución de código en Nginx + PHP-FPM."
+				),
 				"https://www.php.net/manual/en/ini.core.php#ini.cgi.fix-pathinfo"
 			);
 		}
@@ -593,9 +718,12 @@ class mwmod_mw_util_phphealth {
 			"cgi_force_redirect", "execution",
 			"cgi.force_redirect",
 			(!$isCgi) ? self::STATUS_NA : (($forceRedirect === false) ? self::STATUS_WARN : self::STATUS_OK),
-			self::describe_bool($forceRedirect),
-			"On (SAPI CGI)",
-			"Evita que PHP CGI se pueda invocar directamente sin pasar por el servidor web, que es lo que garantiza la autenticación y el control de acceso.",
+			$this->describe_bool($forceRedirect),
+			$this->t("cgi_force_redirect_expected", "On (SAPI CGI)"),
+			$this->t(
+				"cgi_force_redirect_help",
+				"Evita que PHP CGI se pueda invocar directamente sin pasar por el servidor web, que es lo que garantiza la autenticación y el control de acceso."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.cgi.force-redirect"
 		);
 
@@ -612,9 +740,12 @@ class mwmod_mw_util_phphealth {
 			"auto_prepend_append", "execution",
 			"auto_prepend_file / auto_append_file",
 			empty($autoFiles) ? self::STATUS_OK : self::STATUS_WARN,
-			empty($autoFiles) ? "(sin archivos)" : implode(" | ", $autoFiles),
-			"(vacío)",
-			"Un archivo prepend/append se ejecuta en TODAS las peticiones. Si el hosting lo define, conviene saber qué contiene: es código que corre siempre, incluso antes de la aplicación.",
+			empty($autoFiles) ? $this->t("auto_prepend_append_none", "(sin archivos)") : implode(" | ", $autoFiles),
+			$this->t("value_empty", "(vacío)"),
+			$this->t(
+				"auto_prepend_append_help",
+				"Un archivo prepend/append se ejecuta en TODAS las peticiones. Si el hosting lo define, conviene saber qué contiene: es código que corre siempre, incluso antes de la aplicación."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file"
 		);
 
@@ -624,9 +755,16 @@ class mwmod_mw_util_phphealth {
 				"upload_tmp_dir", "execution",
 				"upload_tmp_dir",
 				self::STATUS_INFO,
-				"(directorio temporal del sistema: " . sys_get_temp_dir() . ")",
-				"Directorio propio, no compartido",
-				"Sin valor explícito, las subidas van al temporal del sistema, que en hosting compartido puede ser legible por otros usuarios.",
+				$this->t(
+					"upload_tmp_dir_current_default",
+					"(directorio temporal del sistema: %dir%)",
+					array("dir" => sys_get_temp_dir())
+				),
+				$this->t("upload_tmp_dir_expected", "Directorio propio, no compartido"),
+				$this->t(
+					"upload_tmp_dir_help",
+					"Sin valor explícito, las subidas van al temporal del sistema, que en hosting compartido puede ser legible por otros usuarios."
+				),
 				"https://www.php.net/manual/en/ini.core.php#ini.upload-tmp-dir"
 			);
 		} else {
@@ -636,32 +774,51 @@ class mwmod_mw_util_phphealth {
 				"upload_tmp_dir", "execution",
 				"upload_tmp_dir",
 				(!$writable) ? self::STATUS_FAIL : ($worldWritable ? self::STATUS_WARN : self::STATUS_OK),
-				$uploadTmp . (!$writable ? " (no escribible)" : ($worldWritable ? " (escribible por todos)" : " (escribible)")),
-				"Directorio escribible y no compartido",
-				"Debe ser escribible por el usuario de PHP. Un directorio escribible por todos permite que otro usuario del servidor deje archivos con el nombre de una subida.",
+				$uploadTmp . (!$writable
+					? $this->t("upload_tmp_dir_not_writable", " (no escribible)")
+					: ($worldWritable
+						? $this->t("upload_tmp_dir_world_writable", " (escribible por todos)")
+						: $this->t("upload_tmp_dir_writable", " (escribible)"))),
+				$this->t("upload_tmp_dir_expected_writable", "Directorio escribible y no compartido"),
+				$this->t(
+					"upload_tmp_dir_help_writable",
+					"Debe ser escribible por el usuario de PHP. Un directorio escribible por todos permite que otro usuario del servidor deje archivos con el nombre de una subida."
+				),
 				"https://www.php.net/manual/en/ini.core.php#ini.upload-tmp-dir"
 			);
 		}
 
 		// ---------------------------------------------------------------- session
-		$checks[] = self::ini_flag_check(
+		$checks[] = $this->ini_flag_check(
 			"session_use_strict_mode", "session", "session.use_strict_mode", true,
-			"Rechaza identificadores de sesión no generados por el módulo de sesiones. php.net lo considera obligatorio para sesiones seguras y viene desactivado por defecto.",
+			$this->t(
+				"session_use_strict_mode_help",
+				"Rechaza identificadores de sesión no generados por el módulo de sesiones. php.net lo considera obligatorio para sesiones seguras y viene desactivado por defecto."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
-		$checks[] = self::ini_flag_check(
+		$checks[] = $this->ini_flag_check(
 			"session_use_only_cookies", "session", "session.use_only_cookies", true,
-			"Los identificadores de sesión solo viajan por cookie: evita que se propaguen por URL o por formularios, donde quedan en registros y enlaces compartidos.",
+			$this->t(
+				"session_use_only_cookies_help",
+				"Los identificadores de sesión solo viajan por cookie: evita que se propaguen por URL o por formularios, donde quedan en registros y enlaces compartidos."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
-		$checks[] = self::ini_flag_check(
+		$checks[] = $this->ini_flag_check(
 			"session_cookie_httponly", "session", "session.cookie_httponly", true,
-			"Impide que JavaScript lea la cookie de sesión, lo que neutraliza el robo de sesión mediante inyección de script.",
+			$this->t(
+				"session_cookie_httponly_help",
+				"Impide que JavaScript lea la cookie de sesión, lo que neutraliza el robo de sesión mediante inyección de script."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
-		$checks[] = self::ini_flag_check(
+		$checks[] = $this->ini_flag_check(
 			"session_cookie_secure", "session", "session.cookie_secure", true,
-			"La cookie de sesión solo se envía por HTTPS. Si el sitio no usa HTTPS de extremo a extremo, primero hay que corregir eso.",
+			$this->t(
+				"session_cookie_secure_help",
+				"La cookie de sesión solo se envía por HTTPS. Si el sitio no usa HTTPS de extremo a extremo, primero hay que corregir eso."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -670,9 +827,12 @@ class mwmod_mw_util_phphealth {
 			"session_cookie_samesite", "session",
 			"session.cookie_samesite",
 			in_array($sameSite, array("lax", "strict"), true) ? self::STATUS_OK : self::STATUS_WARN,
-			($sameSite === "") ? "(sin definir)" : $sameSite,
-			"Lax o Strict",
-			"Mitiga CSRF: con Lax o Strict el navegador no envía la cookie en peticiones cruzadas de terceros.",
+			($sameSite === "") ? $this->t("session_cookie_samesite_undefined", "(sin definir)") : $sameSite,
+			$this->t("session_cookie_samesite_expected", "Lax o Strict"),
+			$this->t(
+				"session_cookie_samesite_help",
+				"Mitiga CSRF: con Lax o Strict el navegador no envía la cookie en peticiones cruzadas de terceros."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -681,9 +841,12 @@ class mwmod_mw_util_phphealth {
 			"session_use_trans_sid", "session",
 			"session.use_trans_sid",
 			($useTransSid === false) ? self::STATUS_OK : self::STATUS_WARN,
-			self::describe_bool($useTransSid),
+			$this->describe_bool($useTransSid),
 			"Off",
-			"Propaga el identificador de sesión por la URL. Está deprecado desde PHP 8.4.0 porque filtra sesiones a bookmarks, correos y registros de acceso.",
+			$this->t(
+				"session_use_trans_sid_help",
+				"Propaga el identificador de sesión por la URL. Está deprecado desde PHP 8.4.0 porque filtra sesiones a bookmarks, correos y registros de acceso."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -692,9 +855,12 @@ class mwmod_mw_util_phphealth {
 			"session_cookie_lifetime", "session",
 			"session.cookie_lifetime",
 			((string) $cookieLifetime === "0") ? self::STATUS_OK : self::STATUS_WARN,
-			self::describe_ini_raw($cookieLifetime),
+			$this->describe_ini_raw($cookieLifetime),
 			"0",
-			"Con 0 el navegador no guarda la cookie en disco y la elimina al cerrarse. Un identificador de sesión persistente es una sesión robable a largo plazo.",
+			$this->t(
+				"session_cookie_lifetime_help",
+				"Con 0 el navegador no guarda la cookie en disco y la elimina al cerrarse. Un identificador de sesión persistente es una sesión robable a largo plazo."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -703,9 +869,12 @@ class mwmod_mw_util_phphealth {
 			"session_cache_limiter", "session",
 			"session.cache_limiter",
 			($cacheLimiter === "" or $cacheLimiter === "nocache") ? self::STATUS_OK : self::STATUS_WARN,
-			($cacheLimiter === "") ? "(vacío: sin cabeceras)" : $cacheLimiter,
+			($cacheLimiter === "") ? $this->t("session_cache_limiter_empty", "(vacío: sin cabeceras)") : $cacheLimiter,
 			"nocache",
-			"Evita que el navegador o un proxy cacheen contenido autenticado, que luego puede quedar accesible desde el historial.",
+			$this->t(
+				"session_cache_limiter_help",
+				"Evita que el navegador o un proxy cacheen contenido autenticado, que luego puede quedar accesible desde el historial."
+			),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -714,31 +883,39 @@ class mwmod_mw_util_phphealth {
 		$savePathStatus = self::STATUS_OK;
 		if ($savePath === "") {
 			$savePathStatus = self::STATUS_WARN;
-			$savePathIssues[] = "usa el directorio temporal del sistema";
+			$savePathIssues[] = $this->t("session_save_path_issue_default", "usa el directorio temporal del sistema");
 		} else {
 			if (self::is_system_temp_dir($savePath)) {
 				$savePathStatus = self::STATUS_WARN;
-				$savePathIssues[] = "es el directorio temporal del sistema, compartido";
+				$savePathIssues[] = $this->t("session_save_path_issue_shared", "es el directorio temporal del sistema, compartido");
 			}
 			if (!@is_dir($savePath)) {
 				$savePathStatus = self::STATUS_FAIL;
-				$savePathIssues[] = "no existe";
+				$savePathIssues[] = $this->t("session_save_path_issue_missing", "no existe");
 			} elseif (!@is_writable($savePath)) {
 				$savePathStatus = self::STATUS_FAIL;
-				$savePathIssues[] = "no es escribible";
+				$savePathIssues[] = $this->t("session_save_path_issue_not_writable", "no es escribible");
 			} elseif (self::is_world_writable($savePath)) {
 				$savePathStatus = self::STATUS_WARN;
-				$savePathIssues[] = "es escribible por todos";
+				$savePathIssues[] = $this->t("session_save_path_issue_world_writable", "es escribible por todos");
 			}
 		}
 		$checks[] = self::new_check(
 			"session_save_path", "session",
 			"session.save_path",
 			$savePathStatus,
-			($savePath === "") ? "(vacío)" : $savePath,
-			"Directorio propio, no legible por otros usuarios",
-			"php.net: si el directorio es legible por todo el mundo (como /tmp), otros usuarios del servidor pueden listar las sesiones y secuestrarlas."
-				. (empty($savePathIssues) ? "" : " Problema: " . implode(", ", $savePathIssues) . "."),
+			($savePath === "") ? $this->t("value_empty", "(vacío)") : $savePath,
+			$this->t("session_save_path_expected", "Directorio propio, no legible por otros usuarios"),
+			empty($savePathIssues)
+				? $this->t(
+					"session_save_path_help",
+					"php.net: si el directorio es legible por todo el mundo (como /tmp), otros usuarios del servidor pueden listar las sesiones y secuestrarlas."
+				)
+				: $this->t(
+					"session_save_path_help_issues",
+					"php.net: si el directorio es legible por todo el mundo (como /tmp), otros usuarios del servidor pueden listar las sesiones y secuestrarlas. Problema: %issues%.",
+					array("issues" => implode(", ", $savePathIssues))
+				),
 			"https://www.php.net/manual/en/session.security.ini.php"
 		);
 
@@ -748,9 +925,12 @@ class mwmod_mw_util_phphealth {
 				"session_sid_length", "session",
 				"session.sid_length",
 				self::STATUS_NA,
-				"(no disponible)",
+				$this->t("not_available", "(no disponible)"),
 				">= 32",
-				"La directiva no existe en esta versión de PHP: la longitud del identificador la define el propio módulo.",
+				$this->t(
+					"session_sid_length_help_na",
+					"La directiva no existe en esta versión de PHP: la longitud del identificador la define el propio módulo."
+				),
 				"https://www.php.net/manual/en/session.configuration.php#ini.session.sid-length"
 			);
 		} else {
@@ -759,32 +939,56 @@ class mwmod_mw_util_phphealth {
 				"session_sid_length", "session",
 				"session.sid_length",
 				$sidOk ? self::STATUS_OK : self::STATUS_WARN,
-				self::describe_ini_raw($sidLength),
+				$this->describe_ini_raw($sidLength),
 				">= 26",
-				"El valor por defecto (26) aporta alrededor de 130 bits de entropía. Un identificador más corto reduce la entropía y facilita adivinarlo o forzarlo por fuerza bruta.",
+				$this->t(
+					"session_sid_length_help",
+					"El valor por defecto (26) aporta alrededor de 130 bits de entropía. Un identificador más corto reduce la entropía y facilita adivinarlo o forzarlo por fuerza bruta."
+				),
 				"https://www.php.net/manual/en/session.configuration.php#ini.session.sid-length"
 			);
 		}
 
+		$checks[] = $this->ini_flag_check(
+			"session_upload_progress", "session", "session.upload_progress.enabled", false,
+			$this->t(
+				"session_upload_progress_help",
+				"El seguimiento del progreso de subida deposita datos en \$_SESSION a partir de un campo del formulario"
+					. " (PHP_SESSION_UPLOAD_PROGRESS) que controla el cliente. Sin usar esa función no aporta nada y amplía la"
+					. " superficie: permite inyectar entradas en la sesión y, con session.upload_progress.cleanup en Off,"
+					. " llenar el almacenamiento de sesiones. Desactívalo si la aplicación no muestra barras de progreso."
+			),
+			"https://www.php.net/manual/en/session.configuration.php#ini.session.upload-progress.enabled"
+		);
+
 		// ---------------------------------------------------------------- runtime
 		$memoryLimit = self::ini_bytes("memory_limit");
 		$memoryStatus = self::STATUS_OK;
-		$memoryHelp = "Un límite acotado evita que una petición agote la memoria del servidor.";
+		$memoryHelp = $this->t(
+			"memory_limit_help",
+			"Un límite acotado evita que una petición agote la memoria del servidor."
+		);
 		if ($memoryLimit === null) {
 			$memoryStatus = self::STATUS_WARN;
 		} elseif ($memoryLimit < 0) {
 			$memoryStatus = self::STATUS_FAIL;
-			$memoryHelp = "memory_limit = -1 deja el proceso sin tope de memoria: una petición descontrolada puede tumbar el servidor.";
+			$memoryHelp = $this->t(
+				"memory_limit_help_unlimited",
+				"memory_limit = -1 deja el proceso sin tope de memoria: una petición descontrolada puede tumbar el servidor."
+			);
 		} elseif ($memoryLimit < 128 * 1024 * 1024) {
 			$memoryStatus = self::STATUS_WARN;
-			$memoryHelp = "Menos de 128M suele quedarse corto para las librerías incluidas (hojas de cálculo, generación de documentos).";
+			$memoryHelp = $this->t(
+				"memory_limit_help_low",
+				"Menos de 128M suele quedarse corto para las librerías incluidas (hojas de cálculo, generación de documentos)."
+			);
 		}
 		$checks[] = self::new_check(
 			"memory_limit", "runtime",
 			"memory_limit",
 			$memoryStatus,
-			self::describe_ini_bytes($memoryLimit),
-			">= 128M y distinto de -1",
+			$this->describe_ini_bytes($memoryLimit),
+			$this->t("memory_limit_expected", ">= 128M y distinto de -1"),
 			$memoryHelp,
 			"https://www.php.net/manual/en/ini.core.php#ini.memory-limit"
 		);
@@ -793,21 +997,29 @@ class mwmod_mw_util_phphealth {
 		$uploadMax = self::ini_bytes("upload_max_filesize");
 		$sizeIssues = array();
 		if ($postMax !== null and $uploadMax !== null and $postMax > 0 and $postMax <= $uploadMax) {
-			$sizeIssues[] = "post_max_size debe ser mayor que upload_max_filesize";
+			$sizeIssues[] = $this->t("post_max_size_issue_upload", "post_max_size debe ser mayor que upload_max_filesize");
 		}
 		if ($postMax !== null and $memoryLimit !== null and $memoryLimit > 0 and $postMax > $memoryLimit) {
-			$sizeIssues[] = "post_max_size supera a memory_limit";
+			$sizeIssues[] = $this->t("post_max_size_issue_memory", "post_max_size supera a memory_limit");
 		}
 		$checks[] = self::new_check(
 			"post_max_size", "runtime",
 			"post_max_size / upload_max_filesize / memory_limit",
 			empty($sizeIssues) ? self::STATUS_OK : self::STATUS_WARN,
-			"post_max_size " . self::describe_ini_bytes($postMax)
-				. " | upload_max_filesize " . self::describe_ini_bytes($uploadMax)
-				. " | memory_limit " . self::describe_ini_bytes($memoryLimit),
+			"post_max_size " . $this->describe_ini_bytes($postMax)
+				. " | upload_max_filesize " . $this->describe_ini_bytes($uploadMax)
+				. " | memory_limit " . $this->describe_ini_bytes($memoryLimit),
 			"memory_limit > post_max_size > upload_max_filesize",
-			"php.net: post_max_size debe superar a upload_max_filesize, y en general memory_limit debe superar a post_max_size. Si no, las subidas grandes fallan sin mensaje claro."
-				. (empty($sizeIssues) ? "" : " " . implode("; ", $sizeIssues) . "."),
+			empty($sizeIssues)
+				? $this->t(
+					"post_max_size_help",
+					"php.net: post_max_size debe superar a upload_max_filesize, y en general memory_limit debe superar a post_max_size. Si no, las subidas grandes fallan sin mensaje claro."
+				)
+				: $this->t(
+					"post_max_size_help_issues",
+					"php.net: post_max_size debe superar a upload_max_filesize, y en general memory_limit debe superar a post_max_size. Si no, las subidas grandes fallan sin mensaje claro. %issues%.",
+					array("issues" => implode("; ", $sizeIssues))
+				),
 			"https://www.php.net/manual/en/ini.core.php#ini.post-max-size"
 		);
 
@@ -817,9 +1029,12 @@ class mwmod_mw_util_phphealth {
 			"max_execution_time", "runtime",
 			"max_execution_time",
 			$isCli ? self::STATUS_NA : (((string) $maxExecution === "0") ? self::STATUS_WARN : self::STATUS_OK),
-			$isCli ? "(CLI: sin límite)" : self::describe_ini_raw($maxExecution),
+			$isCli ? $this->t("max_execution_time_cli", "(CLI: sin límite)") : $this->describe_ini_raw($maxExecution),
 			"> 0",
-			"Sin límite, una petición puede quedar colgada y consumir un worker de PHP-FPM hasta agotar el pool.",
+			$this->t(
+				"max_execution_time_help",
+				"Sin límite, una petición puede quedar colgada y consumir un worker de PHP-FPM hasta agotar el pool."
+			),
 			"https://www.php.net/manual/en/info.configuration.php#ini.max-execution-time"
 		);
 
@@ -829,9 +1044,12 @@ class mwmod_mw_util_phphealth {
 				"hard_timeout", "runtime",
 				"hard_timeout",
 				self::STATUS_NA,
-				"(no disponible)",
+				$this->t("not_available", "(no disponible)"),
 				"> 0",
-				"Disponible desde PHP 7.1.0. Termina el proceso cuando el apagado ordenado por tiempo de ejecución se queda trabado.",
+				$this->t(
+					"hard_timeout_help_na",
+					"Disponible desde PHP 7.1.0. Termina el proceso cuando el apagado ordenado por tiempo de ejecución se queda trabado."
+				),
 				"https://www.php.net/manual/en/ini.core.php#ini.hard-timeout"
 			);
 		} else {
@@ -839,9 +1057,12 @@ class mwmod_mw_util_phphealth {
 				"hard_timeout", "runtime",
 				"hard_timeout",
 				((string) $hardTimeout === "0") ? self::STATUS_WARN : self::STATUS_OK,
-				self::describe_ini_raw($hardTimeout),
-				"2 (valor por defecto) o mayor",
-				"Si el apagado ordenado tras max_execution_time se cuelga, este temporizador termina el proceso de forma abrupta; con 0 no hay red de seguridad.",
+				$this->describe_ini_raw($hardTimeout),
+				$this->t("hard_timeout_expected", "2 (valor por defecto) o mayor"),
+				$this->t(
+					"hard_timeout_help",
+					"Si el apagado ordenado tras max_execution_time se cuelga, este temporizador termina el proceso de forma abrupta; con 0 no hay red de seguridad."
+				),
 				"https://www.php.net/manual/en/ini.core.php#ini.hard-timeout"
 			);
 		}
@@ -853,7 +1074,10 @@ class mwmod_mw_util_phphealth {
 			($maxInputVars >= 1000) ? self::STATUS_OK : self::STATUS_WARN,
 			(string) $maxInputVars,
 			">= 1000",
-			"Por debajo de 1000, los formularios y grillas grandes pierden campos en silencio (los últimos valores no llegan a \$_POST).",
+			$this->t(
+				"max_input_vars_help",
+				"Por debajo de 1000, los formularios y grillas grandes pierden campos en silencio (los últimos valores no llegan a \$_POST)."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.max-input-vars"
 		);
 
@@ -864,7 +1088,10 @@ class mwmod_mw_util_phphealth {
 			($maxNesting > 0 and $maxNesting <= 64) ? self::STATUS_OK : self::STATUS_INFO,
 			(string) $maxNesting,
 			"<= 64",
-			"Limita la profundidad de los arrays de entrada. Valores altos permiten cargas anidadas que consumen memoria al parsear.",
+			$this->t(
+				"max_input_nesting_level_help",
+				"Limita la profundidad de los arrays de entrada. Valores altos permiten cargas anidadas que consumen memoria al parsear."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.max-input-nesting-level"
 		);
 
@@ -874,11 +1101,17 @@ class mwmod_mw_util_phphealth {
 			"register_argc_argv", "runtime",
 			"register_argc_argv",
 			($registerArgv === true and $deprecatedArgv) ? self::STATUS_INFO : self::STATUS_OK,
-			self::describe_bool($registerArgv),
+			$this->describe_bool($registerArgv),
 			"Off",
 			$deprecatedArgv
-				? "Derivar argc/argv desde la query string está deprecado desde PHP 8.5.0: conviene desactivarlo."
-				: "Solo informativo en esta rama. Exporta la query string como argc/argv en SAPIs web.",
+				? $this->t(
+					"register_argc_argv_help_deprecated",
+					"Derivar argc/argv desde la query string está deprecado desde PHP 8.5.0: conviene desactivarlo."
+				)
+				: $this->t(
+					"register_argc_argv_help",
+					"Solo informativo en esta rama. Exporta la query string como argc/argv en SAPIs web."
+				),
 			"https://www.php.net/manual/en/ini.core.php#ini.register-argc-argv"
 		);
 
@@ -887,15 +1120,21 @@ class mwmod_mw_util_phphealth {
 			"short_open_tag", "runtime",
 			"short_open_tag",
 			($shortOpenTag === false) ? self::STATUS_OK : self::STATUS_INFO,
-			self::describe_bool($shortOpenTag),
+			$this->describe_bool($shortOpenTag),
 			"Off",
-			"No es un riesgo de seguridad, pero complica la convivencia con XML y con plantillas que usan <?xml.",
+			$this->t(
+				"short_open_tag_help",
+				"No es un riesgo de seguridad, pero complica la convivencia con XML y con plantillas que usan <?xml."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.short-open-tag"
 		);
 
 		$assertions = trim((string) ini_get("zend.assertions"));
 		$assertStatus = self::STATUS_INFO;
-		$assertHelp = "Con -1 (modo producción) el código de las aserciones no se genera. Con 1 se evalúan en cada petición: más costo y más superficie.";
+		$assertHelp = $this->t(
+			"zend_assertions_help",
+			"Con -1 (modo producción) el código de las aserciones no se genera. Con 1 se evalúan en cada petición: más costo y más superficie."
+		);
 		if ($assertions === "-1") {
 			$assertStatus = self::STATUS_OK;
 		} elseif ($assertions === "1") {
@@ -905,7 +1144,7 @@ class mwmod_mw_util_phphealth {
 			"zend_assertions", "runtime",
 			"zend.assertions",
 			$assertStatus,
-			($assertions === "") ? "(vacío)" : $assertions,
+			($assertions === "") ? $this->t("value_empty", "(vacío)") : $assertions,
 			"-1",
 			$assertHelp,
 			"https://www.php.net/manual/en/ini.core.php#ini.zend.assertions"
@@ -916,9 +1155,12 @@ class mwmod_mw_util_phphealth {
 			"zend_exception_ignore_args", "runtime",
 			"zend.exception_ignore_args",
 			($ignoreArgs === true) ? self::STATUS_OK : self::STATUS_INFO,
-			self::describe_bool($ignoreArgs),
+			$this->describe_bool($ignoreArgs),
 			"On",
-			"Excluye los argumentos de las trazas. Si los registros de error son accesibles, los argumentos pueden contener contraseñas o tokens.",
+			$this->t(
+				"zend_exception_ignore_args_help",
+				"Excluye los argumentos de las trazas. Si los registros de error son accesibles, los argumentos pueden contener contraseñas o tokens."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.zend.exception-ignore-args"
 		);
 
@@ -926,11 +1168,16 @@ class mwmod_mw_util_phphealth {
 		$xdebug = extension_loaded("xdebug");
 		$checks[] = self::new_check(
 			"xdebug", "extensions",
-			"Extensión xdebug cargada",
+			$this->t("xdebug_label", "Extensión xdebug cargada"),
 			$xdebug ? self::STATUS_WARN : self::STATUS_OK,
-			$xdebug ? ("cargada (v" . (phpversion("xdebug") ?: "?") . ")") : "no cargada",
-			"No cargada en producción",
-			"xdebug expone información de depuración y degrada el rendimiento. En producción debe estar desactivada o fuera de la configuración.",
+			$xdebug
+				? $this->t("xdebug_loaded", "cargada (v%v%)", array("v" => (phpversion("xdebug") ?: "?")))
+				: $this->t("xdebug_not_loaded", "no cargada"),
+			$this->t("xdebug_expected", "No cargada en producción"),
+			$this->t(
+				"xdebug_help",
+				"xdebug expone información de depuración y degrada el rendimiento. En producción debe estar desactivada o fuera de la configuración."
+			),
 			"https://www.php.net/manual/en/ini.core.php#ini.zend-extension"
 		);
 
@@ -939,9 +1186,12 @@ class mwmod_mw_util_phphealth {
 				"opcache_enable", "extensions",
 				"OPcache",
 				self::STATUS_NA,
-				"(no disponible)",
+				$this->t("not_available", "(no disponible)"),
 				"On",
-				"La extensión Zend OPcache no está cargada: además de no compilar a bytecode, el código se vuelve a interpretar en cada petición.",
+				$this->t(
+					"opcache_enable_help_na",
+					"La extensión Zend OPcache no está cargada: además de no compilar a bytecode, el código se vuelve a interpretar en cada petición."
+				),
 				"https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.enable"
 			);
 		} else {
@@ -950,9 +1200,12 @@ class mwmod_mw_util_phphealth {
 				"opcache_enable", "extensions",
 				"OPcache",
 				($opcache === false) ? self::STATUS_WARN : self::STATUS_OK,
-				self::describe_bool($opcache),
+				$this->describe_bool($opcache),
 				"On",
-				"El compilador de bytecode evita recompilar archivos en cada petición; es la mejora de rendimiento más grande en PHP moderno.",
+				$this->t(
+					"opcache_enable_help",
+					"El compilador de bytecode evita recompilar archivos en cada petición; es la mejora de rendimiento más grande en PHP moderno."
+				),
 				"https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.enable"
 			);
 			$validate = self::ini_bool("opcache.validate_timestamps");
@@ -960,9 +1213,12 @@ class mwmod_mw_util_phphealth {
 				"opcache_validate_timestamps", "extensions",
 				"opcache.validate_timestamps",
 				($validate === false) ? self::STATUS_OK : self::STATUS_INFO,
-				self::describe_bool($validate),
-				"Off en producción",
-				"En producción, con Off se evita consultar la fecha de cada archivo en cada petición. Requiere reiniciar PHP-FPM tras cada despliegue.",
+				$this->describe_bool($validate),
+				$this->t("opcache_validate_timestamps_expected", "Off en producción"),
+				$this->t(
+					"opcache_validate_timestamps_help",
+					"En producción, con Off se evita consultar la fecha de cada archivo en cada petición. Requiere reiniciar PHP-FPM tras cada despliegue."
+				),
 				"https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.validate-timestamps"
 			);
 		}
@@ -970,22 +1226,32 @@ class mwmod_mw_util_phphealth {
 		$missingRequired = self::get_missing_extensions(self::$required_extensions);
 		$checks[] = self::new_check(
 			"required_extensions", "extensions",
-			"Extensiones requeridas",
+			$this->t("required_extensions_label", "Extensiones requeridas"),
 			empty($missingRequired) ? self::STATUS_OK : self::STATUS_FAIL,
-			empty($missingRequired) ? "todas presentes" : ("faltan: " . implode(", ", $missingRequired)),
+			empty($missingRequired)
+				? $this->t("extensions_all_present", "todas presentes")
+				: $this->t("extensions_missing", "faltan: %items%", array("items" => implode(", ", $missingRequired))),
 			implode(", ", self::$required_extensions),
-			"Sin estas extensiones la base de datos, el correo, las subidas y la generación de documentos fallan en tiempo de ejecución.",
+			$this->t(
+				"required_extensions_help",
+				"Sin estas extensiones la base de datos, el correo, las subidas y la generación de documentos fallan en tiempo de ejecución."
+			),
 			"https://www.php.net/manual/en/extensions.php"
 		);
 
 		$missingRecommended = self::get_missing_extensions(self::$recommended_extensions);
 		$checks[] = self::new_check(
 			"recommended_extensions", "extensions",
-			"Extensiones recomendadas",
+			$this->t("recommended_extensions_label", "Extensiones recomendadas"),
 			empty($missingRecommended) ? self::STATUS_OK : self::STATUS_INFO,
-			empty($missingRecommended) ? "todas presentes" : ("faltan: " . implode(", ", $missingRecommended)),
+			empty($missingRecommended)
+				? $this->t("extensions_all_present", "todas presentes")
+				: $this->t("extensions_missing", "faltan: %items%", array("items" => implode(", ", $missingRecommended))),
 			implode(", ", self::$recommended_extensions),
-			"Mejoran internacionalización, manejo de XML y caché en memoria. Su ausencia no impide operar.",
+			$this->t(
+				"recommended_extensions_help",
+				"Mejoran internacionalización, manejo de XML y caché en memoria. Su ausencia no impide operar."
+			),
 			"https://www.php.net/manual/en/extensions.php"
 		);
 
@@ -1033,20 +1299,20 @@ class mwmod_mw_util_phphealth {
 	 *
 	 * @return array<string,string> Normalized check.
 	 */
-	private static function ini_flag_check($code, $group, $iniKey, $recommended, $help, $url = "") {
+	private function ini_flag_check($code, $group, $iniKey, $recommended, $help, $url = "") {
 		$value = self::ini_bool($iniKey);
 		if ($value === null) {
 			return self::new_check(
 				$code, $group, $iniKey, self::STATUS_NA,
-				"(no disponible)", ($recommended ? "On" : "Off"),
-				"La directiva no está disponible en este entorno.", $url
+				$this->t("not_available", "(no disponible)"), ($recommended ? "On" : "Off"),
+				$this->t("directive_not_available", "La directiva no está disponible en este entorno."), $url
 			);
 		}
 		$matches = ($value === $recommended);
 		return self::new_check(
 			$code, $group, $iniKey,
 			$matches ? self::STATUS_OK : self::STATUS_WARN,
-			self::describe_bool($value),
+			$this->describe_bool($value),
 			($recommended ? "On" : "Off"),
 			$help, $url
 		);
@@ -1094,13 +1360,16 @@ class mwmod_mw_util_phphealth {
 	/**
 	 * Formats a boolean INI value for display.
 	 *
+	 * "On"/"Off" are kept literal: they are the tokens written in php.ini, not
+	 * prose to be translated.
+	 *
 	 * @param bool|null $value Parsed value.
 	 *
 	 * @return string "On", "Off" or "(no disponible)".
 	 */
-	static function describe_bool($value) {
+	function describe_bool($value) {
 		if ($value === null) {
-			return "(no disponible)";
+			return $this->t("not_available", "(no disponible)");
 		}
 		return $value ? "On" : "Off";
 	}
@@ -1112,12 +1381,12 @@ class mwmod_mw_util_phphealth {
 	 *
 	 * @return string Display text.
 	 */
-	static function describe_ini_raw($value) {
+	function describe_ini_raw($value) {
 		if ($value === false) {
-			return "(no disponible)";
+			return $this->t("not_available", "(no disponible)");
 		}
 		$value = trim((string) $value);
-		return ($value === "") ? "(vacío)" : $value;
+		return ($value === "") ? $this->t("value_empty", "(vacío)") : $value;
 	}
 
 	/**
@@ -1172,12 +1441,12 @@ class mwmod_mw_util_phphealth {
 	 *
 	 * @return string Display text.
 	 */
-	static function describe_ini_bytes($bytes) {
+	function describe_ini_bytes($bytes) {
 		if ($bytes === null) {
-			return "(no disponible)";
+			return $this->t("not_available", "(no disponible)");
 		}
 		if ($bytes < 0) {
-			return "-1 (sin límite)";
+			return $this->t("bytes_unlimited", "-1 (sin límite)");
 		}
 		$units = array("B", "K", "M", "G", "T");
 		$index = 0;
