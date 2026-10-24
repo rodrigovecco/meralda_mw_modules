@@ -57,13 +57,13 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 		$wrap->addClass("p-3");
 
 		$this->_render_summary($wrap, $report);
-		$this->_render_text_summary($wrap, $report, $util);
 		$this->_render_version_support($wrap, $report);
 
 		foreach ($report["groups"] as $groupCod => $groupTitle) {
 			$this->_render_group($wrap, $groupCod, $groupTitle, $report["checks"]);
 		}
 
+		$this->_render_text_summary($wrap, $report, $util);
 		$this->_render_footer($wrap, $report);
 
 		echo $MainContainer->get_as_html();
@@ -175,8 +175,9 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 	 * Renders the plain text recommendations block.
 	 *
 	 * The block mirrors what the utility returns from get_text_summary(), so
-	 * it can be copied as-is into a ticket or an email. It is shown expanded;
-	 * the header button toggles it and the second button copies it.
+	 * it can be copied as-is into a ticket or an email. It sits at the end of
+	 * the page and is collapsed by default; the header button toggles it and
+	 * the second button copies it.
 	 *
 	 * @param mwmod_mw_html_elem $wrap Container element.
 	 * @param array<string,mixed> $report Report from mwmod_mw_util_phphealth.
@@ -225,7 +226,7 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 		$body->addClass("card-body p-2");
 
 		$collapse = $body->add_cont_elem();
-		$collapse->addClass("collapse show");
+		$collapse->addClass("collapse");
 		$collapse->set_att("id", $panelId);
 
 		$pre = $collapse->add_cont_elem(false, "pre");
