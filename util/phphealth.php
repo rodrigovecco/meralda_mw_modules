@@ -152,6 +152,12 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 	/**
 	 * Shortcut for lng_get_msg_txt().
 	 *
+	 * The framework only replaces the %name% placeholders when a language
+	 * messages manager is available, and it is only available when the object
+	 * has an app context. To keep the plain text correct when the class is used
+	 * standalone (CLI, cron), the replacement is also applied here: it is a no-op
+	 * when the framework already did it.
+	 *
 	 * @param string $cod Message code.
 	 * @param string $def Default text, used when the message file has no entry.
 	 * @param array<string,string>|false $params Placeholder replacements.
@@ -159,7 +165,17 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 	 * @return string
 	 */
 	private function t($cod, $def, $params = false) {
-		return $this->lng_get_msg_txt($cod, $def, $params);
+		$text = $this->lng_get_msg_txt($cod, $def, $params);
+		if (!$params or !is_array($params) or strpos((string) $text, "%") === false) {
+			return $text;
+		}
+		$search  = array();
+		$replace = array();
+		foreach ($params as $key => $value) {
+			$search[]  = "%" . $key . "%";
+			$replace[] = (string) $value;
+		}
+		return str_replace($search, $replace, (string) $text);
 	}
 
 	/**
@@ -385,6 +401,110 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 			"status"    => $global,
 			"total"     => count($checks),
 		);
+	}
+
+	/**
+	 * Plain text summary of the report.
+	 *
+	 * Meant for copy/paste into a ticket, an email or a deployment note: ASCII
+	 * only, no HTML, one block per pending finding.
+	 *
+	 * @param array<string,mixed>|false $report Report to summarize. Built on demand when omitted.
+	 *
+	 * @return string Multi-line text with "\n" line endings.
+	 */
+	function get_text_summary($report = false) {
+		if (!$report) {
+			$report = $this->get_report();
+		}
+		$env     = $report["environment"];
+		$summary = $report["summary"];
+		$rule    = str_repeat("-", 72);
+		$out     = array();
+
+		$out[] = $this->t("text_title", "SALUD Y SEGURIDAD DE PHP - RECOMENDACIONES");
+		$out[] = $this->t("text_rules", "Reglas v%v% (%d%)", array("v" => $report["version"], "d" => $report["date"]));
+		$out[] = $this->t(
+			"text_environment",
+			"Entorno: PHP %php% | SAPI %sapi% | %os% | php.ini: %ini%",
+			array(
+				"php"  => $env["php_version"],
+				"sapi" => $env["sapi"],
+				"os"   => $env["os_family"],
+				"ini"  => ($env["ini_file"] ? $env["ini_file"] : $this->t("text_ini_none", "(ninguno)")),
+			)
+		);
+		$out[] = $this->t(
+			"text_result",
+			"Resultado: %score%% de cumplimiento | %fail% criticos | %warn% avisos | %ok% correctos",
+			array(
+				"score" => $summary["score"],
+				"fail"  => $summary["counts"][self::STATUS_FAIL],
+				"warn"  => $summary["counts"][self::STATUS_WARN],
+				"ok"    => $summary["counts"][self::STATUS_OK],
+			)
+		);
+
+		$criticals = array();
+		$warnings  = array();
+		foreach ($report["checks"] as $check) {
+			if ($check["status"] === self::STATUS_FAIL) {
+				$criticals[] = $check;
+			} elseif ($check["status"] === self::STATUS_WARN) {
+				$warnings[] = $check;
+			}
+		}
+
+		if (empty($criticals) and empty($warnings)) {
+			$out[] = "";
+			$out[] = $this->t("text_no_pending", "Sin acciones pendientes: todas las comprobaciones evaluables estan correctas.");
+		}
+
+		if ($criticals) {
+			$out[] = "";
+			$out[] = $this->t("text_criticals", "CRITICO - corregir de inmediato (%n%)", array("n" => count($criticals)));
+			$out[] = $rule;
+			foreach ($criticals as $check) {
+				$out[] = $this->get_text_check_block($check);
+			}
+		}
+
+		if ($warnings) {
+			$out[] = "";
+			$out[] = $this->t("text_warnings", "AVISOS - endurecer la configuracion (%n%)", array("n" => count($warnings)));
+			$out[] = $rule;
+			foreach ($warnings as $check) {
+				$out[] = $this->get_text_check_block($check);
+			}
+		}
+
+		$out[] = "";
+		$out[] = $rule;
+		$out[] = $this->t(
+			"text_footer",
+			"Recomendaciones basadas en la documentacion de php.net, revisadas manualmente. Esta pagina no modifica la configuracion del servidor."
+		);
+
+		return implode("\n", $out) . "\n";
+	}
+
+	/**
+	 * Formats one check as a plain text block.
+	 *
+	 * @param array<string,mixed> $check One check entry.
+	 *
+	 * @return string Block of lines separated by "\n".
+	 */
+	private function get_text_check_block($check) {
+		$out   = array();
+		$out[] = "- " . $check["label"];
+		$out[] = "  " . $this->t("text_current", "actual") . ": " . $check["current"]
+			. "  ->  " . $this->t("text_expected", "recomendado") . ": " . $check["expected"];
+		$out[] = "  " . $this->t("text_why", "por que") . ": " . $check["help"];
+		if ($check["url"]) {
+			$out[] = "  " . $check["url"];
+		}
+		return implode("\n", $out);
 	}
 
 	/**
@@ -949,16 +1069,39 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 			);
 		}
 
-		$checks[] = $this->ini_flag_check(
-			"session_upload_progress", "session", "session.upload_progress.enabled", false,
-			$this->t(
-				"session_upload_progress_help",
-				"El seguimiento del progreso de subida deposita datos en \$_SESSION a partir de un campo del formulario"
-					. " (PHP_SESSION_UPLOAD_PROGRESS) que controla el cliente. Sin usar esa función no aporta nada y amplía la"
-					. " superficie: permite inyectar entradas en la sesión y, con session.upload_progress.cleanup en Off,"
-					. " llenar el almacenamiento de sesiones. Desactívalo si la aplicación no muestra barras de progreso."
-			),
-			"https://www.php.net/manual/en/session.configuration.php#ini.session.upload-progress.enabled"
+		// php.net advisory of 23 Oct 2026: no patch exists yet for CVE-2026-115560,
+		// so while session.upload_progress.enabled is On this is CRITICAL.
+		$uploadProgress = self::ini_bool("session.upload_progress.enabled");
+		if ($uploadProgress === null) {
+			$uploadProgressStatus  = self::STATUS_NA;
+			$uploadProgressCurrent = $this->t("not_available", "(no disponible)");
+			$uploadProgressHelp    = $this->t(
+				"session_upload_progress_help_na",
+				"La directiva no está disponible en este entorno."
+			);
+		} elseif ($uploadProgress === true) {
+			$uploadProgressStatus  = self::STATUS_FAIL;
+			$uploadProgressCurrent = "On";
+			$uploadProgressHelp    = $this->t(
+				"session_upload_progress_help_on",
+				"CRÍTICO mientras no exista parche (CVE-2026-115560). php.net pide session.upload_progress.enabled=0 hasta la próxima versión de corrección: la función vuelca datos en \$_SESSION desde un campo del formulario (PHP_SESSION_UPLOAD_PROGRESS) que controla el cliente y, combinada con un cambio de session.serialize_handler en tiempo de ejecución, abre una vía de ejecución remota de código. Desactivarlo en php.ini o en el pool de FPM (no con ini_set ni .user.ini) y reiniciar todos los workers."
+			);
+		} else {
+			$uploadProgressStatus  = self::STATUS_OK;
+			$uploadProgressCurrent = "Off";
+			$uploadProgressHelp    = $this->t(
+				"session_upload_progress_help_off",
+				"Desactivado: la mitigación recomendada por php.net para CVE-2026-115560 está aplicada. Mantenerlo así hasta la próxima versión de corrección."
+			);
+		}
+		$checks[] = self::new_check(
+			"session_upload_progress", "session",
+			$this->t("session_upload_progress_label", "session.upload_progress.enabled (CVE-2026-115560)"),
+			$uploadProgressStatus,
+			$uploadProgressCurrent,
+			"Off",
+			$uploadProgressHelp,
+			"https://www.php.net/archive/2026.php#2026-10-23-1"
 		);
 
 		// ---------------------------------------------------------------- runtime

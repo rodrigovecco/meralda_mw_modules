@@ -41,7 +41,8 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 	 * @return void
 	 */
 	function do_exec_page_in() {
-		$util   = new mwmod_mw_util_phphealth();
+		$util = new mwmod_mw_util_phphealth();
+		$util->set_mainap($this->mainap);
 		$report = $util->get_report();
 
 		$MainContainer = $this->get_ui_dom_elem_container();
@@ -56,6 +57,7 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 		$wrap->addClass("p-3");
 
 		$this->_render_summary($wrap, $report);
+		$this->_render_text_summary($wrap, $report, $util);
 		$this->_render_version_support($wrap, $report);
 
 		foreach ($report["groups"] as $groupCod => $groupTitle) {
@@ -167,6 +169,70 @@ class mwmod_mw_ui_def_cfg_phphealth extends mwmod_mw_ui_base_basesubui {
 			$th->addClass("w-25 fw-normal text-muted");
 			$tr->add_cont_elem($this->_e((string) $value), "td");
 		}
+	}
+
+	/**
+	 * Renders the plain text recommendations block.
+	 *
+	 * The block mirrors what the utility returns from get_text_summary(), so
+	 * it can be copied as-is into a ticket or an email. It is shown expanded;
+	 * the header button toggles it and the second button copies it.
+	 *
+	 * @param mwmod_mw_html_elem $wrap Container element.
+	 * @param array<string,mixed> $report Report from mwmod_mw_util_phphealth.
+	 * @param mwmod_mw_util_phphealth $util Utility instance that built the report.
+	 *
+	 * @return void
+	 */
+	private function _render_text_summary($wrap, $report, $util) {
+		$panelId = $this->get_ui_elem_id_and_set_js_init_param("textsummary");
+		$preId   = $this->get_ui_elem_id_and_set_js_init_param("textsummarypre");
+		$text    = $util->get_text_summary($report);
+
+		$card = $wrap->add_cont_elem();
+		$card->addClass("card mb-3");
+
+		$head = $card->add_cont_elem();
+		$head->addClass("card-header d-flex flex-wrap align-items-center gap-2");
+		$head->addCont(
+			"<i class='fa fa-file-lines me-1 text-secondary'></i>" .
+			"<strong>" . $this->_e($this->lng_get_msg_txt("phpHealthTextTitle", "Resumen en texto plano de recomendaciones")) . "</strong>"
+		);
+
+		$toggle = $head->add_cont_elem(false, "button");
+		$toggle->addClass("btn btn-sm btn-outline-secondary ms-auto");
+		$toggle->set_att("type", "button");
+		$toggle->set_att("data-bs-toggle", "collapse");
+		$toggle->set_att("data-bs-target", "#" . $panelId);
+		$toggle->addCont(
+			"<i class='fa fa-align-left me-1'></i>" .
+			$this->_e($this->lng_get_msg_txt("phpHealthTextToggle", "Mostrar / ocultar"))
+		);
+
+		$copy = $head->add_cont_elem(false, "button");
+		$copy->addClass("btn btn-sm btn-outline-primary");
+		$copy->set_att("type", "button");
+		$copy->set_att(
+			"onclick",
+			"navigator.clipboard.writeText(document.getElementById('" . $preId . "').innerText);"
+		);
+		$copy->addCont(
+			"<i class='fa fa-copy me-1'></i>" .
+			$this->_e($this->lng_get_msg_txt("phpHealthTextCopy", "Copiar"))
+		);
+
+		$body = $card->add_cont_elem();
+		$body->addClass("card-body p-2");
+
+		$collapse = $body->add_cont_elem();
+		$collapse->addClass("collapse show");
+		$collapse->set_att("id", $panelId);
+
+		$pre = $collapse->add_cont_elem(false, "pre");
+		$pre->addClass("bg-dark text-light p-2 rounded small mb-0");
+		$pre->set_att("id", $preId);
+		$pre->set_att("style", "white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto;");
+		$pre->addCont($this->_e($text));
 	}
 
 	/**
