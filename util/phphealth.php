@@ -108,7 +108,13 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 	);
 
 	/**
-	 * Minimum PHP version required by the bundled composer dependencies.
+	 * Minimum PHP version required by the code base.
+	 *
+	 * The bundled third-party libraries (PhpSpreadsheet and its dependencies)
+	 * are the binding constraint: they are vendored under modulesext/ and no
+	 * longer installed with Composer, so nothing in the repository declares a
+	 * platform requirement and this value has to be maintained by hand.
+	 *
 	 * @var string
 	 */
 	const MIN_PHP_VERSION = "8.2.0";
@@ -546,7 +552,7 @@ class mwmod_mw_util_phphealth extends mw_apsubbaseobj {
 			">= " . self::MIN_PHP_VERSION,
 			$this->t(
 				"php_requirement_help",
-				"Las dependencias incluidas (PhpSpreadsheet / Composer platform check) exigen PHP %min% o superior.",
+				"Las dependencias de terceros incluidas (PhpSpreadsheet y sus librerías) exigen PHP %min% o superior.",
 				array("min" => self::MIN_PHP_VERSION)
 			),
 			"https://www.php.net/supported-versions.php"
