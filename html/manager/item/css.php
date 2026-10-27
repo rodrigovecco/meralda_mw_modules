@@ -30,7 +30,7 @@ class mwmod_mw_html_manager_item_css extends mwmod_mw_html_manager_item_abs{
 	}
 	function get_atts_for_dec(){
 		$r=array();
-		$r["href"]=$this->get_src();
+		$r["href"]=$this->add_version_to_src($this->get_src());
 		if($a=$this->get_all_atts()){
 			foreach($a as $cod=>$v){
 				if($v){

@@ -5,7 +5,7 @@ class mwmod_mw_html_manager_item_js extends mwmod_mw_html_manager_item_abs{
 		$this->init_item($cod);
 	}
 	function get_html_declaration(){
-		return "<script type='text/javascript'  language='javascript' src='".$this->get_src()."'></script>\n";	
+		return "<script type='text/javascript'  language='javascript' src='".$this->add_version_to_src($this->get_src())."'></script>\n";	
 	}
 
 	
