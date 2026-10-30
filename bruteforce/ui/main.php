@@ -8,6 +8,8 @@ class mwmod_mw_bruteforce_ui_main extends mwmod_mw_ui_base_basesubuia{
 
 		
 	}
+	#[Override]
+	
 	function do_exec_page_in(){
 		$man=$this->mainap->get_submanager("bruteforce");
 

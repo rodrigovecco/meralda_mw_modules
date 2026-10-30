@@ -13,7 +13,10 @@ class mwmod_mw_db_migrations_ui_main extends mwmod_mw_ui_base_basesubuia {
 		$this->init_as_main_or_sub($cod, $parent);
 		$this->set_def_title($this->lng_get_msg_txt("dbMigrations", "Migraciones de BD"));
 	}
-
+	function is_responsable_for_sub_interface_mnu()
+	{
+		return false;
+	}
 	function is_allowed() {
 		return $this->allow("mainadmin");
 	}
