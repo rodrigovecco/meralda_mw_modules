@@ -6,6 +6,8 @@
  * @property-read mwmod_mw_db_row $tblitem The wrapped database row.
  * @property-read mwmod_mw_manager_man $man The manager that owns this item.
  * @property-read mwmod_mw_data_json_man|false $jsonDataMan JSON data manager (if enabled).
+ * @property-read mwmod_mw_data_jsonfield_item|false $jsonFieldDataMan JSON object held in a COLUMN of this
+ *     item's row (if enabled via {@see enable_jsonfielddata()}).
  * @property-read mwmod_mw_data_tree_man|false $_treedataman Tree data manager (lazy-loaded).
  * @property-read mwmod_mw_data_str_man|false $_strdataman String data manager (lazy-loaded).
  * @property-read mwmod_mw_data_xmltree_man|false $_xmldataman XML data manager (lazy-loaded).
@@ -23,6 +25,12 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 	private $_can_create_xmltreedata=false;
 	private $_can_create_jsondata=false;
 	private $jsonDataMan;
+	/** The column {@see jsonFieldDataMan} reads, or false when no column was named. */
+	private $_jsonfield_column=false;
+	/** The lazily built {@see jsonFieldDataMan}, or false once it was found to be unavailable. */
+	private $jsonFieldDataMan;
+	/** One decoder per JSON column of this row, built on demand — see getJsonFieldDataItem(). */
+	private $_jsonfield_managers=array();
 	
 	
 	private $_related_objects_man;
@@ -159,6 +167,87 @@ abstract class  mwmod_mw_manager_itemabs extends mw_apsubbaseobj{
 			}
 		}
 		return $this->jsonDataMan;
+	}
+
+	//json in a COLUMN of this item's own row
+	/**
+	 * Enables {@see jsonFieldDataMan}: a JSON object kept in a COLUMN of this item's row.
+	 *
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * WHY THIS IS NOT `enable_jsondata()`
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * `enable_jsondata()` builds a manager over a DIRECTORY: every item gets its own folder and its own
+	 * `.json` files under `<items_path>/data`. That is right for configuration — a handful of rows, read
+	 * whole, edited by hand — and wrong for the data of people, because a thousand learners become a
+	 * thousand directories and then a thousand thousand files, which is a filesystem used as a database.
+	 *
+	 * The same object shape, the same typed getters and the same "absent is not empty" questions apply to a
+	 * JSON object held in a `longtext` COLUMN, and `mwmod_mw_data_jsonfield_item` is the class that already
+	 * does it (`initAsTBLField($tblitem, $code)`). What was missing is the way to ask an ITEM for one, which
+	 * is what this method and the magic getter below add — so a row says
+	 *
+	 *     $this->enable_jsonfielddata("inputs_json");
+	 *     $map = $this->jsonFieldDataMan->get_data_as_list();
+	 *
+	 * and never calls `json_decode` itself.
+	 *
+	 * THE COLUMN IS NAMED, because a row may hold more than one JSON object and guessing "data" would make
+	 * two of them silently share a column.
+	 *
+	 * @param string $column the column holding the JSON object
+	 * @return void
+	 */
+	final function enable_jsonfielddata($column = "data") {
+		$this->_jsonfield_column = (string) $column;
+	}
+
+	/** Whether {@see jsonFieldDataMan} has a column to work on. */
+	final function jsonFieldDataManEnabled() {
+		return $this->_jsonfield_column !== false && $this->_jsonfield_column !== "";
+	}
+
+	/**
+	 * The JSON object in one of this item's columns, as a data item — or false when it cannot exist.
+	 *
+	 * ONE ITEM MAY HAVE MORE THAN ONE JSON COLUMN, and that is not a hypothetical: a progress row keeps the
+	 * student's figures in `inputs_json` and what the content type EXPOSES in `result_json`, two objects with
+	 * different writers and different readers on the same row. So the column is an argument and the objects are
+	 * cached PER COLUMN — one decoder each, and asking twice for the same column decodes once.
+	 *
+	 * {@see jsonFieldDataMan} is the shorthand for the column {@see enable_jsonfielddata()} named.
+	 *
+	 * @param  string $column
+	 * @return mwmod_mw_data_jsonfield_item|false
+	 */
+	final function getJsonFieldDataItem($column = "data") {
+		$column = (string) $column;
+		if ($column === "" || !$this->tblitem) {
+			return false;
+		}
+		if (!isset($this->_jsonfield_managers[$column])) {
+			$this->_jsonfield_managers[$column] = new mwmod_mw_data_jsonfield_item($this->tblitem, $column);
+		}
+		return $this->_jsonfield_managers[$column];
+	}
+
+	/**
+	 * The JSON object in this item's column, as a data item.
+	 *
+	 * LAZY, and one per item: the decoder keeps what it read (`_dataloaded`), so asking for the map twice in one
+	 * request reads the column once.
+	 *
+	 * FALSE WHEN THERE IS NO ROW OR NO COLUMN, so a caller can ask without checking first — the same contract
+	 * `jsonDataMan` has.
+	 *
+	 * @return mwmod_mw_data_jsonfield_item|false
+	 */
+	final function __get_priv_jsonFieldDataMan() {
+		if (!isset($this->jsonFieldDataMan)) {
+			$this->jsonFieldDataMan = $this->jsonFieldDataManEnabled()
+				? $this->getJsonFieldDataItem($this->_jsonfield_column)
+				: false;
+		}
+		return $this->jsonFieldDataMan;
 	}
 	
 	
