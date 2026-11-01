@@ -164,7 +164,7 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 		 return true;
 		 
 	}
-	private final function addAnAddress($kind,$address, $name = ''){
+	final function addAnAddress($kind,$address, $name = ''){
 		if(!$address=$this->validateAddress($address)){
 			return false;	
 		}
@@ -200,7 +200,7 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 	final function getReplyToAddresses(){
 		return $this->getAddresses("ReplyTo");
 	}
-	private final function getAddresses($kind ){
+	final function getAddresses($kind ){
 		// isset() for the same reason as addAnAddress(): an absent kind is the ordinary case.
 		if(!isset($this->_address_list[$kind])){
 			return false;
