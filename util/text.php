@@ -33,11 +33,68 @@ class  mwmod_mw_util_text extends mw_apsubbaseobj{
 	}
 	
 	/**
+	 * Shortens a string to a maximum of characters WITHOUT splitting a multi-byte one.
+	 *
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * WHY THIS EXISTS AS A FRAMEWORK METHOD
+	 * ─────────────────────────────────────────────────────────────────────────────
+	 * `substr($text, 0, 64)` counts BYTES, and a Spanish or Portuguese text is full of two-byte characters —
+	 * an accent is `c3 a9`. Cutting at an arbitrary byte leaves half of one at the end: the result is not valid
+	 * UTF-8, and anything that then encodes it (`json_encode`, a database column declared utf8mb4) either
+	 * fails or silently stores a replacement character. This module has already been bitten by it once, in an
+	 * MCP preview that turned a JSON response into `false` because one broken character made the whole encode
+	 * fail — and by a name capped with `substr` that came back with a stray byte.
+	 *
+	 * THE RULE BELONGS HERE because every caller needs the same answer, and a copy of "substr, but remember
+	 * mb_" is exactly the copy that forgets. A caller says how many CHARACTERS it wants and does not think
+	 * about bytes at all.
+	 *
+	 * FALLS BACK TO THE BYTE FUNCTION ONLY WHEN THE EXTENSION IS ABSENT, and then re-trims bytes that are not
+	 * valid UTF-8 continuations — so the answer is never an invalid string even on a broken install.
+	 *
+	 * @param  mixed  $value    the text to shorten; anything scalar is accepted, null/array reads as ""
+	 * @param  int    $length   maximum number of CHARACTERS
+	 * @param  string $ellipsis appended when something was actually cut ("" by default: a cap is not a preview)
+	 * @return string
+	 */
+	static function cut(mixed $value, int $length, string $ellipsis = ""): string {
+		if ($value === null || is_array($value) || is_object($value)) {
+			return "";
+		}
+		if (is_bool($value)) {
+			$value = $value ? "1" : "";
+		}
+		$text = (string) $value;
+		$length = (int) $length;
+		if ($length <= 0) {
+			return "";
+		}
+		if (function_exists("mb_substr") && function_exists("mb_strlen")) {
+			if (mb_strlen($text, "UTF-8") <= $length) {
+				return $text;
+			}
+			return mb_substr($text, 0, $length, "UTF-8") . $ellipsis;
+		}
+		/*
+		 * THE FALLBACK STILL CANNOT RETURN BROKEN UTF-8. Cutting to `$length` bytes may land inside a
+		 * character; backing off over continuation bytes (10xxxxxx) lands on the last complete one.
+		 */
+		if (strlen($text) <= $length) {
+			return $text;
+		}
+		$cut = substr($text, 0, $length);
+		while ($cut !== "" && (ord($cut[strlen($cut) - 1]) & 0xC0) === 0x80) {
+			$cut = substr($cut, 0, -1);
+		}
+		return $cut . $ellipsis;
+	}
+
+	/**
 	 * Converts a value to a number when it is numeric.
 	 * 
 	 * Static, context-free helper. Canonical replacement for the deprecated
 	 * core helper mw_get_number() (core/util/text.php).
-	 * 
+	 *
 	 * @param mixed $val Value to convert.
 	 * @return int|float|false The numeric value, or false when not numeric.
 	 */

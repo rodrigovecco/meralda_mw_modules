@@ -13,7 +13,24 @@ class mwmod_mw_data_jsonfield_item extends mwmod_mw_data_json_item{
 	}
 	function encode($value){
 		//json_encode ( mixed $value [, int $options = 0 [, int $depth = 512 ]] )	
-		return json_encode($value);
+		return self::encode_value($value);
+	}
+	/**
+	 * Encodes a value for a JSON COLUMN, without an instance — for the moment a row is being CREATED.
+	 *
+	 * WHY THIS EXISTS. A JSON object in a column is normally written through this item, which needs a row.
+	 * `insert_item(array("config" => json_encode($config)))` happens BEFORE that row exists, so the writer has
+	 * no item to ask — and reaching for `json_encode` there is how a module ends up with two encoders that
+	 * disagree about options and about what an empty value should be.
+	 *
+	 * The instance method `encode()` delegates here, so there is exactly one encoder for this shape and a
+	 * create path and an update path cannot produce different bytes for the same array.
+	 *
+	 * @param  mixed $value
+	 * @return string
+	 */
+	static function encode_value($value){
+		return (string) json_encode(is_array($value) ? $value : array());
 	}
 	function get_sub_item($key){
 		if(!$key){
