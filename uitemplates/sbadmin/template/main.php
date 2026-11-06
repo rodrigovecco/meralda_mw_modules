@@ -254,9 +254,13 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		   icons sit side by side instead of drifting apart. The selector uses the
 		   ids on purpose: ui2's layout.css sets `.sb-topnav #sidebarToggle`
 		   padding with an id, which beats a class-based rule. */
-		echo ".sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{order:0;margin:0;padding:.25rem .35rem;line-height:1;background:transparent;border:0}\n";
+		echo ".sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{order:0;margin:0;padding:.35rem .55rem;line-height:1;background:transparent;border:0}\n";
+		/* A little breathing room on the left edge: ui2 sets .sb-topnav
+		   padding-left:0, so this needs a more specific selector to win. */
+		echo ".sb-nav-fixed .sb-topnav{padding-left:.5rem}\n";
 		echo "@media (max-width:991.98px){\n";
-		echo "  .sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{padding:.2rem .25rem}\n";
+		echo "  .sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{padding:.25rem .4rem}\n";
+		echo "  .sb-nav-fixed .sb-topnav{padding-left:.35rem}\n";
 		echo "}\n";
 		/* Sub-menu toggle: list icon, on the title line, only while collapsed. */
 		echo ".mw-subinterface-mnu-toggle{display:none}\n";
@@ -265,6 +269,9 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		   menu off the right edge. Let it shrink and ellipsize instead. */
 		echo "  .sb-topnav .navbar-brand{display:block;width:auto;min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:.5rem;margin-right:0}\n";
 		echo "  .sb-topnav .navbar-nav{flex:0 0 auto;flex-wrap:nowrap}\n";
+		/* The user name in the topbar costs ~50px; on a phone only the icon stays,
+		   so the site title is not cut to 'ETVAS...'. The dropdown keeps working. */
+		echo "  .sb-topnav .navbar-nav>li>.nav-link>span{display:none}\n";
 		echo "  .mw-subinterface-mnu-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid #ced4da;border-radius:6px;background:#fff;color:#495057;font-size:14px;line-height:1;cursor:pointer}\n";
 		echo "  .mw-subinterface-mnu-toggle:hover{background:#e9ecef;color:#0d6efd}\n";
 		echo "  .mw-subinterface-mnu-toggle-inline{position:absolute;top:0;right:0}\n";
