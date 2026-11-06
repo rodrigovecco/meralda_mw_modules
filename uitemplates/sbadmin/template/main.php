@@ -245,8 +245,11 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		}
 		$this->ui_header_toggle_assets_done=true;
 		echo "<style>\n";
-		echo ".mw-ui-header-zone.mw-ui-header-collapsed{display:none}\n";
-		echo ".mw-ui-header-toggle{color:inherit;opacity:.8;text-decoration:none}\n";
+		/* Collapsing the UI header only makes sense when the viewport is short of
+		   room, so both the button and the collapsed state are limited to narrow
+		   screens. On a desktop the header is always shown and the toggle is not
+		   rendered at all, whatever the stored state of the page is. */
+		echo ".mw-ui-header-toggle{display:none;color:inherit;opacity:.8;text-decoration:none}\n";
 		echo ".mw-ui-header-toggle:hover{opacity:1}\n";
 		/* Both topbar buttons stay at the left, in DOM order: header toggle then
 		   sidebar toggle. sbadmin's .order-1 used to push the sidebar one off the
@@ -264,6 +267,9 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		echo "  .sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{padding:.25rem .4rem}\n";
 		echo "  .sb-topnav #mwUIHeaderToggle{margin-right:.3rem}\n";
 		echo "  .sb-nav-fixed .sb-topnav{padding-left:.35rem}\n";
+		/* The collapse itself is narrow-screen only. */
+		echo "  .sb-topnav #mwUIHeaderToggle{display:inline-block}\n";
+		echo "  .mw-ui-header-zone.mw-ui-header-collapsed{display:none}\n";
 		echo "}\n";
 		/* Sub-menu toggle: list icon, on the title line, only while collapsed. */
 		echo ".mw-subinterface-mnu-toggle{display:none}\n";
