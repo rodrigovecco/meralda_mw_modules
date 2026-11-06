@@ -250,16 +250,19 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		echo ".mw-ui-header-toggle:hover{opacity:1}\n";
 		/* Both topbar buttons stay at the left, in DOM order: header toggle then
 		   sidebar toggle. sbadmin's .order-1 used to push the sidebar one off the
-		   right edge of a phone screen. Margins and padding are zeroed so the two
-		   icons sit side by side instead of drifting apart. The selector uses the
-		   ids on purpose: ui2's layout.css sets `.sb-topnav #sidebarToggle`
-		   padding with an id, which beats a class-based rule. */
+		   right edge of a phone screen. The selector uses the ids on purpose: ui2's
+		   layout.css sets `.sb-topnav #sidebarToggle` padding with an id, which beats
+		   a class-based rule. The chevron keeps a small margin so it does not look
+		   glued to the hamburger. */
 		echo ".sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{order:0;margin:0;padding:.35rem .55rem;line-height:1;background:transparent;border:0}\n";
+		echo ".sb-topnav #mwUIHeaderToggle{margin-right:.4rem}\n";
+		echo ".sb-topnav #sidebarToggle{margin-left:0}\n";
 		/* A little breathing room on the left edge: ui2 sets .sb-topnav
 		   padding-left:0, so this needs a more specific selector to win. */
 		echo ".sb-nav-fixed .sb-topnav{padding-left:.5rem}\n";
 		echo "@media (max-width:991.98px){\n";
 		echo "  .sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{padding:.25rem .4rem}\n";
+		echo "  .sb-topnav #mwUIHeaderToggle{margin-right:.3rem}\n";
 		echo "  .sb-nav-fixed .sb-topnav{padding-left:.35rem}\n";
 		echo "}\n";
 		/* Sub-menu toggle: list icon, on the title line, only while collapsed. */
@@ -281,26 +284,25 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		echo "</style>\n";
 		echo "<script>\n";
 		echo "(function(){\n";
-		echo "var KEY='mwUIHeaderCollapsed:'+(window.mwUIHeaderKeyPrefix||'');\n";
 		echo "function ready(fn){if(document.readyState!=='loading'){fn();}else{document.addEventListener('DOMContentLoaded',fn);}}\n";
 		echo "ready(function(){\n";
 		echo "var btn=document.getElementById('mwUIHeaderToggle');\n";
 		echo "var zone=document.getElementById('mwUIHeaderZone');\n";
 		echo "if(!btn||!zone){return;}\n";
-		echo "var key=KEY+(zone.getAttribute('data-mw-ui-key')||'');\n";
+		/* The state is NOT persisted: every page load starts from what the UI
+		   declared on the server (expanded unless the class opts out), so a page
+		   refreshed always comes back to its own default. */
 		echo "var collapsed=(zone.getAttribute('data-mw-ui-collapsed')==='1');\n";
-		echo "try{var st=window.localStorage.getItem(key);if(st==='1'){collapsed=true;}else if(st==='0'){collapsed=false;}}catch(e){}\n";
-		echo "function apply(c,store){\n";
+		echo "function apply(c){\n";
 		echo "zone.classList.toggle('mw-ui-header-collapsed',c);\n";
 		echo "btn.setAttribute('aria-expanded',c?'false':'true');\n";
 		echo "var i=btn.querySelector('i');if(i){i.className='fas fa-chevron-'+(c?'down':'up');}\n";
 		echo "btn.setAttribute('title',c?btn.getAttribute('data-mw-title-expand'):btn.getAttribute('data-mw-title-collapse'));\n";
-		echo "if(store){try{window.localStorage.setItem(key,c?'1':'0');}catch(e){}}\n";
 		echo "if(typeof window.mw_ui_header_on_toggle==='function'){try{window.mw_ui_header_on_toggle(c);}catch(e){}}\n";
 		echo "window.setTimeout(function(){window.dispatchEvent(new Event('resize'));},80);\n";
 		echo "}\n";
-		echo "btn.addEventListener('click',function(ev){ev.preventDefault();collapsed=!collapsed;apply(collapsed,true);return false;});\n";
-		echo "apply(collapsed,false);\n";
+		echo "btn.addEventListener('click',function(ev){ev.preventDefault();collapsed=!collapsed;apply(collapsed);return false;});\n";
+		echo "apply(collapsed);\n";
 		echo "});\n";
 		echo "})();\n";
 		echo "</script>\n";
