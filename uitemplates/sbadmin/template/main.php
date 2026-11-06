@@ -2,6 +2,13 @@
 class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimaintemplate{
 	public $css_sidebar="sb-sidenav-dark";
 	public $css_topbar="navbar-dark bg-dark";
+	/** Renders the "collapse UI header" button in the topbar. */
+	public $uiHeaderToggleEnabled=true;
+	/** Cache of the collapsible state, keyed by subinterface id. */
+	private $___ui_header_collapsible_cache=array();
+	/** Cache of the sub-interface menu, keyed by subinterface id. */
+	private $___sub_interface_mnu_cache=array();
+	private $ui_header_toggle_assets_done=false;
 	function __construct($ui){
 		$this->set_mainap();
 		$this->set_main_ui($ui);
@@ -69,14 +76,218 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		$navBtn->set_att("href","#!");
 		$navBtn->add_cont("<i class='fas fa-bars'></i>");
 	}
+
+	/**
+	 * Returns the sub-interface menu for a subinterface, building it only once.
+	 *
+	 * get_sub_interface_mnu_from_parent_responsable() hands back a brand new menu
+	 * object on every call (the responsible parents just instantiate one and fill
+	 * it), and this template needs the answer three times: to decide whether the
+	 * header is collapsible, to render the inline toggle and to render the menu.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface
+	 * @return mwmod_mw_mnu_mnu|false The menu, or false when there is none.
+	 */
+	function get_sub_interface_mnu_for($subinterface){
+		if(!$subinterface){
+			return false;
+		}
+		$key=spl_object_id($subinterface);
+		if(array_key_exists($key,$this->___sub_interface_mnu_cache)){
+			return $this->___sub_interface_mnu_cache[$key];
+		}
+		$mnu=false;
+		if(method_exists($subinterface,"get_sub_interface_mnu_from_parent_responsable")){
+			$mnu=$subinterface->get_sub_interface_mnu_from_parent_responsable();
+		}
+		if($mnu){
+			if(!$mnu->can_display()){
+				$mnu=false;
+			}
+		}
+		$this->___sub_interface_mnu_cache[$key]=$mnu;
+		return $mnu;
+	}
+
+	/**
+	 * Whether the given subinterface has a header/sub-menu that can be collapsed.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface
+	 * @return bool
+	 */
+	function is_ui_header_collapsible_for($subinterface){
+		if(!$this->uiHeaderToggleEnabled){
+			return false;
+		}
+		if(!$subinterface){
+			return false;
+		}
+		$key=spl_object_id($subinterface);
+		if(array_key_exists($key,$this->___ui_header_collapsible_cache)){
+			return $this->___ui_header_collapsible_cache[$key];
+		}
+		$r=false;
+		if(method_exists($subinterface,"is_ui_header_collapsible")){
+			if(!$subinterface->is_ui_header_collapsible()){
+				$this->___ui_header_collapsible_cache[$key]=false;
+				return false;
+			}
+		}
+		if(!$subinterface->omit_header()){
+			$r=true;
+		}elseif($this->get_sub_interface_mnu_for($subinterface)){
+			$r=true;
+		}
+		$this->___ui_header_collapsible_cache[$key]=$r;
+		return $r;
+	}
+
+	/**
+	 * Renders the "collapse header" button, left of the sidebar toggler.
+	 *
+	 * @param mwmod_mw_html_elem      $nav          Topbar nav element.
+	 * @param mwmod_mw_ui_sub_uiabs   $subinterface Current subinterface.
+	 * @return bool
+	 */
+	function add_ui_header_toggle($nav,$subinterface){
+		if(!$this->is_ui_header_collapsible_for($subinterface)){
+			return false;
+		}
+		$collapsed=$this->is_ui_header_collapsed_by_default_for($subinterface);
+		$btn=new mwmod_mw_html_elem("button");
+		$btn->addClass("btn btn-link btn-sm mw-ui-header-toggle");
+		$btn->set_att("type","button");
+		$btn->set_att("id","mwUIHeaderToggle");
+		$btn->set_att("aria-controls","mwUIHeaderZone");
+		$btn->set_att("aria-expanded",$collapsed ? "false" : "true");
+		$btn->set_att("data-mw-title-collapse",$this->lng_get_msg_txt("hideUIHeader","Ocultar encabezado"));
+		$btn->set_att("data-mw-title-expand",$this->lng_get_msg_txt("showUIHeader","Mostrar encabezado"));
+		$btn->set_att("title",$collapsed ? $this->lng_get_msg_txt("showUIHeader","Mostrar encabezado") : $this->lng_get_msg_txt("hideUIHeader","Ocultar encabezado"));
+		$btn->add_cont("<i class='fas fa-chevron-".($collapsed ? "down" : "up")."'></i>");
+		$nav->add_cont($btn);
+		return true;
+	}
+
+	/**
+	 * Whether the subinterface starts collapsed (server-side default only).
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface
+	 * @return bool
+	 */
+	function is_ui_header_collapsed_by_default_for($subinterface){
+		if(!$subinterface){
+			return false;
+		}
+		if(method_exists($subinterface,"is_ui_header_collapsed_by_default")){
+			return (bool)$subinterface->is_ui_header_collapsed_by_default();
+		}
+		return false;
+	}
+
+	/**
+	 * Renders the sub-menu toggle.
+	 *
+	 * On narrow screens the sub-menu (the tabs bar) is collapsed, and until now
+	 * the template put a second hamburger on a line of its own right below the
+	 * title. Two identical hamburgers next to each other are confusing, so this
+	 * button uses a list icon instead and sits on the title line, at the right.
+	 *
+	 * The button is delegated to Bootstrap's collapse, which keeps working after
+	 * Ajax navigation because it listens on the document.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface
+	 * @param bool                  $inline Whether it goes inside the header row.
+	 * @return string Empty when there is no sub-menu to toggle.
+	 */
+	function get_sub_interface_mnu_toggle_html($subinterface,$inline=true){
+		if(!$this->get_sub_interface_mnu_for($subinterface)){
+			return "";
+		}
+		$lbl=$this->lng_get_msg_txt("subMenu","Submenú");
+		$cls="mw-subinterface-mnu-toggle".($inline ? " mw-subinterface-mnu-toggle-inline" : " mw-subinterface-mnu-toggle-block");
+		$r="<button class='".$cls."' type='button' data-bs-toggle='collapse' data-bs-target='#navbarCurrentUI' aria-controls='navbarCurrentUI' aria-expanded='false' aria-label='".htmlspecialchars($lbl,ENT_QUOTES)."' title='".htmlspecialchars($lbl,ENT_QUOTES)."'>";
+		$r.="<i class='fas fa-list-ul'></i>";
+		$r.="</button>";
+		return $r;
+	}
+
+	/**
+	 * Opening tag of the wrapper that holds the breadcrumb, the title and the
+	 * subinterface menu, so they can be collapsed together.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs $subinterface
+	 * @return string Empty when the zone must not be created.
+	 */
+	function get_ui_header_zone_open_html($subinterface){
+		if(!$this->is_ui_header_collapsible_for($subinterface)){
+			return "";
+		}
+		$collapsed=$this->is_ui_header_collapsed_by_default_for($subinterface) ? "1" : "0";
+		$key=htmlspecialchars($subinterface->get_full_cod("-"),ENT_QUOTES);
+		return "<div id='mwUIHeaderZone' class='mw-ui-header-zone' data-mw-ui-collapsed='".$collapsed."' data-mw-ui-key='".$key."'>\n";
+	}
+
+	/**
+	 * Emits the styles and the toggle script once per page.
+	 *
+	 * Kept inside the template (not in res/css, res/js) so the feature lives in a
+	 * single submodule and cannot break a page that loads an older asset bundle.
+	 *
+	 * @return void
+	 */
+	function output_ui_header_toggle_assets(){
+		if($this->ui_header_toggle_assets_done){
+			return;
+		}
+		$this->ui_header_toggle_assets_done=true;
+		echo "<style>\n";
+		echo ".mw-ui-header-zone.mw-ui-header-collapsed{display:none}\n";
+		echo ".mw-ui-header-toggle{color:inherit;opacity:.8;text-decoration:none}\n";
+		echo ".mw-ui-header-toggle:hover{opacity:1}\n";
+		/* Sub-menu toggle: list icon, on the title line, only while collapsed. */
+		echo ".mw-subinterface-mnu-toggle{display:none}\n";
+		echo "@media (max-width:991.98px){\n";
+		echo "  .mw-subinterface-mnu-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid #ced4da;border-radius:6px;background:#fff;color:#495057;font-size:14px;line-height:1;cursor:pointer}\n";
+		echo "  .mw-subinterface-mnu-toggle:hover{background:#e9ecef;color:#0d6efd}\n";
+		echo "  .mw-subinterface-mnu-toggle-inline{position:absolute;top:0;right:0}\n";
+		echo "  .mw-subinterface-mnu-toggle-block{float:right;margin:0 0 6px 6px}\n";
+		echo "  .mw-subinterface-header-with-mnutoggle{position:relative;padding-right:40px}\n";
+		echo "}\n";
+		echo "</style>\n";
+		echo "<script>\n";
+		echo "(function(){\n";
+		echo "var KEY='mwUIHeaderCollapsed:'+(window.mwUIHeaderKeyPrefix||'');\n";
+		echo "function ready(fn){if(document.readyState!=='loading'){fn();}else{document.addEventListener('DOMContentLoaded',fn);}}\n";
+		echo "ready(function(){\n";
+		echo "var btn=document.getElementById('mwUIHeaderToggle');\n";
+		echo "var zone=document.getElementById('mwUIHeaderZone');\n";
+		echo "if(!btn||!zone){return;}\n";
+		echo "var key=KEY+(zone.getAttribute('data-mw-ui-key')||'');\n";
+		echo "var collapsed=(zone.getAttribute('data-mw-ui-collapsed')==='1');\n";
+		echo "try{var st=window.localStorage.getItem(key);if(st==='1'){collapsed=true;}else if(st==='0'){collapsed=false;}}catch(e){}\n";
+		echo "function apply(c,store){\n";
+		echo "zone.classList.toggle('mw-ui-header-collapsed',c);\n";
+		echo "btn.setAttribute('aria-expanded',c?'false':'true');\n";
+		echo "var i=btn.querySelector('i');if(i){i.className='fas fa-chevron-'+(c?'down':'up');}\n";
+		echo "btn.setAttribute('title',c?btn.getAttribute('data-mw-title-expand'):btn.getAttribute('data-mw-title-collapse'));\n";
+		echo "if(store){try{window.localStorage.setItem(key,c?'1':'0');}catch(e){}}\n";
+		echo "if(typeof window.mw_ui_header_on_toggle==='function'){try{window.mw_ui_header_on_toggle(c);}catch(e){}}\n";
+		echo "window.setTimeout(function(){window.dispatchEvent(new Event('resize'));},80);\n";
+		echo "}\n";
+		echo "btn.addEventListener('click',function(ev){ev.preventDefault();collapsed=!collapsed;apply(collapsed,true);return false;});\n";
+		echo "apply(collapsed,false);\n";
+		echo "});\n";
+		echo "})();\n";
+		echo "</script>\n";
+	}
 	function exec_page_nav_topbar($subinterface){
 		$mnu_man=$this->main_ui->mnu_man;
 		$mnu=$mnu_man->get_item("topbar");
 		$nav=new mwmod_mw_html_elem("nav");
 		$nav->addClass("sb-topnav navbar navbar-expand {$this->css_topbar}");
 
-		
-		
+		$this->output_ui_header_toggle_assets();
+		$this->add_ui_header_toggle($nav,$subinterface);
 		$this->add_nav_toggle($nav);
 		
 		
@@ -156,12 +367,17 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 	}
 	function exec_page_body_sub_interface_bootstrap($subinterface){
 		echo "<div class='container-fluid'>\n";
+		// Header + sub-menu travel together so the topbar toggle can hide both.
+		$header_zone=$this->get_ui_header_zone_open_html($subinterface);
+		echo $header_zone;
 		$row=new mwmod_mw_bootstrap_html_grid_row();
 		echo $row->get_html_open_full();
 		$col=new mwmod_mw_bootstrap_html_grid_col();
 		echo $col->get_html_open_full();
+		$mnu_toggle=$this->get_sub_interface_mnu_toggle_html($subinterface,true);
 		if(!$subinterface->omit_header()){
-			echo "<div class='mw-subinterface-header'>\n";
+			echo "<div class='mw-subinterface-header".($mnu_toggle ? " mw-subinterface-header-with-mnutoggle" : "")."'>\n";
+			echo $mnu_toggle;
 			if($html=$subinterface->get_html_parents_route()){
 				echo "<div class='mw-subinterface-header-route' >\n";
 				echo $html;
@@ -180,10 +396,16 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 			}
 			echo "</div>\n";
 			echo "</div>\n";
+		}else{
+			// No header to attach to: the toggle gets its own row, above the menu.
+			echo $this->get_sub_interface_mnu_toggle_html($subinterface,false);
 		}
 		echo $col->get_html_close_full();
 		echo $row->get_html_close_full();
 		$this->exec_sub_interface_mnu($subinterface);
+		if($header_zone){
+			echo "</div>\n";
+		}
 		
 		$row=new mwmod_mw_bootstrap_html_grid_row();
 		echo $row->get_html_open_full();
@@ -206,10 +428,7 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 	}
 	function exec_sub_interface_mnu($subinterface){
 		
-		if(!$mnu=$subinterface->get_sub_interface_mnu_from_parent_responsable()){
-			return false;	
-		}
-		if(!$mnu->can_display()){
+		if(!$mnu=$this->get_sub_interface_mnu_for($subinterface)){
 			return false;	
 		}
 		//mw_array2list_echo($mnu->get_debug_data());
@@ -220,8 +439,9 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		
 
 		echo "<nav class='currentUINavBar navbar navbar-expand-lg navbar-light bg-light' >\n";
-		echo "<button class='navbar-toggler' type='button' data-bs-toggle='collapse' data-bs-target='#navbarCurrentUI' aria-controls='#navbarCurrentUI' aria-expanded='false' aria-label='Toggle navigation'><span class='navbar-toggler-icon'></span></button>";
-
+		// The collapse toggle is NOT rendered here: get_sub_interface_mnu_toggle_html()
+		// puts it on the title line with a list icon, so the page does not show a
+		// second hamburger on a line of its own.
 		echo "<div class='collapse navbar-collapse' id='navbarCurrentUI'>";
 		echo $mnu->get_html_as_nav_current_ui();
 		echo '</div>';

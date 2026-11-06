@@ -2511,26 +2511,19 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	public $uiHeaderCollapsedByDefault=false;
 
 	/**
-	 * Indicates whether there is a header and/or submenu worth collapsing.
+	 * Whether the user is allowed to collapse this UI header from the toggle.
 	 *
-	 * Used by the main template to decide if the toggle button is rendered.
+	 * This is the permission only: whether there is actually a header or a
+	 * sub-menu to collapse is decided by the template, which already knows
+	 * (it renders them). Keeping the menu out of this method matters because
+	 * asking a parent for the sub-menu builds a new menu object every time.
 	 *
 	 * @return bool
 	 */
 	function is_ui_header_collapsible(){
-		if(!$this->uiHeaderCollapsible){
-			return false;
-		}
-		if(!$this->omit_header()){
-			return true;
-		}
-		if($mnu=$this->get_sub_interface_mnu_from_parent_responsable()){
-			if($mnu->can_display()){
-				return true;
-			}
-		}
-		return false;
+		return (bool)$this->uiHeaderCollapsible;
 	}
+
 
 	/**
 	 * Indicates whether this UI asks for a collapsed header by default.
