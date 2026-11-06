@@ -2492,6 +2492,67 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	}
 
 	/**
+	 * Whether the UI header (breadcrumb + title) and the subinterface menu can
+	 * be collapsed by the user from the topbar toggle.
+	 *
+	 * @var bool
+	 */
+	public $uiHeaderCollapsible=true;
+
+	/**
+	 * Whether the header starts collapsed when the user has no stored choice.
+	 *
+	 * This is only the server-side default: a choice made with the toggle is
+	 * stored in the browser and always wins. Keep it false unless the page
+	 * really needs the vertical space (e.g. a full-height map on a phone).
+	 *
+	 * @var bool
+	 */
+	public $uiHeaderCollapsedByDefault=false;
+
+	/**
+	 * Indicates whether there is a header and/or submenu worth collapsing.
+	 *
+	 * Used by the main template to decide if the toggle button is rendered.
+	 *
+	 * @return bool
+	 */
+	function is_ui_header_collapsible(){
+		if(!$this->uiHeaderCollapsible){
+			return false;
+		}
+		if(!$this->omit_header()){
+			return true;
+		}
+		if($mnu=$this->get_sub_interface_mnu_from_parent_responsable()){
+			if($mnu->can_display()){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Indicates whether this UI asks for a collapsed header by default.
+	 *
+	 * Child subinterfaces inherit the flag from their parent, so a parent can
+	 * opt in for a whole section with a single line.
+	 *
+	 * @return bool
+	 */
+	function is_ui_header_collapsed_by_default(){
+		if($this->uiHeaderCollapsedByDefault){
+			return true;
+		}
+		if($p=$this->__get_priv_parent_subinterface()){
+			if(method_exists($p,"is_ui_header_collapsed_by_default")){
+				return $p->is_ui_header_collapsed_by_default();
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Executes page content within the main template.
 	 *
 	 * @param object $maintemplate The main template instance.
