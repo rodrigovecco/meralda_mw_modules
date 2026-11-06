@@ -70,8 +70,12 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		$navE->add_cont("<!-- Sidebar Toggle-->");
 		$navBtn=new mwmod_mw_html_elem("button");
 		$navE->add_cont($navBtn);
-		$navBtn->addClass("btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0");
-		//$navBtn->addClass("btn-sm order-1 order-lg-0 me-4 me-lg-0 sidebarToggleBtn");
+		// No order-1 on small screens: with order-1 the flex layout pushes this
+		// button after the brand and the user menu, which on a 390px phone places
+		// it at x=365 with 43px of width, i.e. outside the viewport. Left of the
+		// brand is also where the SB Admin template puts it on desktop.
+		$navBtn->addClass("btn btn-link btn-sm mw-topnav-sidebar-toggle me-2 me-lg-0");
+		$navBtn->set_att("type","button");
 		$navBtn->set_att("id","sidebarToggle");
 		$navBtn->set_att("href","#!");
 		$navBtn->add_cont("<i class='fas fa-bars'></i>");
@@ -244,9 +248,23 @@ class  mwmod_mw_uitemplates_sbadmin_template_main extends mwmod_mw_ui_main_uimai
 		echo ".mw-ui-header-zone.mw-ui-header-collapsed{display:none}\n";
 		echo ".mw-ui-header-toggle{color:inherit;opacity:.8;text-decoration:none}\n";
 		echo ".mw-ui-header-toggle:hover{opacity:1}\n";
+		/* Both topbar buttons stay at the left, in DOM order: header toggle then
+		   sidebar toggle. sbadmin's .order-1 used to push the sidebar one off the
+		   right edge of a phone screen. Margins and padding are zeroed so the two
+		   icons sit side by side instead of drifting apart. The selector uses the
+		   ids on purpose: ui2's layout.css sets `.sb-topnav #sidebarToggle`
+		   padding with an id, which beats a class-based rule. */
+		echo ".sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{order:0;margin:0;padding:.25rem .35rem;line-height:1;background:transparent;border:0}\n";
+		echo "@media (max-width:991.98px){\n";
+		echo "  .sb-topnav #mwUIHeaderToggle,.sb-topnav #sidebarToggle{padding:.2rem .25rem}\n";
+		echo "}\n";
 		/* Sub-menu toggle: list icon, on the title line, only while collapsed. */
 		echo ".mw-subinterface-mnu-toggle{display:none}\n";
 		echo "@media (max-width:991.98px){\n";
+		/* The brand used to hold a fixed width, so on a phone it pushed the user
+		   menu off the right edge. Let it shrink and ellipsize instead. */
+		echo "  .sb-topnav .navbar-brand{display:block;width:auto;min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:.5rem;margin-right:0}\n";
+		echo "  .sb-topnav .navbar-nav{flex:0 0 auto;flex-wrap:nowrap}\n";
 		echo "  .mw-subinterface-mnu-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid #ced4da;border-radius:6px;background:#fff;color:#495057;font-size:14px;line-height:1;cursor:pointer}\n";
 		echo "  .mw-subinterface-mnu-toggle:hover{background:#e9ecef;color:#0d6efd}\n";
 		echo "  .mw-subinterface-mnu-toggle-inline{position:absolute;top:0;right:0}\n";
