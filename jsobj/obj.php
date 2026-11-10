@@ -183,45 +183,45 @@ class mwmod_mw_jsobj_obj extends mwmod_mw_util_objectasarray{
 
 	}
 	
+	/**
+	 * Renders a PHP array as a JavaScript value.
+	 *
+	 * A 0-based sequential array is a list and renders as `[...]` when
+	 * `unassocArraysAsList` is on (the default). Any other array renders as an
+	 * object literal, including key 0.
+	 *
+	 * Previous behaviour: `$isassoc` started as `true` and was never reset, so
+	 * the list branch was unreachable and `if($cod)` dropped the 0 key. A
+	 * PHP list therefore rendered as `{1:'b',2:'c'}` — the first element was
+	 * silently lost.
+	 *
+	 * @param array $array
+	 * @return string
+	 */
 	function get_as_js_val_from_array($array){
-		$isunassoc=false;
-		$isassoc=true;
+		if(!is_array($array)){
+			return "{}";
+		}
+		$a=$this->get_as_js_vals_array($array);
+
+		if($this->unassocArraysAsList && sizeof($a)){
+			$islist=(array_keys($array) === range(0,sizeof($array)-1));
+			if($islist){
+				return "[".implode(",",$a)."]";
+			}
+		}
+
 		$r="{";
-		$aunasscorr=array();
-		
-		if($a=$this->get_as_js_vals_array($array)){
-			$i=0;
-			$rr=array();
-			foreach ($a as $cod=>$v){
-				if($cod==0){
-					$isunassoc=true;	
-				}
-				if($cod!=$i){
-					$isassoc=true;	
-				}
-				$aunasscorr[]=$v;	
-				if($cod){
-					$c=$this->get_prop_cod_with_quote($cod);
-					$rr[]=$c.":".$v;	
-				}
-				$i++;
-			}
-			if(sizeof($rr)){
-				$r.=implode(",",$rr);	
-			}
+		$rr=array();
+		foreach ($a as $cod=>$v){
+			$c=$this->get_prop_cod_with_quote($cod);
+			$rr[]=$c.":".$v;
 		}
-		if(!$isassoc){
-			if($isunassoc){
-				if($this->unassocArraysAsList){
-					//probando
-					return "[".implode(",",$aunasscorr)."]";	
-				}
-			}
+		if(sizeof($rr)){
+			$r.=implode(",",$rr);
 		}
-			
 		$r.="}";
 		return $r;
-		
 	}
 	
 	function get_as_js_vals_array($array){

@@ -4,13 +4,17 @@ class mwmod_mw_demo_ui_ui extends mwmod_mw_demo_ui_abs{
 		$this->init_as_main_or_sub($cod,$parent);
 		$this->set_lngmsgsmancod("demo");
 		$this->set_def_title($this->lng_get_msg_txt("userInterfaces","Interfaces de usuario"));
-		$this->sucods="htmleditor";
+		$this->sucods="htmleditor,tinymceeditor";
 
 		
 	}
 
 	function _do_create_subinterface_child_htmleditor($cod){
 		$ui=new mwmod_mw_demo_ui_ui_htmleditor($cod,$this);
+		return $ui;	
+	}
+	function _do_create_subinterface_child_tinymceeditor($cod){
+		$ui=new mwmod_mw_demo_ui_ui_tinymceeditor($cod,$this);
 		return $ui;	
 	}
 	

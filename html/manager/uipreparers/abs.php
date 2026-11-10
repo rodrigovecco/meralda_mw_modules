@@ -6,6 +6,35 @@ abstract class mwmod_mw_html_manager_uipreparers_abs extends mwmod_mw_html_manag
 		return $this->add_js_item($item,$ui);
 	
 	}
+	/**
+	 * Loads TinyMCE 6 (self hosted, MIT) plus the popup file picker helper that
+	 * the TinyMCE input uses to browse files in a Meralda UI.
+	 *
+	 * TinyMCE builds its own asset URLs (skins, plugins, langs) from the script
+	 * src, so the canonical path must be used: no rewrite/redirect in between.
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs|false $ui
+	 * @return mwmod_mw_html_manager_item_jsexternal|false
+	 */
+	function addTinyMCE($ui=false){
+		$item=new mwmod_mw_html_manager_item_jsexternal("tinymce","/res/thirdparty/tinymce/tinymce.min.js");
+		$this->add_js_item($item,$ui);
+		$this->addMwFilePicker($ui);
+		return $item;
+	}
+	/**
+	 * Popup helper used by editors to ask for a file to a Meralda UI
+	 * (typically the DevExtreme file manager subinterface).
+	 *
+	 * @param mwmod_mw_ui_sub_uiabs|false $ui
+	 * @return mixed
+	 */
+	function addMwFilePicker($ui=false){
+		if(!$jsman=$this->get_js_man($ui)){
+			return false;
+		}
+		return $jsman->add_item_by_cod_def_path("mw_file_picker.js");
+	}
 	function add_js($ui=false){
 		/*
 		if(!$jsman=$this->get_js_man($manorui)){
