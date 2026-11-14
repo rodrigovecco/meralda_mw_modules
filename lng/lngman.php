@@ -32,6 +32,10 @@ class  mwmod_mw_lng_lngman extends mw_apsubbaseobj{
 	}
 	
 	
+	/**
+	 * @param string $cod 
+	 * @return false|mixed|mwmod_mw_lng_msg_man 
+	 */
 	final function get_msgs_man($cod=false){
 		if(!$cod){
 			return false;	
@@ -131,7 +135,10 @@ class  mwmod_mw_lng_lngman extends mw_apsubbaseobj{
 	function get_msg_from_list_by_index($msgslist,$index=0,$objsrc=false){
 		$custumindex=$this->get_current_lng_index_for_objsrc($index,$objsrc);
 		if(is_numeric($custumindex)){
-			return $msgslist[$custumindex];
+			if(isset($msgslist[$custumindex])){
+				return $msgslist[$custumindex];	
+			}
+			
 				
 		}
 		
@@ -147,6 +154,11 @@ class  mwmod_mw_lng_lngman extends mw_apsubbaseobj{
 			return $lng->code;	
 		}
 	}
+	/**
+	 * @param int $index 
+	 * @param mw_apsubbaseobj $objsrc 
+	 * @return int|float|string 
+	 */
 	function get_current_lng_index_for_objsrc($index=0,$objsrc=false){
 		if(!$objsrc){
 			return $index;	

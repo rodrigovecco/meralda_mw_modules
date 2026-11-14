@@ -87,7 +87,7 @@ abstract class mwmod_mw_users_userabs extends mw_apsubbaseobj{
 		}
 		$this->_valid_email=false;
 		if($e=$this->get_once_valid_email()){
-			if(mw_checkemail($e)){
+			if(mwmod_mw_util_text::check_email($e)){
 				$this->_valid_email=$e;	
 			}
 		}
@@ -395,7 +395,7 @@ abstract class mwmod_mw_users_userabs extends mw_apsubbaseobj{
 	}
 	
 	function reset_password(){
-		$pass=randPass(10);
+		$pass=mwmod_mw_util_random::password(10);
 		if($this->is_main()){
 			$sec=1;	
 		}else{
@@ -451,7 +451,7 @@ abstract class mwmod_mw_users_userabs extends mw_apsubbaseobj{
 	
 	
 	function create_reset_password_token(){
-		$token=randPass(50);
+		$token=mwmod_mw_util_random::string(50);
 		$exp=date("Y-m-d H:i",strtotime(date("Y-m-d H:i",time())." + 8 hours" ));
 		$nd=array(
 		"reset_pass_code"=>$token,

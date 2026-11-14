@@ -103,6 +103,13 @@ class mwmod_mw_users_usermailer extends mw_apsubbaseobj{
 		*/
 
 	}
+	/**
+	 * Creates a PHPMailer instance populated with a placeholder group's content.
+	 *
+	 * @param object $phgr Placeholder group providing html/plain/subject.
+	 * @param mwmod_mw_users_user|false $user User whose email is added, or false to skip.
+	 * @return object|false The PHPMailer instance, or false on failure.
+	 */
 	function new_new_phpmailer_for_user_and_phgr($phgr,$user=false){
 		if(!$phpmailer=$this->new_new_phpmailer_for_user($user)){
 			return false;	
@@ -113,6 +120,12 @@ class mwmod_mw_users_usermailer extends mw_apsubbaseobj{
 		return $phpmailer;
 
 	}
+	/**
+	 * Creates a PHPMailer instance, adding the user's email as recipient.
+	 *
+	 * @param mwmod_mw_users_user|false $user User whose email is added, or false to skip.
+	 * @return object|false The PHPMailer instance, or false when the mail manager is missing.
+	 */
 	function new_new_phpmailer_for_user($user=false){
 		if(!$mailerman=$this->mainap->get_submanager("sysmail")){
 			return false;
@@ -254,7 +267,7 @@ class mwmod_mw_users_usermailer extends mw_apsubbaseobj{
 		if(!$cfgcod){
 			return $this->_msg_cfg[$msgcod];
 		}else{
-			return mw_array_get_sub_key($this->_msg_cfg,$msgcod.".".$cfgcod);
+			return mwmod_mw_util_array::get_sub_key($this->_msg_cfg,$msgcod.".".$cfgcod);
 		}
 	}
 	
@@ -269,7 +282,7 @@ class mwmod_mw_users_usermailer extends mw_apsubbaseobj{
 			}
 			return false;
 		}else{
-			mw_array_set_sub_key($msgcod.".".$cfgcod,$val,$this->_msg_cfg);
+			mwmod_mw_util_array::set_sub_key($msgcod.".".$cfgcod,$val,$this->_msg_cfg);
 			return true;
 		}
 	}

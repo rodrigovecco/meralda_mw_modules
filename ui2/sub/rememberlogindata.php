@@ -277,7 +277,7 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 	function do_exec_page_in() {
 		$reset_pass_mode = false;
 		//die("que pasa");
-		if (mw_array_get_sub_key($_REQUEST, "action") == "resetpass") {
+		if (mwmod_mw_util_array::get_sub_key($_REQUEST, "action") == "resetpass") {
 			$reset_pass_mode = true;
 			$this->set_url_param("action", "resetpass");
 		}
@@ -351,7 +351,7 @@ class mwmod_mw_ui2_sub_rememberlogindata extends mwmod_mw_subui_rememberlogindat
 	 * Output JS initialization
 	 */
 	function output_js_init() {
-		$reset_pass_mode = (mw_array_get_sub_key($_REQUEST, "action") == "resetpass");
+		$reset_pass_mode = (mwmod_mw_util_array::get_sub_key($_REQUEST, "action") == "resetpass");
 		$can_change = $this->can_change_password();
 		
 		$this->set_ui_js_params();

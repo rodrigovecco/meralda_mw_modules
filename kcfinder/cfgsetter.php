@@ -48,13 +48,13 @@ class  mwmod_mw_kcfinder_cfgsetter extends mw_apsubbaseobj{
 		if(!$cod){
 			return false;	
 		}
-		mw_array_set_sub_key($cod,$val,$this->config);
+		mwmod_mw_util_array::set_sub_key($cod,$val,$this->config);
 	}
 	function get_cfg($cod=false){
 		if(!$cod){
 			return $this->config;	
 		}
-		return mw_array_get_sub_key($this->config,$cod);
+		return mwmod_mw_util_array::get_sub_key($this->config,$cod);
 	}
 	function allow($action,$params=false){
 		if($man=$this->mainap->get_user_manager()){

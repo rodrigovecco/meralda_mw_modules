@@ -260,7 +260,7 @@ class  mwmod_mw_db_row extends mw_apsubbaseobj{
 	}
 	
 	final function get_data($key=""){
-		return mw_array_get_sub_key($this->data,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->data,$key);	
 	}
 	final function get_id(){
 		return $this->id;		

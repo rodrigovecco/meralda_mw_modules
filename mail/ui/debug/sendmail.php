@@ -18,8 +18,28 @@ class mwmod_mw_mail_ui_debug_sendmail extends mwmod_mw_ui_sub_uiabs{
 	function cfg_phpmailer($phpmailer){
 		//	
 	}
-	function get_php_mailer_info($phpmailer){
-		return mw_convert_object_to_array($phpmailer);
+	/**
+	 * Recursively converts a value into a nested array for debug display.
+	 *
+	 * Self-contained replacement for the deprecated global helper
+	 * mw_convert_object_to_array() (core/util/array.php) so that helper
+	 * can be safely removed from the core.
+	 *
+	 * @param mixed $data Object, array, or scalar value to convert.
+	 * @return mixed Converted array, or the original scalar value.
+	 */
+	function get_php_mailer_info($data){
+		if(is_object($data)){
+			$data=get_object_vars($data);
+		}
+		if(is_array($data)){
+			$r=array();
+			foreach($data as $k=>$v){
+				$r[$k]=$this->get_php_mailer_info($v);
+			}
+			return $r;
+		}
+		return $data;
 	}
 	function get_data_man(){
 		return $this->__get_priv_testDataMan();

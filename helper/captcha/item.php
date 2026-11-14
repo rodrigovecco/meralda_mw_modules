@@ -83,7 +83,7 @@ class mwmod_mw_helper_captcha_item extends mw_apsubbaseobj{
 		imagedestroy($val_img);
 	}
 	function new_secret(){
-		return randPass($this->len);	
+		return mwmod_mw_util_random::string($this->len);	
 	}
 	function set_data_from_session(&$data){
 		if(!is_array($data)){

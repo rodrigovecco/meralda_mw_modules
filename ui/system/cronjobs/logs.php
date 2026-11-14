@@ -130,12 +130,17 @@ class mwmod_mw_ui_system_cronjobs_logs extends mwmod_mw_ui_system_abs{
 		if(!$jobsman=$this->mainap->get_submanager("jobs")){
 			return false;	
 		}
-		if($_REQUEST["empty_log"]){
-			$jobsman->clear_log();	
+		if(isset($_REQUEST["clear_log"])){
+			if($_REQUEST["empty_log"]){
+				$jobsman->clear_log();	
+			}
 		}
-		if($_REQUEST["update_list"]){
-			$jobsman->update_managers_list_by_scan();	
+		if(isset($_REQUEST["update_list"])){
+			if($_REQUEST["update_list"]){
+				$jobsman->update_managers_list_by_scan();	
+			}
 		}
+		
 		
 		$container=$this->get_ui_dom_elem_container();
 		

@@ -17,6 +17,24 @@
  * @method array<int, T>|false get_items_by_simple_crit(array $crit)
  * @method T|null get_available_item(int $id)
  * @method array<int, T>|false get_available_items_from_list(array $items)
+ *
+ * WHY THE TEN DECLARATIONS ABOVE ARE LOAD-BEARING, AND WHAT TO DO WHEN ADDING ONE
+ *
+ * Most of the methods declared above have no docblock of their own, and this list is what
+ * types them: an analyser reads `@method T|null get_item(int $id)` and resolves the T through
+ * its bound (mwmod_mw_manager_item), so a caller can write $man->get_item($id)->get_name().
+ *
+ * A method that hands back an item is therefore in one of TWO states, and only these:
+ *   - it is declared here, or
+ *   - it carries its own `@return T|false`.
+ *
+ * A method in NEITHER state (create_new_item() and create_new_item_from_full_input() were,
+ * until 2026-10-14) gets its type INFERRED from the body instead, and the inference yields a
+ * bare `T` — which is not an object. Every caller in every project is then flagged at its
+ * first `$item->get_id()` with "Expected type 'object'. Found 'T'", although the code is
+ * correct. Prefer `@return T|false` on the method: it is stated where the method is read, and
+ * unlike `@method` it is also honoured by PHPStan and Psalm, which treat `@method` as a
+ * declaration of a magic method and IGNORE it when the method really exists.
  */
 abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	private $tblman;
@@ -137,13 +155,18 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 			return $this->get_items_from_array_id_list(array($str));
 		}
 	}
+	/**
+	 * @param array $list
+	 * @return array<int, T>|false
+	 */
 	function get_items_from_array_id_list($list){
+		$r=array();
 		if(!is_array($list)){
 			return false;	
 		}
 		$listok=array();
 		foreach($list as $id){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				$listok[$id]=$id;
 				$this->add_to_preload($id);
 			}
@@ -176,7 +199,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	function get_all_items_ccb(){
 		return $this->get_items_ccb($this->get_all_items());
 	}
+	/**
+	 * @param array $items
+	 * @return array<int|string, mixed>|false
+	 */
 	function get_items_ccb($items){
+		$r=array();
 		if(!is_array($items)){
 			return false;	
 		}
@@ -285,7 +313,14 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		if(!is_array($crit)){
 			return false;
 		}
-		$tblman=$this->get_tblman();
+		// get_tblman() es false cuando la tabla no existe en la base:
+		// dbman::create_tbl_managers() solo crea managers de las tablas que
+		// devuelve SHOW TABLES. Sin este guard la linea siguiente muere con
+		// "Call to a member function new_query() on false" (p.ej. un modulo
+		// cuyas migraciones todavia no se aplicaron).
+		if(!$tblman=$this->get_tblman()){
+			return false;
+		}
 		$query=$tblman->new_query();
 		foreach($crit as $c=>$v){
 			if($f=$tblman->getField($c)){
@@ -325,7 +360,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 	}
 	
 	
+	/**
+	 * @param array $list
+	 * @return array<int, T>|false
+	 */
 	function get_available_items_from_list($list){
+		$r=array();
 		if(!is_array($list)){
 			return false;
 		}
@@ -347,7 +387,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 	}
 
+	/**
+	 * @param string $sql
+	 * @return array<int, T>|false
+	 */
 	function get_items_by_sql_extra_data_mode($sql){
+		$r=array();
 		//todo: paramquery mode!
 		if(!$man=$this->get_tblman()){
 			return false;	
@@ -367,7 +412,12 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		
 	}
 	
+	/**
+	 * @param string $sql
+	 * @return array<int, T>|false
+	 */
 	function get_items_by_sql($sql){
+		$r=array();
 		if(!$man=$this->get_tblman()){
 			return false;	
 		}
@@ -385,6 +435,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		
 	}
 	
+	/**
+	 * @param array $data
+	 * @return T|false
+	 */
 	function create_new_item_from_full_input($data){
 		if(!is_array($data)){
 			return false;
@@ -395,6 +449,10 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		$item->after_created($data);
 		return $item;
 	}
+	/**
+	 * @param array $data
+	 * @return T|false
+	 */
 	function create_new_item($data){
 		if(!$nd=$this->validate_new_item_data($data)){
 			return false;	

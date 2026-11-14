@@ -67,7 +67,7 @@ class mwmod_mw_db_sql_where_whereinstrlist extends mwmod_mw_db_sql_where_abs{
 		}
 		$r=array();
 		foreach($list as $id){
-			if($id=mw_get_string($id)){
+			if($id=mwmod_mw_util_text::get_string($id)){
 				$id=trim($id);
 				$r[$id]=$id;
 			}elseif($this->allowEmpty){

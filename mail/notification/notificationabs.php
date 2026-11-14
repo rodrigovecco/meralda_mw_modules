@@ -14,7 +14,7 @@ abstract class mwmod_mw_mail_notification_notificationabs extends mw_apsubbaseob
 	
 	function checkEmail($mail){
 
-		if(mw_checkemail($mail,false)){
+		if(mwmod_mw_util_text::check_email($mail,false)){
 			return trim($mail);
 
 		}

@@ -65,8 +65,10 @@ class mwmod_mw_ui_install_adminuser extends mwmod_mw_ui_sub_withfrm{
 			$msg="";
 			if($user=$uman->create_main_admin_user($name,$nd["pass"],$nd["data"],$msg)){
 				///
-			}else{
-				echo $uman->get_tblman()->dbman->get_error()."qqq";
+			}elseif($tblman=$uman->get_tblman()){
+				// Sin tabla de usuarios no hay error de base que mostrar (y
+				// ->dbman sobre false mataria el proceso en plena instalacion).
+				echo $tblman->dbman->get_error()."qqq";
 			}
 			echo "<p>".$msg."</p>";	
 			return $user;

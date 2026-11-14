@@ -21,7 +21,7 @@ class mwmod_mw_data_session_man extends mw_apsubbaseobj{
 		if(!$key){
 			return $_SESSION[$this->varname];
 		}
-		return mw_array_get_sub_key($_SESSION[$this->varname],$key);	
+		return mwmod_mw_util_array::get_sub_key($_SESSION[$this->varname],$key);	
 	}
 	function set_data($data,$key=false){
 		if(!$key){
@@ -31,7 +31,7 @@ class mwmod_mw_data_session_man extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$this->varname]??null)){
 			$_SESSION[$this->varname]=array();
 		}
-		mw_array_set_sub_key($key,$data,$_SESSION[$this->varname]);
+		mwmod_mw_util_array::set_sub_key($key,$data,$_SESSION[$this->varname]);
 			
 	}
 	

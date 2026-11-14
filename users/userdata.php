@@ -626,7 +626,7 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 		}
 		if($val=trim($nd["email"]??"")){
 			if($val!=$user->get_data("email")){
-				if(mw_checkemail($val)){
+				if(mwmod_mw_util_text::check_email($val)){
 					$ndupdate["email"]=$val;	
 				}else{
 					$msg=	$this->lng_get_msg_txt("invalid_mail","Correo no válido");
@@ -927,7 +927,7 @@ class mwmod_mw_users_userdata extends mw_apsubbaseobj{
 	}
 	function check_user_name($name,&$msg=""){
 		if($r=trim($name)){
-			if(!mw_checkemail($name)){
+			if(!mwmod_mw_util_text::check_email($name)){
 				return false;	
 			}
 			return strtolower($r);	

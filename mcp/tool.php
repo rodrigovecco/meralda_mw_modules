@@ -102,15 +102,29 @@ abstract class mwmod_mw_mcp_tool {
 
 	/**
 	 * Build the MCP tools/list definition for this tool.
+	 *
+	 * `properties` IS AN OBJECT EVEN WHEN IT IS EMPTY, and that is a correction rather than a
+	 * detail: a tool with no arguments returns `array()` from getInputSchema(), PHP encodes an
+	 * empty array as `[]`, and a JSON Schema consumer is entitled to reject `"properties": []`
+	 * because the keyword must hold an object. The result was a tool that LOOKED broken to the
+	 * client — the connector refused the whole catalogue over one entry — while the server sent
+	 * it happily and nothing in the log said anything was wrong.
+	 *
+	 * `new stdClass()` encodes as `{}`, which is the correct empty object. It is created here, in
+	 * the one place every tool's definition passes through, so a tool added later needs no
+	 * special case — the alternative (asking each no-argument tool to return an object) is the
+	 * kind of rule that gets forgotten exactly once and breaks a connector.
+	 *
 	 * @return array
 	 */
 	function getDefinition() {
+		$properties = $this->getInputSchema();
 		return [
 			"name"        => $this->getName(),
 			"description" => $this->getDescription(),
 			"inputSchema" => [
 				"type"       => "object",
-				"properties" => $this->getInputSchema(),
+				"properties" => $properties ? $properties : new stdClass(),
 				"required"   => $this->getRequiredProperties(),
 			],
 		];

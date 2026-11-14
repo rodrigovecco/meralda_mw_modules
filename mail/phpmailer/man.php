@@ -10,7 +10,7 @@ class mwmod_mw_mail_phpmailer_man extends mw_apsubbaseobj{
 		return $obj;	
 	}
 	function checkemail($add){
-		if(mw_checkemail($add)){
+		if(mwmod_mw_util_text::check_email($add)){
 			return $add;
 		}
 	}

@@ -37,7 +37,7 @@ abstract class mwmod_mw_facebook_sess_obj extends mw_apsubbaseobj {
 		if(!is_array($_SESSION[$sv])){
 			$_SESSION[$sv]=array();	
 		}
-		mw_array_set_sub_key($key,$val,$_SESSION[$sv]);
+		mwmod_mw_util_array::set_sub_key($key,$val,$_SESSION[$sv]);
 		
 		return true;
 		
@@ -49,7 +49,7 @@ abstract class mwmod_mw_facebook_sess_obj extends mw_apsubbaseobj {
 		if(!is_array($_SESSION[$sv])){
 			return false;	
 		}
-		return mw_array_get_sub_key($_SESSION[$sv],$key);	
+		return mwmod_mw_util_array::get_sub_key($_SESSION[$sv],$key);	
 	
 	}
 	

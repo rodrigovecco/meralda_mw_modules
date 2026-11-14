@@ -196,7 +196,11 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 
 
 	function usersListCreate($list){
-		$tblman=$this->get_tblman();
+		// Sin tabla de usuarios (o inalcanzable) se deja la lista vacia en vez
+		// de llamar new_query() sobre false.
+		if(!$tblman=$this->get_tblman()){
+			return;
+		}
 		$query=$tblman->new_query();
 		$query->select->add_select("id");
 		$query->select->add_select("name");
@@ -351,7 +355,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!$mail=trim($mail)){
 			return false;	
 		}
-		if(!mw_checkemail($mail)){
+		if(!mwmod_mw_util_text::check_email($mail)){
 			return false;	
 		}
 		$mail=strtolower($mail);
@@ -868,7 +872,12 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 				$this->after_user_changed();
 				return false;
 			}
-			if($_COOKIE[$cookie_name]!=$token){
+			// La cookie puede faltar sin que nada esté roto: vive en el cliente y
+			// caduca por su cuenta, mientras que la sesión del servidor la
+			// sobrevive. Sin el ??null, PHP 8 emite "Undefined array key" en cada
+			// petición así. Una cookie ausente compara como null, de modo que la
+			// comprobación sigue fallando igual: esto solo silencia el aviso.
+			if(($_COOKIE[$cookie_name]??null)!=$token){
 				$this->after_user_changed();
 				return false;
 			}
@@ -973,7 +982,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!$generate){
 			return false;	
 		}
-		$t=randPass(20);
+		$t=mwmod_mw_util_random::string(20);
 		$this->set_login_security_sess_data($t,"token");
 		return $t;
 		
@@ -998,7 +1007,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$sv]??null)){
 			$_SESSION[$sv]=array();	
 		}
-		mw_array_set_sub_key($key,$val,$_SESSION[$sv]);
+		mwmod_mw_util_array::set_sub_key($key,$val,$_SESSION[$sv]);
 		
 		return true;
 		
@@ -1013,7 +1022,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$sv]??null)){
 			return false;	
 		}
-		return mw_array_get_sub_key($_SESSION[$sv],$key);	
+		return mwmod_mw_util_array::get_sub_key($_SESSION[$sv],$key);	
 	
 	}
 	function login_session_token_check($input){
@@ -1281,7 +1290,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 	function create_token_cookie(){
 		if($cookie_name=$this->get_token_name()){
-			$cookie_value = randPass(20);
+			$cookie_value = mwmod_mw_util_random::string(20);
 			setcookie($cookie_name, $cookie_value, time() + (86400 * 30), "/"); // 86400 = 1 day
 			$_COOKIE[$cookie_name]=$cookie_value;
 			return $cookie_value;	
@@ -1328,7 +1337,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$sv]??null)){
 			$_SESSION[$sv]=array();	
 		}
-		mw_array_set_sub_key($key,$val,$_SESSION[$sv]);
+		mwmod_mw_util_array::set_sub_key($key,$val,$_SESSION[$sv]);
 		
 		return true;
 		
@@ -1346,7 +1355,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$sv])){
 			return false;	
 		}
-		return mw_array_get_sub_key($_SESSION[$sv],$key);	
+		return mwmod_mw_util_array::get_sub_key($_SESSION[$sv],$key);	
 	
 	}
 	///
@@ -1461,7 +1470,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	 */
 	final function get_user($id){
 
-		if(!$id=mw_get_number($id)){
+		if(!$id=mwmod_mw_util_text::get_number($id)){
 			return false;	
 		}
 
@@ -1471,7 +1480,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		return $this->_load_user($id);
 	}
 	final function get_user_if_loaded($id){
-		if(!$id=mw_get_number($id)){
+		if(!$id=mwmod_mw_util_text::get_number($id)){
 			return false;	
 		}
 
@@ -1584,7 +1593,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 	}
 	//adding and loading user: for interna use only
 	private function _load_user($id){
-		if(!$id=mw_get_number($id)){
+		if(!$id=mwmod_mw_util_text::get_number($id)){
 			return false;	
 		}
 		if($item=$this->load_and_create_user($id)){
@@ -1655,7 +1664,7 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		}
 		$newlist=array();
 		foreach($ids as $id){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				$newlist[$id]=$id;	
 			}
 		}

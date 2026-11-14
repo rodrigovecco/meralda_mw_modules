@@ -34,6 +34,54 @@ abstract class mwmod_mw_html_manager_item_abs extends mw_apsubbaseobj{
 		}
 		return $this->cod;		
 	}
+	// Cache-busting para las declaraciones de JS/CSS.
+	//
+	// Apache no manda Cache-Control ni ETag para los estaticos: solo
+	// Last-Modified. Sin directivas, el navegador aplica frescura heuristica
+	// (aprox. 10% del tiempo transcurrido desde Last-Modified) y puede pasar
+	// horas sirviendo el archivo viejo desde cache sin revalidar. Al desplegar
+	// un fix de JS el usuario sigue viendo el comportamiento anterior y no hay
+	// forma de saberlo desde el servidor.
+	//
+	// Se agrega ?v=<filemtime> solo a los src locales que resuelven a un archivo
+	// real del docroot. URLs externas, relativas y srcs con query propia se
+	// devuelven sin tocar.
+	function add_version_to_src($src){
+		if(!$src){
+			return $src;
+		}
+		$src=$src."";
+		if(strpos($src,"?")!==false){
+			return $src;
+		}
+		if(!preg_match("#^/+[^/]#",$src)){
+			return $src;
+		}
+		if(!$docroot=$this->get_docroot_path()){
+			return $src;
+		}
+		$file=$docroot.rtrim($src,"/");
+		if(!is_file($file)){
+			return $src;
+		}
+		if(!$t=@filemtime($file)){
+			return $src;
+		}
+		return $src."?v=".$t;
+	}
+	final function get_docroot_path(){
+		$p=false;
+		if(isset($this->mainap)&&$this->mainap){
+			$p=$this->mainap->public_path;
+		}
+		if(!$p){
+			$p=$_SERVER['DOCUMENT_ROOT']??false;
+		}
+		if(!$p){
+			return false;
+		}
+		return rtrim($p,"/\\");
+	}
 	final function __get_priv_def_cod(){
 		return $this->cod;	
 	}

@@ -217,7 +217,7 @@ abstract class mwmod_mw_formsubmit_manbase extends mwmod_mw_manager_man {
 			return false;
 		}
 		$val = $cfg->get_value($this->getCfgBaseKey() . "_mail_to");
-		if ($val && mw_checkemail(trim($val))) {
+		if ($val && mwmod_mw_util_text::check_email(trim($val))) {
 			return trim($val);
 		}
 		return false;

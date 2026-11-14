@@ -23,6 +23,12 @@ class  mwmod_mw_facebook_helper_response extends mw_apsubbaseobj {
 		$this->setFBHelper($fbHelper);
 			
 	}
+	/**
+	 * Sends this response request through a Facebook helper.
+	 *
+	 * @param object|false $fbHelper Facebook helper instance, or false to use the stored one.
+	 * @return mixed The helper result, or null when no helper is available.
+	 */
 	function proc($fbHelper=false){
 		if(!$fbHelper){
 			$fbHelper=$this->fbHelper;	
@@ -41,7 +47,7 @@ class  mwmod_mw_facebook_helper_response extends mw_apsubbaseobj {
 		if(!$d=$this->getDecodedBody()){
 			return;	
 		}
-		return mw_array_get_sub_key($d,$cod);
+		return mwmod_mw_util_array::get_sub_key($d,$cod);
 	}
 	function getDecodedBody(){
 		if($this->response){
@@ -61,6 +67,12 @@ class  mwmod_mw_facebook_helper_response extends mw_apsubbaseobj {
 			
 	}
 	
+	/**
+	 * Sets the Facebook helper instance used to send requests.
+	 *
+	 * @param object|false $fbHelper Facebook helper instance, or false to skip.
+	 * @return void
+	 */
 	function setFBHelper ($fbHelper=false){
 		if($fbHelper){
 			$this->fbHelper=$fbHelper;

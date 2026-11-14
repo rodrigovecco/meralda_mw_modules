@@ -1124,7 +1124,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!is_array($args)){
 			return $def;	
 		}
-		return  mw_array_bydefault($args,$def);
+		return  mwmod_mw_util_array::by_default($args,$def);
 	}
 
 	/**
@@ -1148,7 +1148,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!$key){
 			return 	$this->cmdparams;
 		}
-		return mw_array_get_sub_key($this->cmdparams,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->cmdparams,$key);	
 	}
 	
 	/**
@@ -1178,7 +1178,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 */
 	final function set_cmd_param($key,$val){
 
-		mw_array_set_sub_key($key,$val,$this->cmdparams);
+		mwmod_mw_util_array::set_sub_key($key,$val,$this->cmdparams);
 		
 	}
 
@@ -1520,7 +1520,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	function get_url($args=false,$file=false){
 		$url=$this->get_url_base($file);
 		if($args1=$this->get_url_params($args)){
-			if($q=mw_array2urlquery($args1)){
+			if($q=mwmod_mw_util_array::to_url_query($args1)){
 				$url.="?".$q;	
 			}
 		}
@@ -1539,7 +1539,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!is_array($args)){
 			return $def;	
 		}
-		return  mw_array_bydefault($args,$def);
+		return  mwmod_mw_util_array::by_default($args,$def);
 	}
 	
 	/**
@@ -1636,7 +1636,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 * @return void
 	 */
 	final function set_url_param($key,$val){
-		mw_array_set_sub_key($key,$val,$this->urlparams);	
+		mwmod_mw_util_array::set_sub_key($key,$val,$this->urlparams);	
 	}
 	
 	/**
@@ -1650,7 +1650,7 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 		if(!$key){
 			return 	$this->urlparams;
 		}
-		return mw_array_get_sub_key($this->urlparams,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->urlparams,$key);	
 	}
 	
 	/**
@@ -2489,6 +2489,60 @@ abstract class mwmod_mw_ui_sub_uiabs extends mw_apsubbaseobj{
 	 */
 	function omit_header(){
 		return false;	
+	}
+
+	/**
+	 * Whether the UI header (breadcrumb + title) and the subinterface menu can
+	 * be collapsed by the user from the topbar toggle.
+	 *
+	 * @var bool
+	 */
+	public $uiHeaderCollapsible=true;
+
+	/**
+	 * Whether the header starts collapsed when the user has no stored choice.
+	 *
+	 * This is only the server-side default: a choice made with the toggle is
+	 * stored in the browser and always wins. Keep it false unless the page
+	 * really needs the vertical space (e.g. a full-height map on a phone).
+	 *
+	 * @var bool
+	 */
+	public $uiHeaderCollapsedByDefault=false;
+
+	/**
+	 * Whether the user is allowed to collapse this UI header from the toggle.
+	 *
+	 * This is the permission only: whether there is actually a header or a
+	 * sub-menu to collapse is decided by the template, which already knows
+	 * (it renders them). Keeping the menu out of this method matters because
+	 * asking a parent for the sub-menu builds a new menu object every time.
+	 *
+	 * @return bool
+	 */
+	function is_ui_header_collapsible(){
+		return (bool)$this->uiHeaderCollapsible;
+	}
+
+
+	/**
+	 * Indicates whether this UI asks for a collapsed header by default.
+	 *
+	 * Child subinterfaces inherit the flag from their parent, so a parent can
+	 * opt in for a whole section with a single line.
+	 *
+	 * @return bool
+	 */
+	function is_ui_header_collapsed_by_default(){
+		if($this->uiHeaderCollapsedByDefault){
+			return true;
+		}
+		if($p=$this->__get_priv_parent_subinterface()){
+			if(method_exists($p,"is_ui_header_collapsed_by_default")){
+				return $p->is_ui_header_collapsed_by_default();
+			}
+		}
+		return false;
 	}
 
 	/**

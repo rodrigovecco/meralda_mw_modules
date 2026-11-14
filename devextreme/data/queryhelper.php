@@ -366,7 +366,7 @@ class mwmod_mw_devextreme_data_queryhelper extends mw_apsubbaseobj{
 		if(!$cod){
 			return $this->loadOptions;	
 		}
-		return mw_array_get_sub_key($this->loadOptions,$cod);
+		return mwmod_mw_util_array::get_sub_key($this->loadOptions,$cod);
 	}
 	function createFiltersBysearchExpr(){
 		if(!$searchExpr=$this->getLoadOptions("searchExpr")){

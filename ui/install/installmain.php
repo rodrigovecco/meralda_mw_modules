@@ -121,7 +121,7 @@ class mwmod_mw_ui_install_installmain extends mwmod_mw_uitemplates_sbadmin_main{
 		if(!$cod){
 			return $this->_cfg_data;	
 		}else{
-			return mw_array_get_sub_key($this->_cfg_data,$cod);
+			return mwmod_mw_util_array::get_sub_key($this->_cfg_data,$cod);
 		}
 	}
 	function install_ui_enabled(){

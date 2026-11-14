@@ -88,6 +88,86 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	}
 
 	/**
+	 * Accept an OAuth-derived access token as a second credential form.
+	 *
+	 * THE TWO CREDENTIALS IN THIS FLOW ARE NOT THE SAME STRING, AND ONLY ONE OF THEM
+	 * EXISTED HERE. An API token created in the panel is a SIGNED JWT, verified by
+	 * `findActiveByJwt()` with no database round trip beyond the primary key. What the
+	 * OAuth flow hands a connector is NOT that JWT: `/oauth/token` mints a STATELESS
+	 * DERIVED token (`oa1.<payload>.<hmac>`) whose signing key is the master token's
+	 * `token_hash`, per mwmod_mw_oauth_tokenhelper. A client that completes the whole
+	 * consent flow therefore arrives holding a token this endpoint does not know how
+	 * to read — and the visible result is the worst kind: the token exchange answers
+	 * `200` with a real access token, every subsequent MCP request answers `401`, and
+	 * the connector reports "authorization failed" while both halves are working.
+	 *
+	 * WHY THE SAME LOGIN IS USED. `login_user_api_token_mode()` is what makes a
+	 * request's permissions the INTERSECTION of the account's and the master token's
+	 * declared scope; verifying the derived token only establishes WHICH master token
+	 * signed it, so handing that item to the same method keeps one permission model.
+	 * A hand-rolled session here would be a second one.
+	 *
+	 * WHY REFRESH TOKENS ARE NOT ACCEPTED: `verify()` is given ACCESS_PREFIX, so an
+	 * `or1.*` string fails the prefix check. A refresh token is for `/oauth/token`
+	 * only; accepting it here would make a 30-day credential usable as a bearer token
+	 * without ever being exchanged.
+	 *
+	 * @return bool
+	 */
+	function loginUserByToken() {
+		if (parent::loginUserByToken()) {
+			return true;
+		}
+		return $this->loginUserByOauthAccessToken();
+	}
+
+	/**
+	 * Log in from an `oa1.*` access token, or describe why it was refused.
+	 *
+	 * Every refusal returns false and the caller answers 401: the challenge already
+	 * tells a client how to obtain a credential, and naming WHICH check failed would
+	 * confirm to a scanner that a token exists.
+	 *
+	 * @return bool
+	 */
+	protected function loginUserByOauthAccessToken() {
+		if (!$token = $this->getRequestTokenBearer()) {
+			return false;
+		}
+		// Cheap shape test before touching the database: the prefix is signed, so a
+		// token of another type cannot be replayed as this one.
+		$prefix = mwmod_mw_oauth_tokenhelper::ACCESS_PREFIX . '.';
+		if (strpos($token, $prefix) !== 0) {
+			return false;
+		}
+		if (!$uman = $this->get_user_manager()) {
+			return false;
+		}
+		// The framework accessor, not `$this->mainap->db`: the latter is null in a
+		// service context, which is the same mistake that broke the refresh grant.
+		$db = $this->mainap->getDBManager();
+		if (!$db) {
+			return false;
+		}
+		$verified = mwmod_mw_oauth_tokenhelper::verify(
+			$token, mwmod_mw_oauth_tokenhelper::ACCESS_PREFIX, $db);
+		if (!$verified) {
+			return false;
+		}
+		if (!$apitokenMan = $uman->getApitokenMan()) {
+			return false;
+		}
+		$tokenItem = $apitokenMan->get_item((int) $verified['token_id']);
+		if (!$tokenItem || !$tokenItem->isActive()) {
+			return false;
+		}
+		if (!$user = $uman->get_user((int) $verified['user_id'])) {
+			return false;
+		}
+		return $uman->login_user_api_token_mode($user, $tokenItem);
+	}
+
+	/**
 	 * Subclasses must register their tools here.
 	 */
 	abstract protected function registerAllTools();
@@ -446,13 +526,48 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 	private function handleToolsList($id, $params) {
 		$definitions = array();
 		foreach ($this->tools as $tool) {
-			$definitions[] = $tool->getDefinition();
+			/*
+			 * ONE BROKEN TOOL MUST NOT COST THE WHOLE CATALOGUE.
+			 *
+			 * A definition is built from the tool's own description and schema, and a mistake in
+			 * either (a method that does not exist, a value that cannot be encoded) used to throw
+			 * out of this loop and take the request with it: the client received a 500 instead of
+			 * a tool list, so EVERY tool looked broken because one was.
+			 *
+			 * The tool is still listed, with the failure as its description, so it stays visible
+			 * and calling it answers with the same sentence — an absent tool would leave a caller
+			 * unable to tell "not installed" from "installed and broken", which are different
+			 * problems with different fixes.
+			 */
+			try {
+				$definitions[] = $tool->getDefinition();
+			} catch (Throwable $e) {
+				$definitions[] = array(
+					"name"        => $this->safeToolName($tool),
+					"description" => "This tool is registered but its definition could not be built: "
+						. $e->getMessage(),
+					"inputSchema" => array(
+						"type"       => "object",
+						"properties" => new stdClass(),
+						"required"   => array(),
+					),
+				);
+			}
 		}
 		$this->sendResult($id, array(
 			"tools"      => $definitions,
 			"ttlMs"      => 0,
 			"cacheScope" => "public",
 		));
+	}
+
+	/** A tool's name for a failure message, or "?" when even that cannot be asked. */
+	private function safeToolName($tool) {
+		try {
+			return (string) $tool->getName();
+		} catch (Throwable $e) {
+			return "?";
+		}
 	}
 
 	private function handleToolsCall($id, $params) {
@@ -479,10 +594,27 @@ abstract class mwmod_mw_mcp_server extends mwmod_mw_service_user_root {
 			return;
 		}
 
+		/*
+		 * `Throwable`, NOT `Exception` — AND THAT WORD WAS A DEFECT.
+		 *
+		 * In PHP 7+ a runtime fault such as calling a method on `false` (a `TypeError`) or using
+		 * an undefined class is an `Error`, which does NOT extend `Exception`. So `catch
+		 * (Exception $e)` let exactly the failures a tool is most likely to have escape this
+		 * block entirely: the answer was not a JSON-RPC error, it was a PHP fatal — the response
+		 * died half-written and the connector reported the whole server as unreachable.
+		 *
+		 * Measured: a list tool did `(array) $man->get_all_items()` on an empty table, which is
+		 * `[false]`, and the next line's `get_code()` killed the request with a 502 while the
+		 * same call answered perfectly on a machine that had fixtures.
+		 *
+		 * A tool's mistake is the TOOL's failure and belongs in its answer. Nothing a single tool
+		 * does should be able to take the endpoint down, which is also what makes a partially
+		 * broken deployment usable instead of opaque.
+		 */
 		try {
 			$result = $tool->execute($args, $this->mainap);
 			$this->sendResult($id, $result);
-		} catch (Exception $e) {
+		} catch (Throwable $e) {
 			$this->sendError($id, -32000, "Internal error: " . $e->getMessage());
 		}
 	}

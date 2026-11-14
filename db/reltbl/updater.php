@@ -21,7 +21,7 @@ class mwmod_mw_db_reltbl_updater extends mw_apsubbaseobj{
 		if($data=$query->get_one_row_result()){
 			if($ids=explode(",",$data["relIds"])){
 				foreach($ids as $id){
-					if($id=mw_get_number($id)){
+					if($id=mwmod_mw_util_text::get_number($id)){
 						if(!$idsList){
 							$idsList=array();	
 						}

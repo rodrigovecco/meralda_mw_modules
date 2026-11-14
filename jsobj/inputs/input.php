@@ -147,6 +147,38 @@ class mwmod_mw_jsobj_inputs_input extends mwmod_mw_jsobj_newobject{
 	}
 
 	/**
+	 * Adds a rich text (HTML) input powered by TinyMCE.
+	 *
+	 * @param string $cod Input code.
+	 * @param string|false $label Optional label.
+	 * @param string|false $objclass Optional JS class (defaults to
+	 *                              mw_datainput_item_tinymce).
+	 * @return mwmod_mw_jsobj_inputs_tinymce
+	 */
+	function addNewTinyMCE($cod,$label=false,$objclass=false){
+		$input = new mwmod_mw_jsobj_inputs_tinymce($cod, $objclass);
+		if($label){
+			$input->setLabel($label);
+		}
+		return $this->add_child($input);
+	}
+
+	/**
+	 * Adds a plain textarea without any editor attached.
+	 *
+	 * @param string $cod Input code.
+	 * @param string|false $label Optional label.
+	 * @return mwmod_mw_jsobj_inputs_input
+	 */
+	function addNewTextArea($cod,$label=false){
+		$input = new mwmod_mw_jsobj_inputs_input($cod,"mw_datainput_item_textarea");
+		if($label){
+			$input->setLabel($label);
+		}
+		return $this->add_child($input);
+	}
+
+	/**
 	 * @param string $cod 
 	 * @param string $label 
 	 * @return mwmod_mw_jsobj_inputs_iconselect 

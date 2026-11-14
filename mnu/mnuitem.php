@@ -676,7 +676,7 @@ class mwmod_mw_mnu_mnuitem extends mw_apsubbaseobj{
 			
 		}else{
 			if($this->tooltip){
-				$r.="data-toggle='tooltip'  data-placement='top'  title='".mw_text_nl_js($this->tooltip)."' ";	
+				$r.="data-toggle='tooltip'  data-placement='top'  title='".mwmod_mw_util_text::js_escape($this->tooltip)."' ";	
 			}
 	
 		}

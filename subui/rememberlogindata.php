@@ -372,7 +372,7 @@ class mwmod_mw_subui_rememberlogindata extends mwmod_mw_bootstrap_ui_sub_abs{
 		$reset_pass_mode=false;
 		//echo get_class($this);
 		
-		if(mw_array_get_sub_key($_REQUEST,"action")=="resetpass"){
+		if(mwmod_mw_util_array::get_sub_key($_REQUEST,"action")=="resetpass"){
 		//if($_REQUEST["action"]=="resetpass"){
 			$reset_pass_mode=true;
 			$this->set_url_param("action","resetpass");

@@ -489,7 +489,7 @@ abstract class  mwmod_mw_service_abs extends mw_apsubbaseobj{
 		}
 		if($params){
 			if(is_array($params)){
-				if($q=mw_array2urlquery($params)){
+				if($q=mwmod_mw_util_array::to_url_query($params)){
 					$url.="?".$q;	
 				}
 			}

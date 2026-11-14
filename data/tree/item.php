@@ -111,7 +111,7 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 			return $this->set_data_all($data);
 		}
 		$this->_load_data_once();
-		mw_array_set_sub_key($key,$data,$this->data);
+		mwmod_mw_util_array::set_sub_key($key,$data,$this->data);
 		return true;
 	}
 	function getDataInt($cod,$def=null){
@@ -142,7 +142,7 @@ class mwmod_mw_data_tree_item extends mw_apsubbaseobj{
 			return $this->data;
 		}
 		//return $this->_get_sub_data($key);
-		return mw_array_get_sub_key($this->data,$key);	
+		return mwmod_mw_util_array::get_sub_key($this->data,$key);	
 	}
 	function get_sub_data_debug_info($key=false){
 		$r=array();

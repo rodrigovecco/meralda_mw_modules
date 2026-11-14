@@ -122,7 +122,7 @@ abstract class mwmod_mw_users_list_itemabs extends mw_apsubbaseobj{
 	final function set_orig_user_id($id){
 		//before check and load
 		$this->unset_user();
-		if($id=mw_get_number($id)){
+		if($id=mwmod_mw_util_text::get_number($id)){
 			$this->user_id=$id;
 			$this->orig_user_id=$id;
 			return true;	

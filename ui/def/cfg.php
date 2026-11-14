@@ -4,7 +4,7 @@ class mwmod_mw_ui_def_cfg extends mwmod_mw_ui_base_basesubuia{
 		$this->init_as_main_or_sub($cod,$parent);
 		
 		$this->set_def_title($this->lng_get_msg_txt("configuration","Configuración"));
-		$this->sucods="bruteforce,dbmigrations";
+		$this->sucods="bruteforce,dbmigrations,phphealth";
 
 		
 	}
@@ -18,6 +18,11 @@ class mwmod_mw_ui_def_cfg extends mwmod_mw_ui_base_basesubuia{
 
 	function _do_create_subinterface_child_dbmigrations($cod){
 		$ui=new mwmod_mw_db_migrations_ui_main($cod,$this);
+		return $ui;
+	}
+
+	function _do_create_subinterface_child_phphealth($cod){
+		$ui=new mwmod_mw_ui_def_cfg_phphealth($cod,$this);
 		return $ui;
 	}
 	

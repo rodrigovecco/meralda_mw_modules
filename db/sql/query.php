@@ -327,7 +327,7 @@ class mwmod_mw_db_sql_query extends mwmod_mw_db_sql_abs{
 		}
 		$r=array();
 		foreach($list as $id){
-			if($id=mw_get_number($id)){
+			if($id=mwmod_mw_util_text::get_number($id)){
 				$r[$id]=$id;	
 			}
 		}

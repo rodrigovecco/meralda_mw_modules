@@ -164,11 +164,19 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 		 return true;
 		 
 	}
-	private final function addAnAddress($kind,$address, $name = ''){
+	final function addAnAddress($kind,$address, $name = ''){
 		if(!$address=$this->validateAddress($address)){
 			return false;	
 		}
-		if(!$this->_address_list[$kind]){
+		/*
+		 * isset() AND NOT A TRUTHINESS TEST. On PHP 8 reading a key that does not exist is a WARNING, not
+		 * a notice, and this runs on every message: the first `addAddress()` of a message printed
+		 * "Undefined array key \"to\"" and a trace INTO the caller's arguments — which, for a mailer, is
+		 * the whole PHPMailer object including the SMTP password. In a JSON endpoint that warning goes
+		 * into the body before the JSON, so the client reports "the server answered with something that
+		 * is not JSON" and the failure looks like a broken endpoint rather than a mail bug.
+		 */
+		if(!isset($this->_address_list[$kind])){
 			$this->_address_list[$kind]=array();	
 		}
 		$this->_address_list[$kind][$address]=array(
@@ -192,8 +200,9 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 	final function getReplyToAddresses(){
 		return $this->getAddresses("ReplyTo");
 	}
-	private final function getAddresses($kind ){
-		if(!$this->_address_list[$kind]){
+	final function getAddresses($kind ){
+		// isset() for the same reason as addAnAddress(): an absent kind is the ordinary case.
+		if(!isset($this->_address_list[$kind])){
 			return false;
 		}
 		$r=array();
@@ -246,7 +255,7 @@ class mwmod_mw_mail_queue_tempmsg extends mw_apsubbaseobj{
 			return false;	
 		}
 		$address=strtolower($address);
-		if(!mw_checkemail($address,false)){
+		if(!mwmod_mw_util_text::check_email($address,false)){
 			return false;	
 		}
 		return $address;
