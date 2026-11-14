@@ -286,6 +286,7 @@ class mwmod_mw_users_groups_ui_admin extends mwmod_mw_ui_sub_uiabs{
 			$xml->root_do_all_output();
 			return false;	
 		}
+		
 		$xml->set_prop("ok",true);
 		$xml->set_prop("itemid",$item->get_id());
 		$nd=$item->get_data();
