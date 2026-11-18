@@ -660,8 +660,14 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	 * Built on get_files_url_base(), not on the site address: the link has to
 	 * reach the folder the file is in. See the docblock there.
 	 *
+	 * NO BASE, NO URL. An area nothing serves — the canonical copy — has no
+	 * address, and returning `/index.html` for it would be worse than returning
+	 * nothing: a caller renders that as a link to the root of whatever site the
+	 * reader happens to be on. "" is the honest answer, and the callers that show
+	 * links check for it.
+	 *
 	 * @param string $relpath
-	 * @return string
+	 * @return string  "" when the area has no public address
 	 */
 	final function get_url($relpath) {
 		$rel = $this->check_relpath($relpath);
@@ -669,6 +675,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			return '';
 		}
 		$base = $this->get_files_url_base();
+		if ($base === '') {
+			return '';
+		}
 		if ($rel === '') {
 			return $base . '/';
 		}

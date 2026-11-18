@@ -186,11 +186,23 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 			$td->add_cont($value);
 		};
 
+		$filesUrl = isset($data["files_url_base"]) ? (string) $data["files_url_base"] : "";
 		$row(
 			$this->lng_get_msg_txt("fm_help_published", "Published at"),
-			'<a href="' . htmlspecialchars($data["files_url_base"]) . '" target="_blank" '
-			. 'rel="noopener" style="color:#337ab7;">'
-			. htmlspecialchars($data["files_url_base"]) . '</a>'
+			// NO ADDRESS IS A REAL ANSWER, NOT AN EMPTY LINK. The canonical copy is
+			// a git checkout that nothing serves, so its address is "": rendering
+			// `<a href="">` would point at whatever page the reader is already on,
+			// which reads as a working link to the wrong place.
+			$filesUrl !== ""
+				? '<a href="' . htmlspecialchars($filesUrl) . '" target="_blank" '
+					. 'rel="noopener" style="color:#337ab7;">'
+					. htmlspecialchars($filesUrl) . '</a>'
+				: '<span style="color:#888;">'
+					. htmlspecialchars($this->lng_get_msg_txt(
+						"fm_help_not_served",
+						"Not served anywhere — this copy lives in git, not at an address"
+					))
+					. '</span>'
 		);
 
 		$row(
