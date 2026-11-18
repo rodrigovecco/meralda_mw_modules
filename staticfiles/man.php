@@ -318,14 +318,13 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	/**
 	 * Paths that are CODE, not content, and that this manager must never touch.
 	 *
-	 * A PROTECTED PATH IS STILL VISIBLE. Hiding it would be the wrong answer: a
-	 * folder that exists on the site and is missing from the browser reads as an
-	 * incomplete listing, and the person editing the site is owed the truth about
-	 * what is in her folder. So it is listed — and it can be opened and browsed —
-	 * and the guards refuse every write, upload, folder creation, rename and
-	 * delete inside it. Hiding is for names that are not the site at all
-	 * (`get_hidden_names()`: php.ini, cgi-bin); protecting is for the site's own
-	 * machinery, which is worth seeing and not worth touching.
+	 * HIDDEN AND PROTECTED, BOTH. Protected alone is not enough — a row whose
+	 * every action is refused reads as a broken panel — and hidden alone is not a
+	 * rule at all: the file manager's own endpoints, the MCP tools and any future
+	 * API address a path directly, and the listing is only what is offered. So a
+	 * protected path is left out of the listing AND refused by every guard: no
+	 * write, no upload, no folder, no rename, no delete, and nothing below it
+	 * either.
 	 *
 	 * WHY AN AREA WOULD NEED THIS: a static website is static, and the moment a
 	 * folder in it runs code (the draft's `/get` router, which exists only so the
@@ -336,6 +335,7 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	 * Relative paths, matched case-insensitively, and a folder covers everything
 	 * below it.
 	 *
+	 * @see get_hidden_names()  names that are not the site at all
 	 * @return string[]
 	 */
 	function get_protected_paths() {
@@ -757,11 +757,14 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 				continue;
 			}
 			$childRel = $rel === '' ? $name : $rel . '/' . $name;
-			// Hidden by NAME only (dot-files and the files the host owns). A
-			// protected path is listed on purpose: it is part of the site and the
-			// person editing it should see that it is there. Its write, rename and
-			// delete flags come back false, which is what makes it untouchable.
-			if ($this->is_hidden_name($name)) {
+			// Two different reasons, both of them "not offered":
+			//   hidden    — names that are not the site at all (dot-files,
+			//               php.ini, cgi-bin): the host's files.
+			//   protected — the site's own machinery (the draft's /get router):
+			//               part of the site, so it is NOT something to delete or
+			//               rewrite, and a row whose every action is refused reads
+				//               as a broken panel. Left out, still reachable by path.
+			if ($this->is_hidden_name($name) || $this->is_protected_path($childRel)) {
 				continue;
 			}
 			$item     = $this->get_item($childRel);
