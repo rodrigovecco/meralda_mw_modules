@@ -118,10 +118,22 @@ abstract class  mwmod_mw_manager_man extends mwmod_mw_manager_basemanabs{
 		}
 		
 	}
+	/**
+	 * @deprecated Build admin forms with mwmod_mw_jsobj_inputs_* on top of
+	 *             mwmod_mw_ui_base_frm instead. The datafield markup depends on
+	 *             the `___mw_main_frm_manager` JS bundle, which current UIs do
+	 *             not load: the form renders but never initialises.
+	 * @return mwmod_mw_datafield_creator
+	 */
 	function get_new_item_datafield_creator(){
 		$cr=new mwmod_mw_datafield_creator();
 		return $cr;
 	}
+	/**
+	 * @deprecated See get_new_item_datafield_creator().
+	 * @param mwmod_mw_manager_item|false $item
+	 * @return mwmod_mw_datafield_creator
+	 */
 	function get_item_datafield_creator($item=false){
 		$cr=$this->get_new_item_datafield_creator();
 		return $cr;

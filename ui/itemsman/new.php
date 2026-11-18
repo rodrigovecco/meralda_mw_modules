@@ -1,4 +1,15 @@
 <?php
+/**
+ * @deprecated Do not extend this class for new screens.
+ *
+ * It renders the form through new_frm() + a mwmod_mw_datafield_creator, whose
+ * markup expects the `___mw_main_frm_manager` JS bundle. Current UIs do not load
+ * that bundle, so the form renders but throws
+ * `ReferenceError: ___mw_main_frm_manager is not defined` and submits nothing.
+ *
+ * Build admin forms on mwmod_mw_ui_base_frm with mwmod_mw_jsobj_inputs_*
+ * instead. See docs/ai/user-interfaces/jsobj-inputs-pattern.md.
+ */
 abstract class mwmod_mw_ui_itemsman_new extends mwmod_mw_ui_itemsman_itemsmanui{
 	
 	function on_new_item_created($item){
@@ -34,6 +45,12 @@ abstract class mwmod_mw_ui_itemsman_new extends mwmod_mw_ui_itemsman_itemsmanui{
 		}
 			
 	}
+	/**
+	 * @deprecated Use mwmod_mw_ui_base_frm::set_js_inputs_data() instead. The
+	 *             datafield creator it returns cannot be rendered by the current
+	 *             UI (missing `___mw_main_frm_manager` JS bundle).
+	 * @return mwmod_mw_datafield_creator|false
+	 */
 	function get_new_item_datafield_creator(){
 		if(!$this->items_man){
 			return false;	
@@ -44,6 +61,11 @@ abstract class mwmod_mw_ui_itemsman_new extends mwmod_mw_ui_itemsman_itemsmanui{
 			
 	}
 
+	/**
+	 * @deprecated Renders a datafield form that never initialises in current
+	 *             UIs. Override do_exec_page_in() on a mwmod_mw_ui_base_frm
+	 *             subclass instead.
+	 */
 	function do_exec_page_in(){
 		if(!$cr=$this->get_new_item_datafield_creator()){
 			return false;
