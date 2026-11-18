@@ -173,6 +173,32 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 
 		$requestedScope = $this->parseScope($scopeRaw);
 
+		// NO SCOPE FROM THE CLIENT IS NOT "NO PERMISSIONS": IT IS A DEFAULT.
+		//
+		// RFC 6749 §3.3: "If the client omits the scope parameter when requesting
+		// authorization, the authorization server MUST either process the request
+		// using a pre-defined default value or fail the request indicating an
+		// invalid scope."
+		//
+		// This used to do neither: an empty scope produced an empty permission
+		// list, the screen said "the client did not request specific permissions",
+		// and Authorize then answered "you must grant at least one permission" —
+		// with nothing on the page to tick. A dead end reached through no fault of
+		// the person looking at it.
+		//
+		// It happens with real clients. A connector decides what to ask for from
+		// the metadata it read BEFORE registering, and some send no `scope` at all
+		// regardless of what is published. The server cannot control that, so it
+		// applies the default the RFC allows: every permission the signed-in user
+		// actually holds, which is exactly the choice the screen exists to present.
+		//
+		// The user still ticks what they want and the same intersection still
+		// applies at authorize time; this only fills in the QUESTION, not the
+		// answer.
+		if (empty($requestedScope)) {
+			$requestedScope = $this->getDefaultScope($user);
+		}
+
 		// Persist the validated OAuth request context server-side, keyed by a
 		// single-use nonce. The AJAX endpoint reads it back from here so the
 		// browser can never tamper with redirect_uri / code_challenge / scope.
@@ -746,5 +772,48 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 			$result[] = ['code' => $code, 'status' => $status];
 		}
 		return $result;
+	}
+
+	/**
+	 * The scope to present when the client asked for none (RFC 6749 §3.3).
+	 *
+	 * WHAT "DEFAULT" MEANS HERE, AND WHAT IT MUST NOT MEAN.
+	 *
+	 * It is a DEFAULT QUESTION, not a default grant. The list returned is what
+	 * the screen offers; the user still ticks the boxes, and the token is still
+	 * minted from the intersection of what was ticked, what was asked, and what
+	 * the account holds (`handleAuthorize()`). So a client that forgot to send
+	 * `scope` does not silently end up with more than a client that sent one.
+	 *
+	 * WHY EVERY PERMISSION THE USER HOLDS, AND NOT A SHORTER LIST.
+	 *
+	 * There is no smaller answer that is still correct. The set of permissions
+	 * this endpoint can meaningfully offer IS the catalog filtered by what the
+	 * account is allowed to do — anything narrower would be this method guessing
+	 * on the client's behalf, and guessing low is the failure being fixed: a
+	 * consent screen where the client is told it asked for nothing.
+	 *
+	 * `ok` status is preserved by buildScopeInfo(): a held permission renders as
+	 * a checked, enabled box; one the account lacks renders disabled. So the
+	 * screen shows the real choice even though the client said nothing.
+	 *
+	 * @param mwmod_mw_users_user $user
+	 * @return string[]
+	 */
+	private function getDefaultScope($user) {
+		$permMan = $user->man->get_permission_man();
+		if (!$permMan || !($items = $permMan->get_items())) {
+			return [];
+		}
+		$out = [];
+		foreach ($items as $p) {
+			$code = $p->get_code();
+			// Only what the account can actually be granted: offering the rest
+			// would put disabled rows on a screen the client never asked about.
+			if ($code !== '' && $user->man->allow($code)) {
+				$out[$code] = true;
+			}
+		}
+		return array_keys($out);
 	}
 }
