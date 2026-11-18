@@ -293,11 +293,17 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 		}
 
 		// Scope: intersection of (checked) ∩ (originally requested) ∩ (user holds).
+		// "Holds" is $user->allow(), not $user->man->allow() — see user_holds().
+		// The catalog test stays in front of it: allow() defaults to $main_always=true,
+		// so for a main administrator it answers true for any string at all, including
+		// one invented in the POST body. Without the catalog gate that would mint a
+		// token carrying a scope nobody ever defined.
+		$catalog = $this->get_permission_catalog($user);
 		$requestedScope = is_array($ctx['scope']) ? $ctx['scope'] : [];
 		$submittedScope = $this->parseScope($this->postParam('_oauth_scope'), ',');
 		$grantedScope = [];
 		foreach ($submittedScope as $code) {
-			if (in_array($code, $requestedScope, true) && $user->man->allow($code)) {
+			if (in_array($code, $requestedScope, true) && $this->user_holds($catalog, $user, $code)) {
 				$grantedScope[] = $code;
 			}
 		}
@@ -753,18 +759,12 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 	 * @return array<int, array{code:string, status:string}>
 	 */
 	private function buildScopeInfo(array $scope, $user) {
-		$permMan = $user->man->get_permission_man();
-		$catalog = [];
-		if ($permMan && ($items = $permMan->get_items())) {
-			foreach ($items as $p) {
-				$catalog[$p->get_code()] = true;
-			}
-		}
+		$catalog = $this->get_permission_catalog($user);
 		$result = [];
 		foreach ($scope as $code) {
 			if (!isset($catalog[$code])) {
 				$status = 'unknown';
-			} elseif ($user->man->allow($code)) {
+			} elseif ($this->user_holds($catalog, $user, $code)) {
 				$status = 'ok';
 			} else {
 				$status = 'warning';
@@ -772,6 +772,75 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 			$result[] = ['code' => $code, 'status' => $status];
 		}
 		return $result;
+	}
+
+	/**
+	 * Every permission code this deployment defines, as a code => true set.
+	 *
+	 * @param mwmod_mw_users_user $user
+	 * @return array<string, bool>
+	 */
+	private function get_permission_catalog($user) {
+		$catalog = [];
+		$permMan = $user->man->get_permission_man();
+		if ($permMan && ($items = $permMan->get_items())) {
+			foreach ($items as $p) {
+				$catalog[$p->get_code()] = true;
+			}
+		}
+		return $catalog;
+	}
+
+	/**
+	 * Does this account hold $code?
+	 *
+	 * WHY THIS HELPER EXISTS. The decision lives on the USER ($user->allow()); the
+	 * users manager only owns the catalog ($user->man->get_permission_man()). This
+	 * screen asked the manager, and the manager answered false for every code — so
+	 * the default scope came back empty, every box rendered disabled, and approving
+	 * ended in "you must grant at least one permission" with nothing to grant.
+	 * Three separate call sites had the same mistake; they all come through here now.
+	 *
+	 * The catalog gate is not redundant: allow() has $main_always=true by default and
+	 * therefore answers true, for a main administrator, to any string — including a
+	 * scope invented in the POST body.
+	 *
+	 * @param array<string, bool> $catalog
+	 * @param mwmod_mw_users_user $user
+	 * @param string $code
+	 * @return bool
+	 */
+	private function user_holds(array $catalog, $user, $code) {
+		if (!isset($catalog[$code])) {
+			return false;
+		}
+		return (bool) $user->allow($code);
+	}
+
+	/**
+	 * The scopes this deployment publishes in its authorization-server metadata
+	 * (RFC 8414 `scopes_supported`), or null when it publishes no such restriction.
+	 *
+	 * Used only to narrow the DEFAULT offered when the client omits `scope`. The
+	 * permission catalog holds more codes than OAuth exposes — framework codes such
+	 * as `admin` or `mainadmin` exist there but are not scopes, and putting them on
+	 * a consent screen invites a client to ask for something that means nothing.
+	 *
+	 * A deployment opts in by defining get_oauth_scopes() on its users manager.
+	 *
+	 * @param mwmod_mw_users_user $user
+	 * @return string[]|null
+	 */
+	private function get_published_scopes($user) {
+		$man = $user->man;
+		if (!is_object($man) || !method_exists($man, 'get_oauth_scopes')) {
+			return null;
+		}
+		$scopes = $man->get_oauth_scopes();
+		if (!is_array($scopes) || empty($scopes)) {
+			return null;
+		}
+		return $scopes;
 	}
 
 	/**
@@ -801,23 +870,22 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 	 * @return string[]
 	 */
 	private function getDefaultScope($user) {
-		$permMan = $user->man->get_permission_man();
-		if (!$permMan || !($items = $permMan->get_items())) {
+		$catalog = $this->get_permission_catalog($user);
+		if (empty($catalog)) {
 			return [];
 		}
+
+		// When the deployment publishes OAuth scopes, offer exactly those: the
+		// catalog is wider than OAuth and its extra codes are not scopes.
+		$published = $this->get_published_scopes($user);
+		$candidates = ($published !== null) ? $published : array_keys($catalog);
+
 		$out = [];
-		foreach ($items as $p) {
-			$code = $p->get_code();
-			// allow() lives on the user, not on $user->man: the manager owns the
-			// catalog, the user owns the decision. Asking the manager answered false
-			// for every code, so the list came back empty and the screen stayed on
-			// "did not request specific permissions".
-			// Only what the account can actually be granted: offering the rest
-			// would put disabled rows on a screen the client never asked about.
-			if ($code !== '' && $user->allow($code)) {
-				$out[$code] = true;
+		foreach ($candidates as $code) {
+			if ($code !== '' && $this->user_holds($catalog, $user, $code)) {
+				$out[] = $code;
 			}
 		}
-		return array_keys($out);
+		return $out;
 	}
 }
