@@ -480,12 +480,41 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 		if (!$this->guard_write()) {
 			return true;
 		}
-		$man = $this->getFilesMan();
-		$this->json_out($man->write_file(
-			$this->param($params, "path", ""),
-			$this->param($params, "content", "")
-		));
+		$man     = $this->getFilesMan();
+		$relpath = $this->param($params, "path", "");
+		$result  = $man->write_file($relpath, $this->param($params, "content", ""));
+
+		// A SAVE CAN HAVE CONSEQUENCES OUTSIDE THIS AREA, and only the project
+		// knows which. The typical case: a file that is also served from a second
+		// location — the same page published at two addresses — where leaving the
+		// other copy behind makes an edit look like it was never saved.
+		//
+		// The hook is called only on success, and what it returns is appended to
+		// the message the panel shows, so a secondary failure is visible instead of
+		// being reported as "File saved." with something else quietly broken.
+		if (!empty($result["ok"])) {
+			$notice = $this->after_save_file($relpath, $result);
+			if (is_string($notice) && $notice !== "") {
+				$result["msg"] = rtrim((string)$result["msg"]) . " " . $notice;
+			}
+		}
+
+		$this->json_out($result);
 		return true;
+	}
+
+	/**
+	 * Act on a file that was just written successfully.
+	 *
+	 * Override in the project's subclass. Called AFTER the write, with the path
+	 * that was written (relative to the area root) and the manager's result.
+	 *
+	 * @param string $relpath
+	 * @param array  $result  ['ok'=>true,'msg'=>...,'item'=>...]
+	 * @return string  appended to the message shown to the user; '' for nothing
+	 */
+	function after_save_file($relpath, $result) {
+		return "";
 	}
 
 	function execfrommain_getcmd_sxml_mkdir($params = array(), $filename = false) {
