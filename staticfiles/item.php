@@ -164,6 +164,10 @@ class mwmod_mw_staticfiles_item {
 			'writable'  => $this->is_writable(),
 			'deletable' => $this->is_deletable(),
 			'renamable' => $this->is_renamable(),
+			// Application machinery: listed, browsable, and refused by every
+			// guard. Sent so a client can say WHY the actions are missing
+			// instead of showing a row whose buttons do nothing.
+			'protected' => $this->man->is_protected_path($this->relpath),
 			'size'      => 0,
 			'mtime'     => null,
 			'mtime_iso' => '',

@@ -369,15 +369,23 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 	/**
 	 * Is this entry something the person looking at the screen can act on?
 	 *
-	 * A FOLDER IS NOT "WRITABLE", and that is not the question being asked here.
-	 * `is_writable_file()` answers "may its CONTENT be replaced", which is always
-	 * false for a directory. An entry is offered when it is writable OR it can be
-	 * renamed OR deleted — in other words, when there is something to do with it.
+	 * A FOLDER IS ALWAYS ONE, because opening it IS the action. `is_writable_file()`
+	 * answers "may its CONTENT be replaced", which is always false for a directory,
+	 * and using that alone hid folders nobody could rename or delete — the draft's
+	 * own `/get` folder among them — so a listing that was supposed to be complete
+	 * quietly was not. A folder the person cannot change is still a folder she can
+	 * look into, and she should be able to see that it exists.
+	 *
+	 * A FILE that cannot be edited, renamed or deleted has nothing to offer, and
+	 * `should_hide_immutable_items()` is what removes it.
 	 *
 	 * @param array $it  one entry of list_dir()
 	 * @return bool
 	 */
 	protected function is_actionable_item($it) {
+		if (!empty($it["is_dir"])) {
+			return true;
+		}
 		return !empty($it["editable"])
 			|| !empty($it["deletable"])
 			|| !empty($it["renamable"]);
@@ -445,6 +453,7 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 				"readable"    => (bool)$it["readable"],
 				"deletable"   => (bool)$it["deletable"],
 				"renamable"   => (bool)$it["renamable"],
+				"protected"   => (bool)$it["protected"],
 			);
 		}
 		$this->json_out(array(
