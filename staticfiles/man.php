@@ -268,23 +268,137 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	}
 
 	/**
+	 * Names that exist in the folder but are never offered in the browser.
+	 *
+	 * THE SITE'S CONTENT IS NOT EVERYTHING IN THE DIRECTORY. A document root
+	 * accumulates files that belong to the HOST, not to the site: `php.ini` and
+	 * `.user.ini` written by the control panel, `cgi-bin` created with the
+	 * domain, `web.config` on IIS. They have to stay where they are — deleting
+	 * `php.ini` changes how PHP runs, deleting `cgi-bin` breaks the subdomain —
+	 * and they are not content, so listing them only offers rows whose every
+	 * action is refused.
+	 *
+	 * They are still READABLE BY PATH, exactly like dot-files: the deploy scripts
+	 * and the server itself address them directly. "Not listed" is not "not
+	 * there".
+	 *
+	 * BUILT FROM THE POLICY where the policy already knows: every denied filename
+	 * (`php.ini`, `.htpasswd`, `.env`, `web.config`, `composer.json`...) is server
+	 * configuration by definition, so it is hidden for the same reason it is not
+	 * writable. The list adds the ones that are not files-with-an-extension and
+	 * therefore have no place in an extension policy at all.
+	 *
+	 * @return string[]
+	 */
+	function get_hidden_names() {
+		$names = (array)$this->get_init_hidden_names();
+
+		// Everything the policy refuses by name: config files.
+		foreach ((array)$this->get_policy()->get_denied_filenames() as $n) {
+			$names[] = $n;
+		}
+
+		return array_values(array_unique(array_filter(array_map('strval', $names), 'strlen')));
+	}
+
+	/**
+	 * Area-specific additions to `get_hidden_names()`.
+	 *
+	 * `cgi-bin` is here rather than in every area's own list: modern cPanel
+	 * creates it next to a document root whether or not anything uses it, and it
+	 * is a server folder in a site's folder. A project that genuinely serves CGI
+	 * from its static area can override this method.
+	 *
+	 * @return string[]
+	 */
+	function get_init_hidden_names() {
+		return array('cgi-bin');
+	}
+
+	/**
+	 * Paths that are CODE, not content, and that this manager must never touch.
+	 *
+	 * HIDING IS NOT PROTECTING. `get_hidden_names()` removes a name from the
+	 * listing, which is a courtesy to the person using the panel; a request that
+	 * names the path directly — the file manager's own endpoints, the MCP tools,
+	 * a future API — would still reach it. So a protected path is refused by the
+	 * guards themselves: no write, no upload, no folder, no rename, no delete.
+	 *
+	 * WHY AN AREA WOULD NEED THIS: a static website is static, and the moment a
+	 * folder in it runs code (the draft's `/get` router, which exists only so the
+	 * form works on the private host exactly as it does in public), editing that
+	 * folder through a file browser is a way to execute anything. The router is
+	 * not content: it is the application, sitting where the document root put it.
+	 *
+	 * Relative paths, matched case-insensitively, and a folder covers everything
+	 * below it.
+	 *
+	 * @return string[]
+	 */
+	function get_protected_paths() {
+		return array();
+	}
+
+	/**
+	 * True when the relative path is a protected path or lives inside one.
+	 *
+	 * @param string $relpath
+	 * @return bool
+	 */
+	final function is_protected_path($relpath) {
+		if (!is_string($relpath) && !is_numeric($relpath)) {
+			return false;
+		}
+		$rel = strtolower(trim(str_replace('\\', '/', (string)$relpath), '/'));
+		if ($rel === '') {
+			return false;
+		}
+		foreach ((array)$this->get_protected_paths() as $p) {
+			$p = strtolower(trim(str_replace('\\', '/', (string)$p), '/'));
+			if ($p === '') {
+				continue;
+			}
+			if ($rel === $p || strpos($rel, $p . '/') === 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * True when a file/folder name must be left out of listings.
 	 *
-	 * A leading dot marks server configuration (`.htaccess`, `.user.ini`,
-	 * `.env`…) or editor/VCS leftovers. They stay reachable by absolute path
-	 * for the deploy scripts, but are not offered in the browser.
+	 * Three reasons, in this order: a leading dot (server configuration and
+	 * editor/VCS leftovers), an explicit name from `get_hidden_names()`, or — for
+	 * the areas that ask for it — an entry the caller could not act on anyway.
+	 * They stay reachable by absolute path for the deploy scripts, but are not
+	 * offered in the browser.
 	 *
 	 * @param string $name
 	 * @return bool
 	 */
 	function is_hidden_name($name) {
-		if (!$this->hide_dotfiles) {
-			return false;
-		}
 		if (!is_string($name) || $name === '') {
 			return false;
 		}
-		return substr($name, 0, 1) === '.';
+
+		// A leading dot: server configuration and editor/VCS leftovers.
+		if ($this->hide_dotfiles && substr($name, 0, 1) === '.') {
+			return true;
+		}
+
+		// Names the host owns rather than the site: php.ini, cgi-bin, web.config.
+		// CASE-INSENSITIVE, because the same file arrives spelled differently
+		// depending on who created it, and a name that hides only in one spelling
+		// is worse than no rule at all.
+		$lower = strtolower($name);
+		foreach ($this->get_hidden_names() as $hidden) {
+			if ($lower === strtolower($hidden)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// ====================================================================
@@ -511,6 +625,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($rel === false || $rel === '') {
 			return false;
 		}
+		// Application code is not content, whatever the flags say.
+		if ($this->is_protected_path($rel)) {
+			return false;
+		}
 		if (!$this->get_policy()->is_filename_allowed($rel)) {
 			return false;
 		}
@@ -538,6 +656,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($rel === false || $rel === '') {
 			return false;
 		}
+		if ($this->is_protected_path($rel)) {
+			return false;
+		}
 		if (!$this->is_in_subfolder($rel)) {
 			return (bool)$this->allow_delete && $this->is_existing_dir($rel);
 		}
@@ -559,6 +680,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		}
 		$rel = $this->check_relpath($relpath);
 		if ($rel === false || $rel === '') {
+			return false;
+		}
+		if ($this->is_protected_path($rel)) {
 			return false;
 		}
 		if (!$this->is_in_subfolder($rel)) {
@@ -629,10 +753,12 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			if ($name === '.' || $name === '..') {
 				continue;
 			}
-			if ($this->is_hidden_name($name)) {
+			$childRel = $rel === '' ? $name : $rel . '/' . $name;
+			// Hidden by name (dot-files, server files) or protected (code that
+			// happens to live under this document root).
+			if ($this->is_hidden_name($name) || $this->is_protected_path($childRel)) {
 				continue;
 			}
-			$childRel = $rel === '' ? $name : $rel . '/' . $name;
 			$item     = $this->get_item($childRel);
 			if (!$item) {
 				continue;
@@ -864,6 +990,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if (!$this->allow_mkdir || !$this->allow_subfolders) {
 			return $this->err("Creating folders is disabled.");
 		}
+		if ($this->is_protected_path($rel)) {
+			return $this->err($this->explain_protected_path());
+		}
 		// Folders may be created at the root (that is structure, not content):
 		// the editable-root rule only pins root FILES.
 		$abs = $this->get_abs_path($rel);
@@ -1006,6 +1135,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($this->read_only) {
 			return "This area is read-only: it can be browsed and downloaded, but not changed.";
 		}
+		if ($this->is_protected_path($rel)) {
+			return $this->explain_protected_path();
+		}
 		$policy = $this->get_policy();
 		if ($policy->is_filename_allowed($rel) === false) {
 			// Distinguish the three reasons: blocked name, blocked ext, no ext.
@@ -1031,6 +1163,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($this->read_only) {
 			return "This area is read-only: nothing can be deleted.";
 		}
+		if ($this->is_protected_path($rel)) {
+			return $this->explain_protected_path();
+		}
 		if (!$this->is_in_subfolder($rel)) {
 			return "Root files cannot be deleted.";
 		}
@@ -1041,10 +1176,27 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($this->read_only) {
 			return "This area is read-only: nothing can be renamed.";
 		}
+		if ($this->is_protected_path($rel)) {
+			return $this->explain_protected_path();
+		}
 		if (!$this->is_in_subfolder($rel)) {
 			return "Root files cannot be renamed.";
 		}
 		return "Renaming is disabled.";
+	}
+
+	/**
+	 * The one sentence every protected-path refusal gives.
+	 *
+	 * Written for the person reading it, not for the developer: it says WHAT the
+	 * folder is (part of the application) rather than that a permission was
+	 * missing, because "not allowed" in a file manager reads like a bug.
+	 *
+	 * @return string
+	 */
+	function explain_protected_path() {
+		return "This folder is part of the application, not of the website: "
+			. "it can be browsed but not created, changed, renamed or deleted here.";
 	}
 }
 ?>

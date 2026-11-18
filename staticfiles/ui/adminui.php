@@ -366,6 +366,50 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 		return false;
 	}
 
+	/**
+	 * Is this entry something the person looking at the screen can act on?
+	 *
+	 * A FOLDER IS NOT "WRITABLE", and that is not the question being asked here.
+	 * `is_writable_file()` answers "may its CONTENT be replaced", which is always
+	 * false for a directory. An entry is offered when it is writable OR it can be
+	 * renamed OR deleted — in other words, when there is something to do with it.
+	 *
+	 * @param array $it  one entry of list_dir()
+	 * @return bool
+	 */
+	protected function is_actionable_item($it) {
+		return !empty($it["editable"])
+			|| !empty($it["deletable"])
+			|| !empty($it["renamable"]);
+	}
+
+	/**
+	 * Should entries that cannot be changed be left out of the listing?
+	 *
+	 * YES FOR A LIVE AREA, NO FOR A FROZEN ONE, and the asymmetry is the point:
+	 *
+	 *   - In an area somebody edits, an entry that cannot be touched is noise. It
+	 *     cannot be opened in the editor, renamed or deleted, so showing it is
+	 *     showing a row whose every action is refused. The area root is the case
+	 *     that matters: it is closed except for the files declared in
+	 *     `editable_root_files`, so a README sitting there is a row that does
+	 *     nothing — and it makes the root look like it holds files it cannot.
+	 *
+	 *   - In a FROZEN area everything is immutable, so the same rule would empty
+	 *     the screen. There the listing is a reference: the point is to see what
+	 *     the approved copy contains, and a file nobody can edit is exactly what
+	 *     one expects to find.
+	 *
+	 * @return bool
+	 */
+	function should_hide_immutable_items() {
+		$man = $this->getFilesMan();
+		if (!$man) {
+			return false;
+		}
+		return !$man->is_read_only();
+	}
+
 	function execfrommain_getcmd_sxml_list($params = array(), $filename = false) {
 		$man   = $this->getFilesMan();
 		$path  = $this->param($params, "path", "");
@@ -374,8 +418,17 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 			$this->json_out(array("ok" => false, "msg" => "Folder not found."));
 			return true;
 		}
-		$out = array();
+		$hide  = $this->should_hide_immutable_items();
+		$out   = array();
+		$hidden = 0;
 		foreach ($items as $it) {
+			if ($hide && !$this->is_actionable_item($it)) {
+				// Counted, not silently dropped: a folder that looks emptier than
+				// it is reads as a bug, and the count is what the info strip uses
+				// to say so.
+				$hidden++;
+				continue;
+			}
 			// `readable` is sent separately from `editable` so the widget can open
 			// a file for reading in a frozen area. Without it the panel fetched
 			// nothing and printed "this file cannot be shown as text" — the
@@ -395,9 +448,10 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 			);
 		}
 		$this->json_out(array(
-			"ok"    => true,
-			"path"  => (string)$man->check_relpath($path),
-			"items" => $out,
+			"ok"     => true,
+			"path"   => (string)$man->check_relpath($path),
+			"items"  => $out,
+			"hidden" => $hidden,
 		));
 		return true;
 	}
