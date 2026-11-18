@@ -92,6 +92,19 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	private $read_only      = false;
 	/** Hide dot-files / dot-folders from listings. */
 	private $hide_dotfiles   = true;
+	/**
+	 * The public address of this area answers 401 without the site login.
+	 *
+	 * A FACT ABOUT THE DEPLOYMENT, reported so a caller can interpret a 401 as
+	 * "you are not signed in" instead of "the path is wrong". The draft copy is
+	 * the case: it is served on its own subdomain behind a password, which is what
+	 * makes it private. A client that measured that 401 and concluded its URL was
+	 * malformed would go looking for a path segment that must not be added.
+	 *
+	 * It changes no rule here — the guard is the `.htaccess` on the folder, not
+	 * this flag. It exists to be TOLD, not to be enforced.
+	 */
+	private $requires_auth  = false;
 	/** Max bytes accepted for a single write/upload. 0 = use fileman limit. */
 	private $max_file_bytes = 0;
 	/** @var mwmod_mw_staticfiles_policy|null */
@@ -337,6 +350,11 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	final function set_allow_rename($v)        { $this->allow_rename     = (bool)$v; }
 	final function set_allow_mkdir($v)         { $this->allow_mkdir      = (bool)$v; }
 	final function set_max_file_bytes($bytes)  { $this->max_file_bytes   = (int)$bytes; }
+
+	/** Declare that this area's public address requires the site login. */
+	final function set_requires_auth($v) { $this->requires_auth = (bool)$v; }
+
+	final function requires_auth() { return (bool)$this->requires_auth; }
 
 	/**
 	 * Freeze or unfreeze the area.
@@ -1291,6 +1309,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			// lives one level down from the site's address (see the accessor):
 			// url_base is an origin for CORS, this is a folder for links.
 			'files_url_base' => $this->get_files_url_base(),
+			// True when files_url_base answers 401 without the site login, so a
+			// caller reads that 401 as "sign in" and not as "wrong path".
+			'requires_auth'  => $this->requires_auth(),
 			'editable_root'  => $this->get_editable_root_files(),
 			// The folders whose contents are editable but whose name is fixed.
 			// Reported because a caller that cannot delete one deserves to know
