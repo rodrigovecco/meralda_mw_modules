@@ -24,12 +24,18 @@
  *   files.info    {}                          → area configuration + policy
  *   files.list    {path}                      → entries of a folder
  *   files.stat    {path}                      → metadata of one entry
- *   files.read    {path}                      → text content (editable only)
+ *   files.read    {path}                      → text content (readable files)
  *   files.write   {path, content}             → save text content
- *   files.upload  {path, filename, base64}    → write binary/text from base64
+ *   files.upload  {path, base64}              → write binary/text from base64
  *   files.mkdir   {path}                      → create a folder
  *   files.rename  {from, to}                  → rename/move inside sub-folders
  *   files.delete  {path, recursive?}          → delete inside sub-folders
+ *
+ * READ AND WRITE ARE DIFFERENT QUESTIONS. `files.read` asks whether the file can
+ * be SHOWN (a text extension the policy allows); `files.write` asks whether it
+ * can be CHANGED. They used to be one check, and the consequence was that a
+ * frozen area — or a read-only one like an approved copy — answered every read
+ * with an error, so the reference could not be consulted at all.
  */
 class mwmod_mw_staticfiles_tools {
 
@@ -83,16 +89,16 @@ class mwmod_mw_staticfiles_tools {
 			),
 			array(
 				'name'        => 'files.read',
-				'description' => 'Read a text file. Only files the area considers editable (text extensions and writable) can be read.',
+				'description' => 'Read a text file. Any file the area considers readable (a text extension the policy allows) can be read, whether or not the area allows writing it.',
 				'inputSchema' => $s('File to read.', array(
 					'path' => $str('File path relative to the area root.'),
 				), array('path')),
 			),
 			array(
 				'name'        => 'files.write',
-				'description' => 'Create or overwrite a text file with the given content.',
+				'description' => 'Create or overwrite a text file with the given content. Refused when the area is read-only.',
 				'inputSchema' => $s('File to write.', array(
-					'path'    => $str('Destinaton path relative to the area root.'),
+					'path'    => $str('Destination path relative to the area root.'),
 					'content' => $str('Full file content.'),
 				), array('path', 'content')),
 			),
@@ -168,7 +174,10 @@ class mwmod_mw_staticfiles_tools {
 				if (!$item) {
 					return $this->man->err("Invalid path.");
 				}
-				if (!$item->exists) {
+				// exists() IS A METHOD. It used to be read as a property here, which
+				// is always null on an object with no magic getter — so the check
+				// never fired and a missing file was reported as present.
+				if (!$item->exists()) {
 					return $this->man->err("Not found.");
 				}
 				return array('ok' => true, 'item' => $item->get_data(true));
@@ -177,7 +186,7 @@ class mwmod_mw_staticfiles_tools {
 				$path = (string)$get('path', '');
 				$txt  = $this->man->read_file($path);
 				if ($txt === false) {
-					return $this->man->err("Cannot read that file (not found, binary, or not editable).");
+					return $this->man->err("Cannot read that file (not found, binary, or not a text file).");
 				}
 				return array('ok' => true, 'path' => $this->man->check_relpath($path), 'content' => $txt);
 
