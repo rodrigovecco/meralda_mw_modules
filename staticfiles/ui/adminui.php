@@ -188,9 +188,9 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 
 		$row(
 			$this->lng_get_msg_txt("fm_help_published", "Published at"),
-			'<a href="' . htmlspecialchars($data["url_base"]) . '" target="_blank" '
+			'<a href="' . htmlspecialchars($data["files_url_base"]) . '" target="_blank" '
 			. 'rel="noopener" style="color:#337ab7;">'
-			. htmlspecialchars($data["url_base"]) . '</a>'
+			. htmlspecialchars($data["files_url_base"]) . '</a>'
 		);
 
 		$row(
@@ -268,7 +268,7 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 		// The framework encodes the command in the URL path, so the widget gets
 		// a template with a placeholder it replaces per call.
 		$cfg->set_prop("sxmlUrl", $this->get_exec_cmd_sxml_url("__CMD__"));
-		$cfg->set_prop("rootUrl", $data["url_base"]);
+		$cfg->set_prop("rootUrl", $data["files_url_base"]);
 		$cfg->set_prop("role", $data["role"]);
 		$cfg->set_prop("label", $data["label"]);
 		$cfg->set_prop("editableRoot", array_values($data["editable_root"]));

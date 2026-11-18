@@ -193,6 +193,34 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	}
 
 	/**
+	 * Where the FILES of this area are served, for building links.
+	 *
+	 * ─────────────────────────────────────────────────────────────────────
+	 * WHY THIS IS NOT get_url_base(), AND WHY THE DIFFERENCE BITES
+	 * ─────────────────────────────────────────────────────────────────────
+	 * `url_base` answers "what is the public address of this site" — and its
+	 * consumer is CORS, which compares it against an `Origin` header, which is
+	 * always `scheme://host` with NO path. So a value with a path in it silently
+	 * contributes nothing to an allow-list.
+	 *
+	 * A link to a file is a different question: it has to reach the folder the
+	 * file is actually in. When an area's files are served one level down — the
+	 * live copy at `<domain>/ws/` — the site address is right for CORS and wrong
+	 * for every link, and one accessor cannot answer both. Pointing the links at
+	 * the site address is how a file manager ends up advertising addresses that
+	 * serve a DIFFERENT copy of the same document, or 404.
+	 *
+	 * Default: the same as the site address, because for most areas the files are
+	 * served exactly there. An area whose folder is one level down overrides it.
+	 *
+	 * @see get_url()
+	 * @return string
+	 */
+	function get_files_url_base() {
+		return $this->url_base;
+	}
+
+	/**
 	 * Point the area at an absolute directory, bypassing path modes.
 	 *
 	 * Needed for areas that live outside both the document root and the
@@ -629,6 +657,9 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	/**
 	 * Normalised public URL for a relative path.
 	 *
+	 * Built on get_files_url_base(), not on the site address: the link has to
+	 * reach the folder the file is in. See the docblock there.
+	 *
 	 * @param string $relpath
 	 * @return string
 	 */
@@ -637,7 +668,7 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($rel === false) {
 			return '';
 		}
-		$base = $this->url_base;
+		$base = $this->get_files_url_base();
 		if ($rel === '') {
 			return $base . '/';
 		}
@@ -1247,6 +1278,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			'root_path'      => $root ?: '',
 			'root_exists'    => $root ? is_dir($root) : false,
 			'url_base'       => $this->url_base,
+			// Where the FILES are served. Different from url_base when the area
+			// lives one level down from the site's address (see the accessor):
+			// url_base is an origin for CORS, this is a folder for links.
+			'files_url_base' => $this->get_files_url_base(),
 			'editable_root'  => $this->get_editable_root_files(),
 			// The folders whose contents are editable but whose name is fixed.
 			// Reported because a caller that cannot delete one deserves to know
