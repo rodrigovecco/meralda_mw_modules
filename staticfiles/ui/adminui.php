@@ -66,6 +66,19 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 	}
 
 	/**
+	 * Extra rows for the settings block, contributed by the project.
+	 *
+	 * Return an associative array of label => HTML value. Empty by default: an
+	 * area knows about files, not about the endpoints that may reach it.
+	 *
+	 * @param array $data  the area's get_data()
+	 * @return array<string,string>
+	 */
+	function get_extra_info_rows($data) {
+		return array();
+	}
+
+	/**
 	 * Load DevExtreme and the widget script before the page renders.
 	 * Mirrors mwmod_mw_ui_base_dxtbladmin::before_exec().
 	 */
@@ -234,6 +247,16 @@ abstract class mwmod_mw_staticfiles_ui_adminui extends mwmod_mw_ui_base_basesubu
 				"files go inside a folder, never on the area root"
 			)
 		);
+
+		// ---- rows contributed by the project --------------------------
+		// THIS CLASS KNOWS NOTHING ABOUT WHAT ELSE MAY CONNECT to an area, and it
+		// should not: a static-files area is reusable, and the endpoints that can
+		// reach it belong to the deployment. The project answers with a
+		// label => value map and it is rendered as ordinary rows, so a project can
+		// document its own MCP endpoint here without this file naming it.
+		foreach ((array)$this->get_extra_info_rows($data) as $label => $value) {
+			$row(htmlspecialchars((string)$label), $value);
+		}
 
 		echo $main->get_as_html();
 
