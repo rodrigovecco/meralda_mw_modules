@@ -52,6 +52,22 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	private $role           = 'live';
 	/** Root-level files that may be written. Lower-case, relative to root. */
 	private $editable_root_files = null;
+	/**
+	 * Root-level folders that ARE the site's structure.
+	 *
+	 * Their contents are ordinary content — files inside them are written,
+	 * renamed and deleted like anything else — but the folder itself cannot be
+	 * deleted or renamed. Removing it does not clean something up; it breaks every
+	 * reference the page makes, in one action, with no partial undo.
+	 *
+	 * NOT THE SAME AS get_protected_paths(), and the difference is the whole
+	 * reason this exists. A protected path is CODE (the draft's `/get` router):
+	 * nothing below it may be touched either. A structural folder is CONTENT IN A
+	 * SHAPE: the shape is fixed, the content is not.
+	 *
+	 * @see get_protected_paths()
+	 */
+	private $structural_root_folders = null;
 	/** Allow creating/editing anything inside sub-folders. */
 	private $allow_subfolders = true;
 	/** Allow deleting / renaming (sub-folders only). */
@@ -232,6 +248,60 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			$this->editable_root_files = (array)$this->get_init_editable_root_files();
 		}
 		return $this->editable_root_files;
+	}
+
+	/**
+	 * Declare the root-level folders that are the site's structure.
+	 *
+	 * @param string[] $folders
+	 */
+	final function set_structural_root_folders($folders) {
+		$r = array();
+		foreach ((array)$folders as $f) {
+			$f = trim(str_replace('\\', '/', (string)$f), '/');
+			if ($f !== '') {
+				$r[] = $f;
+			}
+		}
+		$this->structural_root_folders = $r;
+	}
+
+	/** @return string[] */
+	final function get_structural_root_folders() {
+		if (!isset($this->structural_root_folders)) {
+			$this->structural_root_folders = (array)$this->get_init_structural_root_folders();
+		}
+		return $this->structural_root_folders;
+	}
+
+	/** Area hook: folders whose contents are editable but whose name is fixed. */
+	function get_init_structural_root_folders() {
+		return array();
+	}
+
+	/**
+	 * True when the path IS one of the structural root folders.
+	 *
+	 * EXACT MATCH, NOT A PREFIX — that is the entire difference from
+	 * is_protected_path(). `ws` is structural; `ws/assets`, `ws/assets/a.jpg` and
+	 * everything else under it are not, so they keep whatever permissions the
+	 * area gives them. A prefix test here would turn the content tree read-only
+	 * to protect one folder name, which is the opposite of the intent.
+	 *
+	 * @param string $relpath
+	 * @return bool
+	 */
+	final function is_structural_root_folder($relpath) {
+		$rel = $this->check_relpath($relpath);
+		if ($rel === false || $rel === '') {
+			return false;
+		}
+		foreach ($this->get_structural_root_folders() as $f) {
+			if (strcasecmp(trim($f, '/'), $rel) === 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	final function set_allow_subfolders($v)    { $this->allow_subfolders = (bool)$v; }
@@ -662,6 +732,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($this->is_protected_path($rel)) {
 			return false;
 		}
+		// The folder is the site's structure: what is inside it can go, it cannot.
+		if ($this->is_structural_root_folder($rel)) {
+			return false;
+		}
 		if (!$this->is_in_subfolder($rel)) {
 			return (bool)$this->allow_delete && $this->is_existing_dir($rel);
 		}
@@ -686,6 +760,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			return false;
 		}
 		if ($this->is_protected_path($rel)) {
+			return false;
+		}
+		// Renaming it breaks the same references deleting it would.
+		if ($this->is_structural_root_folder($rel)) {
 			return false;
 		}
 		if (!$this->is_in_subfolder($rel)) {
@@ -1064,10 +1142,25 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 	}
 
 	/**
-	 * Delete a file or an empty folder inside a sub-folder.
+	 * Delete a file, or a folder.
+	 *
+	 * TWO WAYS TO REMOVE A FOLDER, AND THE DIFFERENCE MATTERS.
+	 *
+	 * `recursive = false` removes it ONLY IF IT IS EMPTY, with rmdir(). That is
+	 * the safe default and the one a file manager should reach for: it either
+	 * succeeds on a folder nobody wanted, or refuses and names what is in the
+	 * way. It used to call unlink() here, which fails on any directory on any
+	 * platform — so an empty folder could not be removed at all, and the answer
+	 * ("a folder must be empty") was about a folder that WAS empty.
+	 *
+	 * `recursive = true` removes the folder and everything below it. That is the
+	 * sledgehammer, and it is the caller's explicit choice.
+	 *
+	 * Neither path can reach a structural folder: the guard above refuses it
+	 * before anything touches the disk.
 	 *
 	 * @param string $relpath
-	 * @param bool   $recursive  delete folders recursively
+	 * @param bool   $recursive  delete folders with their contents
 	 * @return array
 	 */
 	function delete($relpath, $recursive = false) {
@@ -1086,17 +1179,57 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if (!$fm) {
 			return $this->err("File manager unavailable.");
 		}
-		if (is_dir($abs) && $recursive) {
-			if (!$fm->delete_path($abs)) {
-				return $this->err("Could not delete the folder.");
+		if (is_dir($abs)) {
+			if ($recursive) {
+				if (!$fm->delete_path($abs)) {
+					return $this->err("Could not delete the folder.");
+				}
+			} elseif (!@rmdir($abs)) {
+				// rmdir refuses a folder with anything in it, dot-files included,
+				// and that refusal is the answer: say what has to go first rather
+				// than offering to delete it all.
+				return $this->err(
+					"The folder is not empty. Delete its contents first, or ask for a recursive delete."
+				);
 			}
 		} else {
 			if (!@unlink($abs)) {
-				return $this->err("Could not delete (a folder must be empty).");
+				return $this->err("Could not delete the file.");
 			}
-			@$fm->delete_empty_dirs(dirname($abs));
 		}
+		// Prune parents that the removal left empty — never past the area root,
+		// and never a folder this area declares structural.
+		$this->prune_empty_parents($rel);
 		return array('ok' => true, 'msg' => "Deleted.", 'path' => $rel);
+	}
+
+	/**
+	 * Remove folders above $relpath that are now empty.
+	 *
+	 * WHY IT STOPS WHERE IT STOPS. Emptying `ws/assets/photos` should not leave
+	 * three empty folders behind, but it also must not take `ws` with it: the
+	 * folder is the shape of the site, and an area that declares it structural
+	 * declares it for every operation, including this one.
+	 *
+	 * @param string $relpath  the path that was just removed
+	 * @return void
+	 */
+	protected function prune_empty_parents($relpath) {
+		$rel = $this->check_relpath($relpath);
+		if ($rel === false || $rel === '') {
+			return;
+		}
+		$parent = dirname($rel);
+		while ($parent !== '' && $parent !== '.' && $parent !== '/') {
+			if ($this->is_structural_root_folder($parent) || $this->is_protected_path($parent)) {
+				return;
+			}
+			$abs = $this->get_abs_path($parent);
+			if (!$abs || !is_dir($abs) || !@rmdir($abs)) {
+				return;
+			}
+			$parent = dirname($parent);
+		}
 	}
 
 	// ====================================================================
@@ -1115,6 +1248,11 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			'root_exists'    => $root ? is_dir($root) : false,
 			'url_base'       => $this->url_base,
 			'editable_root'  => $this->get_editable_root_files(),
+			// The folders whose contents are editable but whose name is fixed.
+			// Reported because a caller that cannot delete one deserves to know
+			// that before it tries, and because the MCP guide describes the area
+			// from this array rather than from prose.
+			'structural_folders' => $this->get_structural_root_folders(),
 			'allow_subfolders' => (bool)$this->allow_subfolders,
 			'allow_delete'   => (bool)$this->allow_delete,
 			'allow_rename'   => (bool)$this->allow_rename,
@@ -1236,6 +1374,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		if ($this->is_protected_path($rel)) {
 			return $this->explain_protected_path();
 		}
+		if ($this->is_structural_root_folder($rel)) {
+			return "This folder is the site's structure: its contents can be deleted one by one, "
+				. "but the folder itself cannot. Every page that refers to it would break at once.";
+		}
 		if (!$this->is_in_subfolder($rel)) {
 			return "Root files cannot be deleted.";
 		}
@@ -1248,6 +1390,10 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 		}
 		if ($this->is_protected_path($rel)) {
 			return $this->explain_protected_path();
+		}
+		if ($this->is_structural_root_folder($rel)) {
+			return "This folder is the site's structure and its name is part of every reference the "
+				. "pages make: it can be renamed only by changing those references too.";
 		}
 		if (!$this->is_in_subfolder($rel)) {
 			return "Root files cannot be renamed.";
