@@ -1162,9 +1162,71 @@ abstract class mwmod_mw_staticfiles_man extends mw_apsubbaseobj {
 			return "File type not allowed: ." . $ext;
 		}
 		if (!$this->is_in_subfolder($rel)) {
-			return "This root file is not in the editable list.";
+			// THE ONE REFUSAL A CALLER CANNOT GUESS ITS WAY OUT OF.
+			//
+			// "This root file is not in the editable list" is true and useless:
+			// it says no without saying what a yes would look like, so the next
+			// attempt is another guess at the same place. An editor reads it and
+			// picks a different name; a model reads it and retries, sometimes
+			// several times, because nothing in the sentence changed the model it
+			// had of the area.
+			//
+			// So the answer carries the two facts that end the guessing: WHICH
+			// root files exist, and WHICH folders are there to put a new file in.
+			// Both are read from the area, not templated, because the layout is
+			// the site's and this class does not know it.
+			$editable = (array) $this->get_editable_root_files();
+			$msg = "A new file cannot be created at the root of this area. "
+				. "The root accepts only " . ($editable
+					? implode(', ', $editable)
+					: "nothing")
+				. ", and " . basename($rel) . " is not one of them.";
+			if ($folders = $this->get_root_folder_names()) {
+				$msg .= " Put the file inside one of the folders that exist at the root ("
+					. implode(', ', $folders) . ") and write it at that path, for example "
+					. $folders[0] . "/" . basename($rel) . ".";
+			} else {
+				$msg .= " This area has no folder at its root, so a new file has nowhere to go.";
+			}
+			return $msg;
 		}
 		return "Writing into sub-folders is disabled.";
+	}
+
+	/**
+	 * Names of the folders at the area root, alphabetically.
+	 *
+	 * Used by the refusal messages, to turn "no" into "no, but here". Hidden and
+	 * protected entries are left out for the same reason list_dir() leaves them
+	 * out: they are the host's files or the application's, and offering one as a
+	 * destination would be advice that ends in a second refusal.
+	 *
+	 * @return string[]
+	 */
+	function get_root_folder_names() {
+		$abs = $this->get_abs_path('');
+		if (!$abs || !is_dir($abs)) {
+			return array();
+		}
+		$names = @scandir($abs);
+		if ($names === false) {
+			return array();
+		}
+		$out = array();
+		foreach ($names as $name) {
+			if ($name === '.' || $name === '..') {
+				continue;
+			}
+			if ($this->is_hidden_name($name) || $this->is_protected_path($name)) {
+				continue;
+			}
+			if (!is_dir($abs . '/' . $name)) {
+				continue;
+			}
+			$out[] = $name;
+		}
+		sort($out, SORT_FLAG_CASE | SORT_STRING);
+		return $out;
 	}
 
 	function explain_not_deletable($rel) {

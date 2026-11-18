@@ -211,6 +211,27 @@ class mwmod_mw_staticfiles_policy {
 	}
 
 	/**
+	 * Extensions `files.write` accepts: text, so the content travels as a string.
+	 *
+	 * THIS IS THE LIST A CALLER NEEDS BEFORE IT TRIES, and it used to be written
+	 * inline inside is_editable_ext() — which meant the only way to learn it was
+	 * to attempt a write and read the refusal. Reporting it (get_data()["policy"]
+	 * and the MCP guide) is what stops a client from building a page in an
+	 * extension this installation does not take.
+	 *
+	 * Everything else in the allow list is uploaded as base64 instead: an image
+	 * has no meaningful text form.
+	 *
+	 * @return string[]
+	 */
+	function get_editable_exts() {
+		return array(
+			'html', 'htm', 'css', 'js', 'mjs', 'json', 'map',
+			'txt', 'md', 'csv', 'xml', 'svg',
+		);
+	}
+
+	/**
 	 * True when the extension is text and therefore editable in the UI
 	 * (a binary file can only be uploaded/renamed/deleted).
 	 *
@@ -222,11 +243,7 @@ class mwmod_mw_staticfiles_policy {
 		if ($ext === false) {
 			return false;
 		}
-		$editable = array(
-			'html', 'htm', 'css', 'js', 'mjs', 'json', 'map',
-			'txt', 'md', 'csv', 'xml', 'svg',
-		);
-		return in_array($ext, $editable, true);
+		return in_array($ext, $this->get_editable_exts(), true);
 	}
 
 	/**
@@ -281,9 +298,14 @@ class mwmod_mw_staticfiles_policy {
 	 */
 	function get_debug_data() {
 		return array(
-			'allowed' => $this->get_allowed_exts(),
-			'denied'  => $this->get_denied_exts(),
-			'files'   => $this->get_denied_filenames(),
+			'allowed'  => $this->get_allowed_exts(),
+			'denied'   => $this->get_denied_exts(),
+			'files'    => $this->get_denied_filenames(),
+			// What files.write takes vs what can only be uploaded. A caller that
+			// does not know the difference sends base64 to files.write, or text
+			// to files.upload, and reads a refusal for a file it could have
+			// written correctly.
+			'editable' => $this->get_editable_exts(),
 		);
 	}
 }
