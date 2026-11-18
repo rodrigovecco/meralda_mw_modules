@@ -808,9 +808,13 @@ class mwmod_mw_users_ui_oauthconsent_main extends mwmod_mw_ui_base_basesubuia {
 		$out = [];
 		foreach ($items as $p) {
 			$code = $p->get_code();
+			// allow() lives on the user, not on $user->man: the manager owns the
+			// catalog, the user owns the decision. Asking the manager answered false
+			// for every code, so the list came back empty and the screen stayed on
+			// "did not request specific permissions".
 			// Only what the account can actually be granted: offering the rest
 			// would put disabled rows on a screen the client never asked about.
-			if ($code !== '' && $user->man->allow($code)) {
+			if ($code !== '' && $user->allow($code)) {
 				$out[$code] = true;
 			}
 		}
