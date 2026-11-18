@@ -52,6 +52,39 @@ class mwmod_mw_staticfiles_tools {
 	}
 
 	/**
+	 * The operations that change something.
+	 *
+	 * ONE PLACE THAT KNOWS, because more than one caller needs the answer and a
+	 * second copy of this list is a second list that drifts. The MCP adapter asks
+	 * here to decide whether a call needs the write permission or the read one,
+	 * and a door that mounts read-only areas asks here to decide which operations
+	 * may be mounted at all.
+	 *
+	 * `files.info` is not on it: it reports configuration, and a client that
+	 * cannot write still needs to know the limits it must respect.
+	 *
+	 * @return string[]
+	 */
+	static function get_write_operations() {
+		return array('files.write', 'files.upload', 'files.mkdir', 'files.rename', 'files.delete');
+	}
+
+	/**
+	 * Does this operation change something?
+	 *
+	 * An unknown name answers FALSE: a caller that does not recognise an
+	 * operation must not be told it writes, or a future read operation would be
+	 * refused everywhere until somebody remembered to add it to the list. The
+	 * static-files manager still refuses what it does not understand.
+	 *
+	 * @param  string $operation  e.g. "files.write"
+	 * @return bool
+	 */
+	static function is_write_operation($operation) {
+		return in_array((string) $operation, self::get_write_operations(), true);
+	}
+
+	/**
 	 * Tool catalogue, for MCP `tools/list`.
 	 *
 	 * @return array
