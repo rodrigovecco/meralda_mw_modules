@@ -352,11 +352,11 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 			
 	}
 	/**
-	 * Devuelve los usuarios asociados a un correo electrónico.
+	 * Returns the users that match an email address.
 	 *
-	 * @param string $mail       Correo a buscar.
-	 * @param bool   $onlyactive Si true, sólo usuarios con active=1.
-	 * @return array|false Usuarios encontrados, o false si el criterio no es válido.
+	 * @param string $mail       Address to look up.
+	 * @param bool   $onlyactive When true, restrict to users with active=1.
+	 * @return array|false Matching users, or false when the input is not valid.
 	 */
 	function get_users_with_mail($mail,$onlyactive=true){
 		if(!$mail=trim($mail)){
@@ -372,13 +372,14 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if($onlyactive){
 			$q->where->add_where_crit("active",1);	
 		}
-		// La columna es email, no name: name guarda el identificador del usuario
-		// (el DNI, en las implementaciones que lo usan) y su colación puede ser
-		// binaria, así que comparar un correo contra ella nunca coincidía.
-		// Se usa add_where_crit() para que el valor vaya como parámetro y no
-		// concatenado en el SQL. Nota: la columna email suele estar declarada
-		// con una colación *_ci, por lo que la comparación ya ignora mayúsculas
-		// y envolverla en LOWER() sólo impediría usar un índice.
+		// The column is email, not name: name holds the user identifier (the
+		// document number, in the implementations that use it) and its collation
+		// may be binary, so comparing an address against it never matched.
+		// add_where_crit() is used so the value travels as a bound parameter
+		// instead of being concatenated into the SQL. Note: the email column is
+		// usually declared with a *_ci collation, so the comparison already
+		// ignores case and wrapping it in LOWER() would only prevent an index
+		// from being used.
 		$q->where->add_where_crit("email",$mail);
 		return $this->get_users_by_query($q);
 	}
