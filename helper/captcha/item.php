@@ -77,10 +77,11 @@ class mwmod_mw_helper_captcha_item extends mw_apsubbaseobj{
 			}
 		}
 		ob_end_clean();
-		header ('Content-type: image/jpeg');
+		header ('Content-type: image/png');
 		
 		imagepng($val_img);
-		imagedestroy($val_img);
+		# imagedestroy() es no-op desde PHP 8.0 y esta deprecada en 8.5.
+		# El GD resource lo libera el garbage collector al salir de scope.
 	}
 	function new_secret(){
 		return mwmod_mw_util_random::string($this->len);	
