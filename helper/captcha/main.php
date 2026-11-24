@@ -88,7 +88,12 @@ class mwmod_mw_helper_captcha_main extends mw_apsubbaseobj{
 		if(!is_array($_SESSION[$this->sessionvarname][$cod]??null)){
 			return false;
 		}
-		return $_SESSION[$this->sessionvarname][$cod]["secret"];
+		// El código puede estar en sesión sin haber generado todavía su secret
+		// (set_item_secret corre al preparar la salida de la imagen). Sin esta
+		// comprobación PHP 8 emite "Undefined array key" y ensucia el log en
+		// cada validación que llega antes. Comportamiento: seguir devolviendo
+		// false, que es lo que la validación necesita.
+		return $_SESSION[$this->sessionvarname][$cod]["secret"]??false;
 		
 	}
 	function get_item_data($item){
