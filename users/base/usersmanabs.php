@@ -351,6 +351,13 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		return $tblman->real_escape_string($txt);
 			
 	}
+	/**
+	 * Devuelve los usuarios asociados a un correo electrónico.
+	 *
+	 * @param string $mail       Correo a buscar.
+	 * @param bool   $onlyactive Si true, sólo usuarios con active=1.
+	 * @return array|false Usuarios encontrados, o false si el criterio no es válido.
+	 */
 	function get_users_with_mail($mail,$onlyactive=true){
 		if(!$mail=trim($mail)){
 			return false;	
@@ -365,12 +372,15 @@ abstract class mwmod_mw_users_base_usersmanabs extends mw_apsubbaseobj{
 		if($onlyactive){
 			$q->where->add_where_crit("active",1);	
 		}
-		$mail=$this->real_escape_string($mail);
-		//$q->where->add_where("LOWER(email)='$mail'");
-		$q->where->add_where("LOWER(name)='$mail'");
+		// La columna es email, no name: name guarda el identificador del usuario
+		// (el DNI, en las implementaciones que lo usan) y su colación puede ser
+		// binaria, así que comparar un correo contra ella nunca coincidía.
+		// Se usa add_where_crit() para que el valor vaya como parámetro y no
+		// concatenado en el SQL. Nota: la columna email suele estar declarada
+		// con una colación *_ci, por lo que la comparación ya ignora mayúsculas
+		// y envolverla en LOWER() sólo impediría usar un índice.
+		$q->where->add_where_crit("email",$mail);
 		return $this->get_users_by_query($q);
-		//return $q;
-		
 	}
 	
 	//creación de objetos
